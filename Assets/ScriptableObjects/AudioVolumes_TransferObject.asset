@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ade2add08ac869d479bf70e256b56276, type: 3}
+  m_Name: AudioVolumes_TransferObject
+  m_EditorClassIdentifier: Assembly-CSharp::AudioVolumes_TransferObject
+  AudioVolumes:
+  - {fileID: 11400000, guid: cd092f552cbfd4d48889692d43ef7e81, type: 2}
+  - {fileID: 11400000, guid: 1a518ca37032c5f41afbe50b5dd75141, type: 2}
+  - {fileID: 11400000, guid: db53e2698de0fb54daa28da6bae2f07e, type: 2}
