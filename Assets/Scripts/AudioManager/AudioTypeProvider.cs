@@ -6,4 +6,5 @@ public enum AudioTypeProvider
     Music,
     SFX,
     Player,
+    BehindWall
 }

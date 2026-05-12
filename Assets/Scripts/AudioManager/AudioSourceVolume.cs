@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "AudioSoruceVolume", menuName = "Scriptable Objects/AudioSoruceVolume")]
+[CreateAssetMenu(fileName = "AudioSourceVolume", menuName = "Scriptable Objects/AudioSourceVolume")]
 public class AudioSourceVolume : ScriptableObject
 {
     public AudioTypeProvider CurrentAudioType;

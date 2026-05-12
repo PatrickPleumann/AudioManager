@@ -5,5 +5,6 @@ public class AudioDataObject : ScriptableObject
 {
     public AudioClip[] CurrentClips;
     public AudioTypeProvider CurrentTypeProvider;
-    public Vector3 callerPosition;
+    public Transform CallerTransform;
+    public bool SetCallerAsParent;
 }
