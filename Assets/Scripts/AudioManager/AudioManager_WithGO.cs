@@ -10,7 +10,7 @@ public class AudioManager_WithGO : MonoBehaviour
     //number of audio sources has impact on cpu thread speed: above 100 is mostly unnecessary >> stay with 30 - 60 to have very low performance impact
     [SerializeField][Range(1, 100)] private int numbersOfAudioSources = 50;
 
-    [SerializeField] private float defaultCuttoffFreqValue = 5000f; 
+    [SerializeField] private float defaultCuttoffFreqValue = 5000f;
     [SerializeField] AudioVolumes_TransferObject transferObject;
     [SerializeField] private float numberOfAll3DAudioGameObjects;
     [SerializeField] private GameObject audioGameObjectPrefab;
@@ -38,11 +38,17 @@ public class AudioManager_WithGO : MonoBehaviour
     private void Start()
     {
         InstantiateAudioGameObjects_Array(numbersOfAudioSources);
-
         FillDictionaryWithKeysAndValues();
 
         CallAudioSourceDispatcher += ProvideCallerWithTransformableAudioSource;
     }
+
+    private void OnDisable()
+    {
+        CallAudioSourceDispatcher -= ProvideCallerWithTransformableAudioSource;
+    }
+
+
     private void InstantiateAudioGameObjects_Array(int _numberOfAudioSources)
     {
         for (int i = 0; i < _numberOfAudioSources; i++)
@@ -69,7 +75,10 @@ public class AudioManager_WithGO : MonoBehaviour
         if (transferObject.AudioVolumes != null && transferObject.AudioVolumes.Length > 0)
             for (int i = 0; i < transferObject.AudioVolumes.Length; i++)
             {
-                volumeDictionary.Add(transferObject.AudioVolumes[i].CurrentAudioType, transferObject.AudioVolumes[i].Volume);
+                if (transferObject.AudioVolumes[i] != null)
+                    volumeDictionary.Add(transferObject.AudioVolumes[i].CurrentAudioType, transferObject.AudioVolumes[i].Volume);
+                else
+                    Debug.Log("Audio Volume Array position: " + i + " is null. Check if your AudioVolumes_TransferObject may has a empty spot");
             }
     }
 
@@ -105,7 +114,7 @@ public class AudioManager_WithGO : MonoBehaviour
 
 
 
-            if (volumeDictionary.TryGetValue(_audioDataObject.CurrentTypeProvider, out float curVolume))
+            if (volumeDictionary.TryGetValue(_audioDataObject.CurrentType, out float curVolume))
                 source.volume = curVolume;
 
             if (CheckIfPlayerIsBehindWall(_audioDataObject) == true)
@@ -120,7 +129,7 @@ public class AudioManager_WithGO : MonoBehaviour
                 temp.transform.position = _audioDataObject.CallerTransform.position;
 
             source.Play();
-            Debug.Log($"AudioSource >>{_audioDataObject.CurrentTypeProvider}<< was played with >>{curVolume}<< volume");
+            Debug.Log($"AudioSource >>{_audioDataObject.CurrentType}<< was played with >>{curVolume}<< volume");
         }
     }
 
