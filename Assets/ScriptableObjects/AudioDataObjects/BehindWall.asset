@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: BehindWall
   m_EditorClassIdentifier: Assembly-CSharp::AudioDataObject
   CurrentClips:
-  - {fileID: 8300000, guid: 09e22874557a04dd1834c6cc34e7afd7, type: 3}
-  CurrentTypeProvider: 5
+  - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
+  CurrentType: 5
   CallerTransform: {fileID: 0}
-  SetCallerAsParent: 1
+  SetCallerAsParent: 0
+  SourceOriginCouldBeBehindWall: 0

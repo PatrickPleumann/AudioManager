@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "AudioVolumes_TransferObject", menuName = "Scriptable Objects/AudioVolumes_TransferObject")]
-public class AudioVolumes_TransferObject : ScriptableObject
+public class AudioVolumesTransferObject : ScriptableObject
 {
     private string[] allAudioSourceVolumes;
 
@@ -25,13 +25,13 @@ public class AudioVolumes_TransferObject : ScriptableObject
     }
 }
 
-[CustomEditor(typeof(AudioVolumes_TransferObject))]
+[CustomEditor(typeof(AudioVolumesTransferObject))]
 public class ScriptableEditorBehaviour : Editor
 {
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
-        var script = (AudioVolumes_TransferObject)target;
+        var script = (AudioVolumesTransferObject)target;
         if (GUILayout.Button("Populate array", GUILayout.Height(40)))
         {
             script.GetAllAudioSourceVolumes();

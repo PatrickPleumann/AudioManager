@@ -58,22 +58,22 @@ public class TestScript : MonoBehaviour
     private void PlayAmbientTest()
     {
         Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManager_WithGO.CallAudioSourceDispatcher.Invoke(Ambient);
+        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Ambient);
     }
     private void PlayPlayerTest()
     {
-        Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManager_WithGO.CallAudioSourceDispatcher(Player);
+        Player.CallerTransform = transforms[Random.Range(0, transforms.Length)];
+        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Player);
     }
     private void PlaySFXTest()
     {
-        Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManager_WithGO.CallAudioSourceDispatcher(SFX);
+        SFX.CallerTransform = transforms[Random.Range(0, transforms.Length)];
+        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(SFX);
     }
     private void PlayBehindWallTest()
     {
         BehindWall.CallerTransform = BehindWallPos;
-        AudioManager_WithGO.CallAudioSourceDispatcher(BehindWall);
+        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(BehindWall);
     }
 
     private void SetWallOnOff()

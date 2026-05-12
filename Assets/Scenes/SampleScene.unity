@@ -327,7 +327,13 @@ MonoBehaviour:
   walls:
     serializedVersion: 2
     m_Bits: 128
+  CutOffFrequenciesPerLayerMask:
+  - SingleLayer: 7
+    CutoffFrequencyValue: 3000
+  - SingleLayer: 4
+    CutoffFrequencyValue: 4000
   playerAudioListenerTransform: {fileID: 330585546}
+  timeIntervalBetweenPositionChecks: 0.25
 --- !u!4 &261192438
 Transform:
   m_ObjectHideFlags: 0
