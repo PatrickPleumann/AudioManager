@@ -22,11 +22,11 @@ public class AudioDataObject : ScriptableObject
     [Tooltip("Performance Tooltip:  Check this, if you need the sound to be parented - " +
         "Example: Passing car emitting sounds. Uncheck this mark if the sounds are short")]
     public bool SetCallerAsParent;
-    [Space]
+    //[Space]
 
-    [Tooltip("Performance Tooltip:  Check this box, if the Source could be behind a wall. " +
-        "Uncheck this, if you are sure, the sound won´t appear behind wall")]
-    public bool SourceOriginCouldBeBehindWall;
+    ////[Tooltip("Performance Tooltip:  Check this box, if the Source could be behind a wall. " +
+    ////    "Uncheck this, if you are sure, the sound won´t appear behind wall")]
+    ////public bool SourceOriginCouldBeBehindWall;
 
     public int PoolIndex { get; set; } = -1;
     public bool canHandleAudioSource;

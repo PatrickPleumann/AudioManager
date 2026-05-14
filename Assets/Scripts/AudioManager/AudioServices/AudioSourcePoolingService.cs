@@ -1,4 +1,4 @@
-#define USE_UNITASK //TODO: REMOVE THIS
+//#define USE_UNITASK //TODO: REMOVE THIS
 using System.Threading;
 using UnityEngine;
 
@@ -6,18 +6,25 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 #endif
 
-public class AudioSourceProviderService : MonoBehaviour 
+public class AudioSourcePoolingService : MonoBehaviour 
 {
+    [Space]
     [SerializeField] private int numberOfAudioObjects;
+    [Space]
     [SerializeField] private GameObject audioGameObjectPrefab;
-    public CancellationTokenSource[] poolTokenSources;
-
+    [Space]
     public PoolAudioObject[] allAudioSources;
 
+#if USE_UNITASK
+    public CancellationTokenSource[] poolTokenSources;
+#endif
     private void Awake()
     {
         allAudioSources = new PoolAudioObject[numberOfAudioObjects];
+
+#if USE_UNITASK
         poolTokenSources = new CancellationTokenSource[numberOfAudioObjects];
+#endif
 
         InstantiateAudioGameObjects(numberOfAudioObjects);
     }
@@ -42,12 +49,13 @@ public class AudioSourceProviderService : MonoBehaviour
         }
     }
 
-    public int GetFreeAudioPoolIndex()
+    public int GetFreeAudioSourcePoolIndex()
     {
         for (int i = 0; i < allAudioSources.Length; i++)
         {
             if (!allAudioSources[i].Source.isPlaying) return i;
         }
+        Debug.Log($"All {allAudioSources.Length} audio sources are occupied");
         return -1;
     }
 }
