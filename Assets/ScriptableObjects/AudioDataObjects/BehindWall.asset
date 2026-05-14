@@ -18,3 +18,5 @@ MonoBehaviour:
   CallerTransform: {fileID: 0}
   SetCallerAsParent: 0
   SourceOriginCouldBeBehindWall: 0
+  CurrentBoundedAudioSource: {fileID: 0}
+  canHandleAudioSource: 1

@@ -1,3 +1,4 @@
+using System.Threading;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "AudioDataObject", menuName = "Scriptable Objects/AudioDataObject")]
@@ -26,4 +27,8 @@ public class AudioDataObject : ScriptableObject
     [Tooltip("Performance Tooltip:  Check this box, if the Source could be behind a wall. " +
         "Uncheck this, if you are sure, the sound won´t appear behind wall")]
     public bool SourceOriginCouldBeBehindWall;
+
+    public int PoolIndex { get; set; } = -1;
+    public bool canHandleAudioSource;
+    public CancellationToken cancellationToken;
 }

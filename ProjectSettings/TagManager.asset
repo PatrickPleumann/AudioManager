@@ -14,9 +14,9 @@ TagManager:
   - 
   - Wall
   - 
-  - 
-  - 
-  - 
+  - ThinWall
+  - MediumWall
+  - ThickWall
   - 
   - 
   - 

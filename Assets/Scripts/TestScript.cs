@@ -11,6 +11,8 @@ public class TestScript : MonoBehaviour
     public Button B_BehindWall;
     public Button B_WallOnOff;
 
+    public Button B_StopSource;
+
     [Space]
     [Header("Test Values")]
     public float AmbientVolume;
@@ -44,7 +46,6 @@ public class TestScript : MonoBehaviour
         AmbientVol.Volume = AmbientVolume;
         PlayerVol.Volume = PlayerVolume;
         SFXVol.Volume = SFXVolume;
-
     }
     private void OnEnable()
     {
@@ -53,27 +54,28 @@ public class TestScript : MonoBehaviour
         B_SFX.onClick.AddListener(PlaySFXTest);
         B_BehindWall.onClick.AddListener(PlayBehindWallTest);
         B_WallOnOff.onClick.AddListener(SetWallOnOff);
+        B_StopSource.onClick.AddListener(StopSourcePlaying);
     }
 
     private void PlayAmbientTest()
     {
         Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Ambient);
+        AudioManagerDynamicMerged.CallAudioSourceDispatcher.Invoke(Ambient);
     }
     private void PlayPlayerTest()
     {
         Player.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Player);
+        AudioManagerDynamicMerged.CallAudioSourceDispatcher.Invoke(Player);
     }
     private void PlaySFXTest()
     {
         SFX.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(SFX);
+        AudioManagerDynamicMerged.CallAudioSourceDispatcher.Invoke(SFX);
     }
     private void PlayBehindWallTest()
     {
         BehindWall.CallerTransform = BehindWallPos;
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(BehindWall);
+        AudioManagerDynamicMerged.CallAudioSourceDispatcher.Invoke(BehindWall);
     }
 
     private void SetWallOnOff()
@@ -84,5 +86,10 @@ public class TestScript : MonoBehaviour
         }
         else
             walls.SetActive(true);
+    }
+
+    private void StopSourcePlaying()
+    {
+        AudioManagerDynamicMerged.DynamicAudioSourceStop.Invoke(BehindWall);
     }
 }
