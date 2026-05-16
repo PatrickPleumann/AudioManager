@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public struct PoolAudioObject
+public struct AudioObject
 {
     public GameObject GameObject;
     public AudioSource Source;

@@ -1,4 +1,4 @@
-//#define USE_UNITASK //TODO: REMOVE THIS
+#define USE_UNITASK //TODO: REMOVE THIS
 using System.Threading;
 using UnityEngine;
 
@@ -8,25 +8,24 @@ using Cysharp.Threading.Tasks;
 
 public class AudioSourcePoolingService : MonoBehaviour 
 {
-    [Space]
-    [SerializeField] private int numberOfAudioObjects;
+    [SerializeField] private AudioManagerSettings settingsData;
     [Space]
     [SerializeField] private GameObject audioGameObjectPrefab;
     [Space]
-    public PoolAudioObject[] allAudioSources;
+    public AudioObject[] allAudioSources;
 
 #if USE_UNITASK
     public CancellationTokenSource[] poolTokenSources;
 #endif
     private void Awake()
     {
-        allAudioSources = new PoolAudioObject[numberOfAudioObjects];
+        allAudioSources = new AudioObject[settingsData.numberOfAudioObjects];
 
 #if USE_UNITASK
-        poolTokenSources = new CancellationTokenSource[numberOfAudioObjects];
+        poolTokenSources = new CancellationTokenSource[settingsData.numberOfAudioObjects];
 #endif
 
-        InstantiateAudioGameObjects(numberOfAudioObjects);
+        InstantiateAudioGameObjects(settingsData.numberOfAudioObjects);
     }
 
     private void InstantiateAudioGameObjects(int _numberOfAudioSources)
@@ -36,7 +35,7 @@ public class AudioSourcePoolingService : MonoBehaviour
             var tempGameObject = Instantiate(audioGameObjectPrefab);
             tempGameObject.transform.SetParent(this.transform);
 
-            allAudioSources[i] = new PoolAudioObject
+            allAudioSources[i] = new AudioObject
             {
                 GameObject = tempGameObject,
                 Source = tempGameObject.GetComponent<AudioSource>(),

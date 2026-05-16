@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class AudioPauseService
 {
-    private readonly PoolAudioObject[] allAudioSources_Array;
+    private readonly AudioObject[] allAudioSources_Array;
     
-    public AudioPauseService(PoolAudioObject[] _allAudioSources_Array)
+    public AudioPauseService(AudioObject[] _allAudioSources_Array)
     {
         allAudioSources_Array = _allAudioSources_Array;
     }

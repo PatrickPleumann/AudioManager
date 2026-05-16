@@ -1,4 +1,4 @@
-//#define USE_UNITASK //TODO: REMOVE THIS!!!
+#define USE_UNITASK //TODO: REMOVE THIS!!!
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,15 +11,22 @@ using Random = UnityEngine.Random;
 using Cysharp.Threading.Tasks;
 #endif
 
-[RequireComponent(typeof(AudioSourcePoolingService), typeof(AudioManagerDataService))]
+[RequireComponent(typeof(AudioSourcePoolingService))]
 public class AudioManagerDynamic : MonoBehaviour
 {
+    [Header("Settings Data")]
+    [SerializeField] private AudioManagerSettings audioManagerSettings;
+    [Space]
+
     [Header("Services")]
-    private AudioManagerDataService audioManagerDataService;
+    //private AudioManagerDataService audioManagerDataService;
     private AudioSourcePoolingService sourceProvider;
     [Space]
-    [SerializeField] private AudioVolumesTransferObject transferObject;
 
+    [SerializeField] private AudioVolumesTransferObject transferObject;
+    [Space]
+
+    private AudioListener audioListener;
     private AudioPauseService audioPauseService;
     private AudioManagerDictionaryProvider dictionaryProvider;
 
@@ -41,29 +48,31 @@ public class AudioManagerDynamic : MonoBehaviour
     public static UnityAction CallUnPauseAllSources;
 
 
-    //#if !USE_UNITASK
-    //    [Header("Coroutine specific values")]
-    //    private readonly Dictionary<int, Coroutine> activeCoroutineChecks = new Dictionary<int, Coroutine>();
-    //    private WaitForSeconds intervalWait;
-    //    private WaitForSeconds pauseWait;
-    //#else
-    //    [Header("UniTask specific values")]
-    //    private CancellationTokenSource linkedMasterTokenSource;
-    //#endif
+#if !USE_UNITASK
+        [Header("Coroutine specific values")]
+        private readonly Dictionary<int, Coroutine> activeCoroutineChecks = new Dictionary<int, Coroutine>();
+        private WaitForSeconds intervalWait;
+        private WaitForSeconds pauseWait;
+#else
+    [Header("UniTask specific values")]
+    private CancellationTokenSource linkedMasterTokenSource;
+#endif
 
     private void Awake()
     {
-        audioManagerDataService = GetComponent<AudioManagerDataService>();
+        audioListener = FindFirstObjectByType<AudioListener>(); // only called once
+        audioManagerSettings.playerAudioListenerTransform = audioListener.gameObject.transform;
+
         sourceProvider = GetComponent<AudioSourcePoolingService>();
         dictionaryProvider = new();
 
 #if !USE_UNITASK
-        audioManagerDataService.intervalWait = new WaitForSeconds(audioManagerDataService.timeIntervalBetweenPositionChecks);
-        audioManagerDataService.pauseWait = new WaitForSeconds(0.1f);
+        audioManagerSettings.intervalWait = new WaitForSeconds(audioManagerSettings.timeIntervalBetweenPositionChecks);
+        audioManagerSettings.pauseWait = new WaitForSeconds(0.1f);
         Debug.Log("[AudioTool] Pure Coroutine mode initialized (Not Recommended).");
 #else
 
-        audioManagerDataService.linkedMasterTokenSource = new CancellationTokenSource();
+        linkedMasterTokenSource = new CancellationTokenSource();
         Debug.Log("[AudioTool] UniTask mode initialized (Recommended).");
 #endif
         //Initialize all services
@@ -81,7 +90,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
     private void Start()
     {
-        dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(audioManagerDataService.CutoffFrequenciesPerLayer);
+        dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(audioManagerSettings.CutoffFrequenciesPerLayer);
         dictionaryProvider.FillDictionaryWithKeysAndValues(transferObject);
 
         GenerateLayerMaskFromDictionary();
@@ -104,7 +113,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
         _audioDataObject.PoolIndex = poolIndex;
 
-        PoolAudioObject poolObject = sourceProvider.allAudioSources[poolIndex];
+        AudioObject poolObject = sourceProvider.allAudioSources[poolIndex];
         AudioSource source = poolObject.Source;
         AudioLowPassFilter filter = poolObject.Filter;
 
@@ -121,7 +130,7 @@ public class AudioManagerDynamic : MonoBehaviour
         else
             poolObject.GameObject.transform.position = _audioDataObject.CallerTransform.position;
 
-        filter.cutoffFrequency = audioManagerDataService.defaultCuttoffFreqValue;
+        filter.cutoffFrequency = audioManagerSettings.defaultCuttoffFreqValue;
 
 
 #if !USE_UNITASK
@@ -135,14 +144,14 @@ public class AudioManagerDynamic : MonoBehaviour
 #if !USE_UNITASK
     private void StartWallCheckCoroutine(AudioSourcePoolingService sourceProvider, AudioDataObject audioDataObject, AudioLowPassFilter filter, float currentClipLength, int poolIndex)
     {
-        if (audioManagerDataService.activeCoroutineChecks.TryGetValue(poolIndex, out Coroutine runningCoroutine))
+        if (audioManagerSettings.activeCoroutineChecks.TryGetValue(poolIndex, out Coroutine runningCoroutine))
         {
             if (runningCoroutine != null) StopCoroutine(runningCoroutine);
-            audioManagerDataService.activeCoroutineChecks.Remove(poolIndex);
+            audioManagerSettings.activeCoroutineChecks.Remove(poolIndex);
         }
 
         Coroutine newCheck = StartCoroutine(CheckIfPlayerBehindWallRoutine(audioDataObject, filter, currentClipLength, poolIndex));
-        audioManagerDataService.activeCoroutineChecks.Add(poolIndex, newCheck);
+        audioManagerSettings.activeCoroutineChecks.Add(poolIndex, newCheck);
     }
 
     private IEnumerator CheckIfPlayerBehindWallRoutine(AudioDataObject audioDataObject, AudioLowPassFilter filter, float currentClipLength, int poolIndex)
@@ -159,7 +168,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
             if (!targetSource.isPlaying)
             {
-                yield return audioManagerDataService.pauseWait;
+                yield return audioManagerSettings.pauseWait;
                 continue;
             }
 
@@ -167,14 +176,14 @@ public class AudioManagerDynamic : MonoBehaviour
                 AssignNewCutoffFreqToCurrentSource(filter, tempHit);
 
             else if (filter != null)
-                filter.cutoffFrequency = audioManagerDataService.defaultCuttoffFreqValue;
+                filter.cutoffFrequency = audioManagerSettings.defaultCuttoffFreqValue;
 
-            yield return audioManagerDataService.intervalWait;
-            elapsedPlayTime += audioManagerDataService.timeIntervalBetweenPositionChecks;
+            yield return audioManagerSettings.intervalWait;
+            elapsedPlayTime += audioManagerSettings.timeIntervalBetweenPositionChecks;
         }
 
         if (audioDataObject != null) audioDataObject.PoolIndex = -1;
-        audioManagerDataService.activeCoroutineChecks.Remove(poolIndex);
+        audioManagerSettings.activeCoroutineChecks.Remove(poolIndex);
     }
 #endif
 
@@ -184,7 +193,7 @@ public class AudioManagerDynamic : MonoBehaviour
     {
         sourceProvider.poolTokenSources[_poolIndex].Cancel();
         sourceProvider.poolTokenSources[_poolIndex].Dispose();
-        sourceProvider.poolTokenSources[_poolIndex] = CancellationTokenSource.CreateLinkedTokenSource(audioManagerDataService.linkedMasterTokenSource.Token);
+        sourceProvider.poolTokenSources[_poolIndex] = CancellationTokenSource.CreateLinkedTokenSource(linkedMasterTokenSource.Token);
 
         CheckIfPlayerBehindWallUniTaskVoid(
             sourceProvider.poolTokenSources[_poolIndex].Token,
@@ -199,7 +208,7 @@ public class AudioManagerDynamic : MonoBehaviour
     {
         float elapsedPlayTime = 0f;
         AudioSource targetSource = sourceProvider.allAudioSources[_poolIndex].Source;
-        int checkIntervalMs = (int)(audioManagerDataService.timeIntervalBetweenPositionChecks * 1000);
+        int checkIntervalMs = (int)(audioManagerSettings.timeIntervalBetweenPositionChecks * 1000);
 
         if (CheckIfPlayerIsBehindWall(_audioDataObject, out RaycastHit firstHit))
             AssignNewCutoffFreqToCurrentSource(_filter, firstHit);
@@ -220,12 +229,12 @@ public class AudioManagerDynamic : MonoBehaviour
                 AssignNewCutoffFreqToCurrentSource(_filter, tempHit);
 
             else if (_filter != null)
-                _filter.cutoffFrequency = audioManagerDataService.defaultCuttoffFreqValue;
+                _filter.cutoffFrequency = audioManagerSettings.defaultCuttoffFreqValue;
 
             bool canceledDuringWait = await UniTask.Delay(checkIntervalMs, delayType: DelayType.DeltaTime, cancellationToken: _token).SuppressCancellationThrow();
             if (canceledDuringWait) return;
 
-            elapsedPlayTime += audioManagerDataService.timeIntervalBetweenPositionChecks;
+            elapsedPlayTime += audioManagerSettings.timeIntervalBetweenPositionChecks;
         }
 
         if (_audioDataObject != null) _audioDataObject.PoolIndex = -1;
@@ -236,14 +245,14 @@ public class AudioManagerDynamic : MonoBehaviour
     {
         hitinfo = default;
 
-        if (audioManagerDataService.playerAudioListenerTransform == null || _audioDataObject == null || _audioDataObject.CallerTransform == null)
+        if (audioManagerSettings.playerAudioListenerTransform == null || _audioDataObject == null || _audioDataObject.CallerTransform == null)
             return false;
 
         Vector3 startPos = _audioDataObject.CallerTransform.position;
-        Vector3 direction = audioManagerDataService.playerAudioListenerTransform.position - startPos;
+        Vector3 direction = audioManagerSettings.playerAudioListenerTransform.position - startPos;
         float maxDistance = direction.magnitude;
 
-        if (Physics.Raycast(startPos, direction.normalized, out RaycastHit tempHit, maxDistance, audioManagerDataService.autoGeneratedWallLayerMask))
+        if (Physics.Raycast(startPos, direction.normalized, out RaycastHit tempHit, maxDistance, audioManagerSettings.autoGeneratedWallLayerMask))
         {
             hitinfo = tempHit;
             return true;
@@ -274,10 +283,10 @@ public class AudioManagerDynamic : MonoBehaviour
         sourceProvider.allAudioSources[targetIndex].Source.Stop();
 
 #if !USE_UNITASK
-        if (audioManagerDataService.activeCoroutineChecks.TryGetValue(targetIndex, out Coroutine runningCoroutine))
+        if (audioManagerSettings.activeCoroutineChecks.TryGetValue(targetIndex, out Coroutine runningCoroutine))
         {
             if (runningCoroutine != null) StopCoroutine(runningCoroutine);
-            audioManagerDataService.activeCoroutineChecks.Remove(targetIndex);
+            audioManagerSettings.activeCoroutineChecks.Remove(targetIndex);
         }
 #else
         sourceProvider.poolTokenSources[targetIndex].Cancel();
@@ -298,20 +307,20 @@ public class AudioManagerDynamic : MonoBehaviour
             }
         }
 
-        audioManagerDataService.autoGeneratedWallLayerMask = combinedBitmask;
+        audioManagerSettings.autoGeneratedWallLayerMask = combinedBitmask;
     }
 
     private void OnDestroy()
     {
 #if !USE_UNITASK
-        foreach (var runningCoroutine in audioManagerDataService.activeCoroutineChecks.Values)
+        foreach (var runningCoroutine in audioManagerSettings.activeCoroutineChecks.Values)
         {
             if (runningCoroutine != null) StopCoroutine(runningCoroutine);
         }
-        audioManagerDataService.activeCoroutineChecks.Clear();
+        audioManagerSettings.activeCoroutineChecks.Clear();
 #else
-        audioManagerDataService.linkedMasterTokenSource.Cancel();
-        audioManagerDataService.linkedMasterTokenSource.Dispose();
+        linkedMasterTokenSource.Cancel();
+        linkedMasterTokenSource.Dispose();
 
         for (int i = 0; i < sourceProvider.poolTokenSources.Length; i++)
         {
