@@ -29,6 +29,8 @@ public class AudioDataObject : ScriptableObject
     ////public bool SourceOriginCouldBeBehindWall;
 
     public int PoolIndex { get; set; } = -1;
+    public bool IsOneShot;
     public bool canHandleAudioSource;
     public CancellationToken cancellationToken;
+    public bool UseWallCheck;
 }

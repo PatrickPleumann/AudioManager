@@ -9,5 +9,5 @@ public struct AudioHandle
         PoolIndex = _poolIndex;
     }
 
-    public bool isValid => PoolIndex >= 0;
+    public bool IsValid => PoolIndex >= 0;
 }
