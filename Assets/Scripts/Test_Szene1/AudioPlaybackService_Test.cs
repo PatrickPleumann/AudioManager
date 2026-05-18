@@ -35,7 +35,10 @@ public class AudioPlaybackService_Test
             source.volume = curVolume;
 
         if (audioDataObject.SetCallerAsParent)
+        {
             poolObject.GameObject.transform.SetParent(audioDataObject.CallerTransform);
+            poolObject.GameObject.transform.position = audioDataObject.CallerTransform.position;
+        }
         else
             poolObject.GameObject.transform.position = audioDataObject.CallerTransform.position;
 

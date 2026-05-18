@@ -6,7 +6,7 @@ public class AudioManagerDictionaryProvider
     public Dictionary<AudioTypeProvider, float> volumeDictionary = new();
 
     /// <summary>
-    /// Fills the a Dictionary With LayerMask values as key and sound related "Cutoff Frequency"-float as value.
+    /// Fills the a Dictionary With LayerMask values as key and sound related "Cutoff Frequency"-floats as value.
     /// </summary>
     /// <param name="_cutoffFreqArray"></param>
     public void FillLayerMaskDictionaryWithLayerRelatedValues(CutoffFreqLayerBehaviour[] _cutoffFreqArray)
