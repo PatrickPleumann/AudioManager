@@ -2,7 +2,10 @@
 
 Short Description:   Developer Friendly Unity AudioSource Management System
 
+If you wanna check out the code - the current FOLDER for all the refactored scripts is under "Assets/Scripts/Test_Szene1"  - this will Change throughout production.
+
 Description:
+
 I struggled with handling audio sources, so I built a tool to lift that weight off my shoulders—both for now and for future projects.
 Along the way, I encountered many interesting and challenging edge cases, and solving them taught me a great deal about the developer mindset. 
 Initially, my goal was to create an absolute foolproof, plug-and-play solution. 
