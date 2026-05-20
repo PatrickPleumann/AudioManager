@@ -2,11 +2,11 @@ using UnityEngine;
 
 namespace AudioFramework.Pause
 {
-    public class AudioPauseService_Test
+    public class AudioPauseService
     {
         private readonly AudioObject[] poolArray;
 
-        public AudioPauseService_Test(AudioObject[] _poolArray)
+        public AudioPauseService(AudioObject[] _poolArray)
         {
             poolArray = _poolArray;
         }

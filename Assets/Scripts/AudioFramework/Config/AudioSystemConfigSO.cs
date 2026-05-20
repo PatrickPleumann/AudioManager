@@ -4,7 +4,7 @@ using AudioFramework.Data;
 namespace AudioFramework.Configuration
 {
     [CreateAssetMenu(fileName = "NewAudioSystemConfig_Test", menuName = "Audio Tool Test/System Config")]
-    public class AudioSystemConfigSO_Test : ScriptableObject
+    public class AudioSystemConfigSO : ScriptableObject
     {
         [Header(" --- General values --- ")]
         [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. More objects = lower performance.")]

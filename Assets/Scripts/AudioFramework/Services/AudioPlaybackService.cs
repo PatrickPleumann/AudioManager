@@ -8,17 +8,17 @@ using AudioFramework.Ultilities;
 
 namespace AudioFramework.Services.Playback
 {
-    public class AudioPlaybackService_Test
+    public class AudioPlaybackService
     {
-        private readonly AudioPoolAcquisitionService_Test poolAcquisitionService;
+        private readonly AudioPoolAcquisitionService poolAcquisitionService;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
-        private readonly IAudioWallCheckService_Test wallCheckService;
+        private readonly IAudioWallCheckService wallCheckService;
         private readonly float defaultCutoffValue;
 
-        public AudioPlaybackService_Test(
-            AudioPoolAcquisitionService_Test _poolAcquisitionService,
+        public AudioPlaybackService(
+            AudioPoolAcquisitionService _poolAcquisitionService,
             AudioManagerDictionaryProvider _dictionaryProvider,
-            IAudioWallCheckService_Test _wallCheckService,
+            IAudioWallCheckService _wallCheckService,
             float _defaultCutoffValue)
         {
             poolAcquisitionService = _poolAcquisitionService;
@@ -27,10 +27,10 @@ namespace AudioFramework.Services.Playback
             defaultCutoffValue = _defaultCutoffValue;
         }
 
-        public AudioHandle_Test DispatchAudio(AudioDataObject audioDataObject)
+        public AudioHandle DispatchAudio(AudioDataObject audioDataObject)
         {
             int poolIndex = poolAcquisitionService.GetFreePoolIndex();
-            if (poolIndex == -1) return new AudioHandle_Test(-1);
+            if (poolIndex == -1) return new AudioHandle(-1);
 
             AudioObject poolObject = poolAcquisitionService.PoolArray[poolIndex];
             AudioSource source = poolObject.Source;
@@ -60,7 +60,7 @@ namespace AudioFramework.Services.Playback
                 if (audioDataObject.UseWallCheck)
                     wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
 
-                return new AudioHandle_Test(-1);
+                return new AudioHandle(-1);
             }
             else
             {
@@ -70,11 +70,11 @@ namespace AudioFramework.Services.Playback
                     wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
 
                 source.Play();
-                return new AudioHandle_Test(poolIndex);
+                return new AudioHandle(poolIndex);
             }
         }
 
-        public void StopAudio(AudioHandle_Test handle)
+        public void StopAudio(AudioHandle handle)
         {
             int targetIndex = handle.PoolIndex;
             if (poolAcquisitionService.PoolArray[targetIndex].Source != null)

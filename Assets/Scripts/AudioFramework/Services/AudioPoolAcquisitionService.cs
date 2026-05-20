@@ -4,19 +4,19 @@ using AudioFramework.Configuration;
 
 namespace AudioFramework.Pooling
 {
-    public class AudioPoolAcquisitionService_Test
+    public class AudioPoolAcquisitionService
     {
         private readonly AudioObject[] poolArray;
-        private readonly AudioSystemConfigSO_Test config;
+        private readonly AudioSystemConfigSO config;
         private readonly Transform parentTransform;
 
         public AudioObject[] PoolArray => poolArray;
 
-        public AudioPoolAcquisitionService_Test(AudioSystemConfigSO_Test _config, Transform _parentTransform)
+        public AudioPoolAcquisitionService(AudioSystemConfigSO _config, Transform _parentTransform)
         {
-            this.config = _config;
-            this.parentTransform = _parentTransform;
-            poolArray = new AudioObject[this.config.numbersOfAudioSources];
+            config = _config;
+            parentTransform = _parentTransform;
+            poolArray = new AudioObject[config.numbersOfAudioSources];
 
             InitializePool();
         }

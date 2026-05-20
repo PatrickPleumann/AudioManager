@@ -9,10 +9,10 @@ using AudioFramework.Ultilities;
 
 namespace AudioFramework.Services.WallCheck
 {
-    public class AudioCoroutineWallCheckService_Test : IAudioWallCheckService_Test
+    public class AudioCoroutineWallCheckService : IAudioWallCheckService
     {
         private readonly AudioObject[] poolArray;
-        private readonly AudioSystemConfigSO_Test config;
+        private readonly AudioSystemConfigSO config;
         private readonly Transform playerListener;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
         private readonly MonoBehaviour routineRunner;
@@ -22,9 +22,9 @@ namespace AudioFramework.Services.WallCheck
         private readonly WaitForSeconds pauseWait;
         private int automaticallyGeneratedWallLayerMask;
 
-        public AudioCoroutineWallCheckService_Test(
+        public AudioCoroutineWallCheckService(
             AudioObject[] _poolArray,
-            AudioSystemConfigSO_Test _config,
+            AudioSystemConfigSO _config,
             Transform _playerListener,
             AudioManagerDictionaryProvider _dictionaryProvider,
             MonoBehaviour _routineRunner)

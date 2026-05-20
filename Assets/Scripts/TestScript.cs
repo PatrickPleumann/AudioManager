@@ -62,7 +62,7 @@ public class TestScript : MonoBehaviour
     private void PlayAmbientTest()
     {
         Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamicMerged_Test.AquireFreeAudioSource.Invoke(Ambient);
+        AudioManagerDynamic.AquireFreeAudioSource.Invoke(Ambient);
     }
     private void PlayPlayerTest()
     {
@@ -75,7 +75,7 @@ public class TestScript : MonoBehaviour
     private void PlayBehindWallTest()
     {
         BehindWall.CallerTransform = BehindWallPos;
-        AudioManagerDynamicMerged_Test.AquireFreeAudioSource.Invoke(BehindWall);
+        AudioManagerDynamic.AquireFreeAudioSource.Invoke(BehindWall);
     }
 
     private void SetWallOnOff()

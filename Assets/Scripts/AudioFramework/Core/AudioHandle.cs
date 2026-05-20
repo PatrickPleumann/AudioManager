@@ -1,10 +1,10 @@
 namespace AudioFramework.Core
 {
-    public struct AudioHandle_Test
+    public struct AudioHandle
     {
         public readonly int PoolIndex;
 
-        public AudioHandle_Test(int index)
+        public AudioHandle(int index)
         {
             PoolIndex = index;
         }
