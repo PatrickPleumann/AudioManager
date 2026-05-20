@@ -17,6 +17,6 @@ MonoBehaviour:
   CurrentType: 5
   CallerTransform: {fileID: 0}
   SetCallerAsParent: 0
-  SourceOriginCouldBeBehindWall: 0
-  CurrentBoundedAudioSource: {fileID: 0}
+  IsOneShot: 0
   canHandleAudioSource: 1
+  UseWallCheck: 1

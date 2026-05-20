@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+using AudioFramework.Data;
+using AudioFramework.Core;
 public class TestScript : MonoBehaviour
 {
     [Space]
@@ -60,22 +62,20 @@ public class TestScript : MonoBehaviour
     private void PlayAmbientTest()
     {
         Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Ambient);
+        AudioManagerDynamicMerged_Test.AquireFreeAudioSource.Invoke(Ambient);
     }
     private void PlayPlayerTest()
     {
         Player.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(Player);
     }
     private void PlaySFXTest()
     {
         SFX.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(SFX);
     }
     private void PlayBehindWallTest()
     {
         BehindWall.CallerTransform = BehindWallPos;
-        AudioManagerDynamic.CallAudioSourceDispatcher.Invoke(BehindWall);
+        AudioManagerDynamicMerged_Test.AquireFreeAudioSource.Invoke(BehindWall);
     }
 
     private void SetWallOnOff()
@@ -90,6 +90,5 @@ public class TestScript : MonoBehaviour
 
     private void StopSourcePlaying()
     {
-        AudioManagerDynamic.DynamicAudioSourceStop.Invoke(BehindWall);
     }
 }

@@ -1,4 +1,3 @@
-#define USE_UNITASK
 using UnityEngine;
 using System.Threading;
 using System.Collections.Generic;
@@ -6,6 +5,8 @@ using System.Collections.Generic;
 #if USE_UNITASK
 using Cysharp.Threading.Tasks;
 #endif
+
+using AudioFramework.Data;
 
 [CreateAssetMenu(fileName = "AudioManagerSettings", menuName = "Scriptable Objects/AudioManagerSettings")]
 
