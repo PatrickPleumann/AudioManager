@@ -11,6 +11,7 @@ using AudioFramework.Data;
 using AudioFramework.Pause;
 using AudioFramework.Pooling;
 using AudioFramework.Utilities;
+using AudioFramework.Interfaces;
 
 public class AudioManagerDynamic : MonoBehaviour
 {
@@ -25,7 +26,7 @@ public class AudioManagerDynamic : MonoBehaviour
     private AudioPauseService pauseService;
     private AudioPlaybackService playbackService;
 
-    public static Func<AudioDataObject, AudioHandle> AquireFreeAudioSource;
+    public static Func<AudioDataObject, AudioHandle> AcquireFreeAudioSource;
     public static Action<AudioHandle> HandledAudioSourceStop;
 
     public static Action GlobalPauseAllEvent;
@@ -70,7 +71,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
     private void OnEnable()
     {
-        AquireFreeAudioSource += DispatchAudioFromBus;
+        AcquireFreeAudioSource += DispatchAudioFromBus;
         HandledAudioSourceStop += StopAudioFromBus;
 
         GlobalPauseAllEvent += PauseAllSources;
@@ -79,7 +80,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
     private void OnDisable()
     {
-        AquireFreeAudioSource -= DispatchAudioFromBus;
+        AcquireFreeAudioSource -= DispatchAudioFromBus;
         HandledAudioSourceStop -= StopAudioFromBus;
 
         GlobalPauseAllEvent -= PauseAllSources;
@@ -89,9 +90,9 @@ public class AudioManagerDynamic : MonoBehaviour
     private AudioHandle DispatchAudioFromBus(AudioDataObject data)
     {
 #if USE_UNITASK
-        if (data != false && data.UseWallCheck)
+        if (data != null && data.UseWallCheck)
         {
-            int poolIndex = poolAcquisitionService.GetFreePoolIndex();
+            int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
             if (poolIndex != -1)
             {
                 poolTokenSources[poolIndex].Cancel();

@@ -2,7 +2,7 @@ using UnityEngine;
 
 using AudioFramework.Data;
 
-namespace AudioFramework.Services.WallCheck
+namespace AudioFramework.Interfaces
 {
     public interface IAudioWallCheckService
     {

@@ -4,6 +4,7 @@ using AudioFramework.Data;
 using AudioFramework.Core;
 using AudioFramework.Pooling;
 using AudioFramework.Utilities;
+using AudioFramework.Interfaces;
 
 namespace AudioFramework.Services.Playback
 {
@@ -28,7 +29,7 @@ namespace AudioFramework.Services.Playback
 
         public AudioHandle DispatchAudio(AudioDataObject audioDataObject)
         {
-            int poolIndex = poolAcquisitionService.GetFreePoolIndex();
+            int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
             if (poolIndex == -1) return new AudioHandle(-1);
 
             AudioObject poolObject = poolAcquisitionService.PoolArray[poolIndex];

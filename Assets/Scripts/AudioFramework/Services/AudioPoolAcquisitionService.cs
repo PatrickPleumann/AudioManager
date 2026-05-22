@@ -2,10 +2,11 @@ using UnityEngine;
 
 using AudioFramework.Configuration;
 using AudioFramework.Core;
+using AudioFramework.Interfaces;
 
 namespace AudioFramework.Pooling
 {
-    public class AudioPoolAcquisitionService
+    public class AudioPoolAcquisitionService  : IGetPoolIndex
     {
         private readonly AudioObject[] poolArray;
         private readonly AudioSystemConfigSO config;
@@ -38,7 +39,7 @@ namespace AudioFramework.Pooling
             }
         }
 
-        public int GetFreePoolIndex()
+        public int GetFreeAudioSourcePoolIndex()
         {
             float currentTime = Time.time;
             for (int i = 0; i < poolArray.Length; i++)
@@ -53,5 +54,6 @@ namespace AudioFramework.Pooling
 
         public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.time + duration;
         public void ResetSlotBusy(int poolIndex) => poolArray[poolIndex].BusyUntilTime = 0f;
+
     }
 }

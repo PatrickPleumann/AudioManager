@@ -7,6 +7,7 @@ using AudioFramework.Data;
 using AudioFramework.Configuration;
 using AudioFramework.Utilities;
 using AudioFramework.Core;
+using AudioFramework.Interfaces;
 
 namespace AudioFramework.Services.WallCheck
 {
