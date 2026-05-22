@@ -1,13 +1,14 @@
-//#define USE_UNITASK
+#define USE_UNITASK
 #if USE_UNITASK
 using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
+using AudioFramework.Core;
 using AudioFramework.Data;
 using AudioFramework.Configuration;
-using AudioFramework.Ultilities;
+using AudioFramework.Utilities;
 
 namespace AudioFramework.Services.WallCheck
 {
@@ -34,7 +35,7 @@ namespace AudioFramework.Services.WallCheck
             playerListener = _playerListener;
             dictionaryProvider = _dictionaryProvider;
 
-            poolTokenSources = new CancellationTokenSource[config.numbersOfAudioSources];
+            poolTokenSources = new CancellationTokenSource[config.NumbersOfAudioSources];
             linkedMasterTokenSource = new CancellationTokenSource();
 
             for (int i = 0; i < poolTokenSources.Length; i++)
@@ -62,7 +63,7 @@ namespace AudioFramework.Services.WallCheck
         {
             hitInfo = default;
 
-            if (playerListener == null)
+            if (playerListener == false)
                 return false;
 
             Vector3 direction = playerListener.position - originPos;
@@ -83,13 +84,13 @@ namespace AudioFramework.Services.WallCheck
         {
             AudioSource targetSource = poolArray[poolIndex].Source;
             AudioLowPassFilter filter = poolArray[poolIndex].Filter;
-            int checkIntervalMs = (int)(config.timeIntervalBetweenPositionChecks * 1000);
+            int checkIntervalMs = (int)(config.TimeIntervalBetweenPositionChecks * 1000);
             float elapsedPlayTime = 0f;
 
             while (elapsedPlayTime < clipLength)
             {
                 if (token.IsCancellationRequested) return;
-                if (audioDataObject == null || targetSource == null) return;
+                if (audioDataObject == false || targetSource == false) return;
 
                 bool isSoundPlaying = targetSource.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
                 if (!isSoundPlaying)
@@ -114,7 +115,7 @@ namespace AudioFramework.Services.WallCheck
                 if (canceledDuringWait)
                     return;
 
-                elapsedPlayTime += config.timeIntervalBetweenPositionChecks;
+                elapsedPlayTime += config.TimeIntervalBetweenPositionChecks;
             }
         }
 

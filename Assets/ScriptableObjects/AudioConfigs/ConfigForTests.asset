@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6db332b9a6d6bf048ace0f7666ede124, type: 3}
   m_Name: ConfigForTests
   m_EditorClassIdentifier: Assembly-CSharp::AudioFramework.Configuration.AudioSystemConfigSO_Test
-  numbersOfAudioSources: 50
+  NumbersOfAudioSources: 50
   defaultCuttoffFreqValue: 5000
-  timeIntervalBetweenPositionChecks: 0.25
+  TimeIntervalBetweenPositionChecks: 0.25
   CutOffFrequenciesPerLayer:
   - SingleLayer: 9
     CutoffFrequencyValue: 4000
@@ -22,5 +22,5 @@ MonoBehaviour:
     CutoffFrequencyValue: 3000
   - SingleLayer: 11
     CutoffFrequencyValue: 2000
-  transferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}
-  audioGameObjectPrefab: {fileID: 377295153041213637, guid: ad4150fbf24cd714685ef117c5421b69, type: 3}
+  TransferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}
+  AudioGameObjectPrefab: {fileID: 377295153041213637, guid: ad4150fbf24cd714685ef117c5421b69, type: 3}

@@ -1,5 +1,7 @@
 using UnityEngine;
 
+using AudioFramework.Core;
+
 namespace AudioFramework.Pause
 {
     public class AudioPauseService

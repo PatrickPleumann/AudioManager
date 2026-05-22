@@ -1,9 +1,12 @@
 using UnityEngine;
 
-public struct AudioObject
+namespace AudioFramework.Core
 {
-    public GameObject GameObject;
-    public AudioSource Source;
-    public AudioLowPassFilter Filter;
-    public float BusyUntilTime;
+    public struct AudioObject
+    {
+        public GameObject GameObject;
+        public AudioSource Source;
+        public AudioLowPassFilter Filter;
+        public float BusyUntilTime;
+    }
 }

@@ -1,4 +1,4 @@
-//#define USE_UNITASK
+#define USE_UNITASK
 using System;
 using System.Threading;
 using UnityEngine;
@@ -10,15 +10,15 @@ using AudioFramework.Services.Playback;
 using AudioFramework.Data;
 using AudioFramework.Pause;
 using AudioFramework.Pooling;
-using AudioFramework.Ultilities;
+using AudioFramework.Utilities;
 
 public class AudioManagerDynamic : MonoBehaviour
 {
-    [Header("--- System Konfiguration ---")]
+    [Header("--- System Config ---")]
     [SerializeField] private AudioSystemConfigSO systemConfig;
     [SerializeField] private Transform playerAudioListenerTransform;
 
-    private AudioManagerDictionaryProvider dictionaryProvider = new AudioManagerDictionaryProvider();
+    private readonly AudioManagerDictionaryProvider dictionaryProvider = new AudioManagerDictionaryProvider();
 
     private IAudioWallCheckService wallCheckService;
     private AudioPoolAcquisitionService poolAcquisitionService;
@@ -41,7 +41,7 @@ public class AudioManagerDynamic : MonoBehaviour
         if (systemConfig == null) return;
 
         dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.CutOffFrequenciesPerLayer);
-        dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.transferObject);
+        dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
 
         playerAudioListenerTransform = FindFirstObjectByType<AudioListener>().transform;
 
@@ -55,7 +55,7 @@ public class AudioManagerDynamic : MonoBehaviour
         wallCheckService = new AudioUniTaskWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider);
         Debug.Log("[AudioTool] UniTask mode was initialized (recommended)");
 
-        poolTokenSources = new CancellationTokenSource[systemConfig.numbersOfAudioSources];
+        poolTokenSources = new CancellationTokenSource[systemConfig.NumbersOfAudioSources];
         linkedMasterTokenSource = new CancellationTokenSource();
         for (int i = 0; i < poolTokenSources.Length; i++) poolTokenSources[i] = new CancellationTokenSource();
 #endif
@@ -89,7 +89,7 @@ public class AudioManagerDynamic : MonoBehaviour
     private AudioHandle DispatchAudioFromBus(AudioDataObject data)
     {
 #if USE_UNITASK
-        if (data != null && data.UseWallCheck)
+        if (data != false && data.UseWallCheck)
         {
             int poolIndex = poolAcquisitionService.GetFreePoolIndex();
             if (poolIndex != -1)

@@ -1,6 +1,7 @@
 using UnityEngine;
 
 using AudioFramework.Configuration;
+using AudioFramework.Core;
 
 namespace AudioFramework.Pooling
 {
@@ -16,7 +17,7 @@ namespace AudioFramework.Pooling
         {
             config = _config;
             parentTransform = _parentTransform;
-            poolArray = new AudioObject[config.numbersOfAudioSources];
+            poolArray = new AudioObject[config.NumbersOfAudioSources];
 
             InitializePool();
         }
@@ -25,8 +26,7 @@ namespace AudioFramework.Pooling
         {
             for (int i = 0; i < poolArray.Length; i++)
             {
-                var go = Object.Instantiate(config.audioGameObjectPrefab);
-                go.transform.SetParent(parentTransform);
+                var go = Object.Instantiate(config.AudioGameObjectPrefab,parentTransform);
 
                 poolArray[i] = new AudioObject
                 {

@@ -5,7 +5,8 @@ using UnityEngine;
 
 using AudioFramework.Data;
 using AudioFramework.Configuration;
-using AudioFramework.Ultilities;
+using AudioFramework.Utilities;
+using AudioFramework.Core;
 
 namespace AudioFramework.Services.WallCheck
 {
@@ -35,7 +36,7 @@ namespace AudioFramework.Services.WallCheck
             dictionaryProvider = _dictionaryProvider;
             routineRunner = _routineRunner;
 
-            intervalWait = new WaitForSeconds(config.timeIntervalBetweenPositionChecks);
+            intervalWait = new WaitForSeconds(config.TimeIntervalBetweenPositionChecks);
             pauseWait = new WaitForSeconds(0.1f); // only for pausing intervalbased Routines...
 
             GenerateLayerMaskFromDictionary();
@@ -63,7 +64,7 @@ namespace AudioFramework.Services.WallCheck
         public bool CheckIfPlayerIsBehindWall(Vector3 originPos, out RaycastHit hitInfo)
         {
             hitInfo = default;
-            if (playerListener == null) return false;
+            if (playerListener == false) return false;
             Vector3 direction = playerListener.position - originPos;
             return Physics.Raycast(originPos, direction.normalized, out hitInfo, direction.magnitude, automaticallyGeneratedWallLayerMask);
         }
@@ -89,7 +90,7 @@ namespace AudioFramework.Services.WallCheck
 
             while (elapsedPlayTime < clipLength)
             {
-                if (audioDataObject == null || targetSource == null) yield break;
+                if (audioDataObject == false || targetSource == false) yield break;
 
                 bool isSoundPlaying = targetSource.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
                 if (!isSoundPlaying)
@@ -104,20 +105,20 @@ namespace AudioFramework.Services.WallCheck
                     if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(tempHit.transform.gameObject.layer, out float targetValue))
                         filter.cutoffFrequency = targetValue;
                 }
-                else if (filter != null)
+                else if (filter != false)
                 {
                     filter.cutoffFrequency = config.defaultCuttoffFreqValue;
                 }
 
                 yield return intervalWait;
-                elapsedPlayTime += config.timeIntervalBetweenPositionChecks;
+                elapsedPlayTime += config.TimeIntervalBetweenPositionChecks;
             }
 
             activeCoroutineChecks.Remove(poolIndex);
         }
 
         /// <summary>
-        /// Based on the poolIndex fetches a probably still active Coroutine and stops it immedietly. This is a secure mechanism.
+        /// Based on the poolIndex fetches a probably still active Coroutine and stops it immediately. This is a secure mechanism.
         /// </summary>
         /// <param name="poolIndex">The given index which not only refers to position in AudioObject[] but also to any other array-handled data.</param>
         public void StopActiveCheck(int poolIndex)

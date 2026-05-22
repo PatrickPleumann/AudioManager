@@ -1,10 +1,9 @@
 using UnityEngine;
-
 using AudioFramework.Services.WallCheck;
 using AudioFramework.Data;
 using AudioFramework.Core;
 using AudioFramework.Pooling;
-using AudioFramework.Ultilities;
+using AudioFramework.Utilities;
 
 namespace AudioFramework.Services.Playback
 {
@@ -39,7 +38,7 @@ namespace AudioFramework.Services.Playback
             AudioClip chosenClip = audioDataObject.CurrentClips[Random.Range(0, audioDataObject.CurrentClips.Length)];
             source.clip = chosenClip;
 
-            if (dictionaryProvider.volumeDictionary.TryGetValue(audioDataObject.CurrentType, out float curVolume))
+            if (dictionaryProvider.VolumeDictionary.TryGetValue(audioDataObject.CurrentType, out float curVolume))
                 source.volume = curVolume;
 
             if (audioDataObject.SetCallerAsParent)
@@ -62,16 +61,13 @@ namespace AudioFramework.Services.Playback
 
                 return new AudioHandle(-1);
             }
-            else
-            {
-                poolAcquisitionService.ResetSlotBusy(poolIndex);
+            poolAcquisitionService.ResetSlotBusy(poolIndex);
 
-                if (audioDataObject.UseWallCheck)
-                    wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
+            if (audioDataObject.UseWallCheck)
+                wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
 
-                source.Play();
-                return new AudioHandle(poolIndex);
-            }
+            source.Play();
+            return new AudioHandle(poolIndex);
         }
 
         public void StopAudio(AudioHandle handle)

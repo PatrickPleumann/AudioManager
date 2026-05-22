@@ -34,7 +34,7 @@ namespace AudioFramework.Data
         public int PoolIndex { get; set; } = -1;
         public bool IsOneShot;
         public bool canHandleAudioSource;
-        public CancellationToken cancellationToken;
+        public CancellationToken CancellationToken;
         public bool UseWallCheck;
     }
 

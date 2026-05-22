@@ -3,15 +3,15 @@ using UnityEngine;
 
 using AudioFramework.Data;
 
-namespace AudioFramework.Ultilities
+namespace AudioFramework.Utilities
 {
     public class AudioManagerDictionaryProvider
     {
-        public Dictionary<int, float> WallLayerMaskDictionary = new();
-        public Dictionary<AudioTypeProvider, float> volumeDictionary = new();
+        public readonly Dictionary<int, float> WallLayerMaskDictionary = new();
+        public readonly Dictionary<AudioTypeProvider, float> VolumeDictionary = new();
 
         /// <summary>
-        /// Fills the a Dictionary With LayerMask values as key and sound related "Cutoff Frequency"-floats as value.
+        /// Fills the Dictionary With LayerMask values as key and sound related "Cutoff Frequency"-floats as value.
         /// </summary>
         /// <param name="_cutoffFreqArray"></param>
         public void FillLayerMaskDictionaryWithLayerRelatedValues(CutoffFreqLayerBehaviour[] _cutoffFreqArray)
@@ -46,7 +46,7 @@ namespace AudioFramework.Ultilities
                 for (int i = 0; i < _transferObject.AudioVolumes.Length; i++)
                 {
                     if (_transferObject.AudioVolumes[i] != null)
-                        volumeDictionary.Add(_transferObject.AudioVolumes[i].CurrentAudioType, _transferObject.AudioVolumes[i].Volume);
+                        VolumeDictionary.Add(_transferObject.AudioVolumes[i].CurrentAudioType, _transferObject.AudioVolumes[i].Volume);
                     else
                         Debug.Log("Audio Volume Array position: " + i + " is null. Check if your AudioVolumesTransferObject may has a empty spot");
                 }
