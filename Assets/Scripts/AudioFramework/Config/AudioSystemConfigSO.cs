@@ -7,7 +7,8 @@ namespace AudioFramework.Configuration
     public class AudioSystemConfigSO : ScriptableObject
     {
         [Header(" --- General values --- ")]
-        [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. More objects = lower performance.")]
+        [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. " +
+                 " More objects = lower performance.")]
         [Range(1, 100)] public int NumbersOfAudioSources = 50;
         [Space]
 
@@ -17,18 +18,20 @@ namespace AudioFramework.Configuration
         [Space]
 
         [Header(" --- Wallcheck Interval --- ")]
-        [Tooltip("--Performance Tooltip-- : The time between two interval checks in seconds -> For human hearing: the sweet spot is between 0.1 to 0.25 -> Higher values means lower performance cost.")]
+        [Tooltip("--Performance Tooltip-- : The time between two interval checks in seconds -> For human hearing: " +
+                 " the sweet spot is between 0.1 to 0.25 -> Higher values means lower performance cost.")]
         [Range(0.01f, 1f)] public float TimeIntervalBetweenPositionChecks = 0.25f;
         [Space]
 
         [Header(" --- Array of all layer related Cutoff Frequencies --- ")]
-        [Tooltip("Create a new element with (+) -> Expand the new Element -> Choose a single Layer -> Add a Cutoff Frequency as value -> Done")]
+        [Tooltip("Create a new element with (+) -> Expand the new Element -> Choose a single Layer -> " +
+                 " Add a Cutoff Frequency as value -> Done")]
         public CutoffFreqLayerBehaviour[] CutOffFrequenciesPerLayer;
         [Space]
 
         [Header(" --- References ---")]
-        [Tooltip("This transfer object contains all the audio source volumes which will be handled automaticly by the [AudioTool]. " +
-            " Double click on the element to see which audio source volumes are handled at the moment")]
+        [Tooltip("This transfer object contains all the audio source volumes which will be handled automaticly by the " +
+                 " [AudioTool]. Double click on this element to see which audio source volumes are handled at the moment")]
         public AudioVolumesTransferObject TransferObject;
         [Space]
 

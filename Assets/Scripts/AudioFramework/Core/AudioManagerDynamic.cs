@@ -49,7 +49,7 @@ public class AudioManagerDynamic : MonoBehaviour
         poolAcquisitionService = new AudioPoolAcquisitionService(systemConfig, transform);
         pauseService = new AudioPauseService(poolAcquisitionService.PoolArray);
 
-#if !USE_UNITASK
+#if !USE_UNITASK // strategy from---------------------------------------------------------------------------------------
         wallCheckService = new AudioCoroutineWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider, this);
         Debug.Log("[AudioTool] Internal Coroutine mode was initialized (not recommended)");
 #else
@@ -59,7 +59,7 @@ public class AudioManagerDynamic : MonoBehaviour
         poolTokenSources = new CancellationTokenSource[systemConfig.NumbersOfAudioSources];
         linkedMasterTokenSource = new CancellationTokenSource();
         for (int i = 0; i < poolTokenSources.Length; i++) poolTokenSources[i] = new CancellationTokenSource();
-#endif
+#endif // strategy till here--------------------------------------------------------------------------------------------
 
         playbackService = new AudioPlaybackService(
             poolAcquisitionService,
@@ -89,7 +89,7 @@ public class AudioManagerDynamic : MonoBehaviour
 
     private AudioHandle DispatchAudioFromBus(AudioDataObject data)
     {
-#if USE_UNITASK
+#if USE_UNITASK //strategy from here------------------------------------------------------------------------------------
         if (data != null && data.UseWallCheck)
         {
             int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
@@ -107,8 +107,9 @@ public class AudioManagerDynamic : MonoBehaviour
     private void StopAudioFromBus(AudioHandle handle)
     {
 #if USE_UNITASK
-        if (handle.IsValid) poolTokenSources[handle.PoolIndex].Cancel();
-#endif
+        if (handle.IsValid) poolTokenSources[handle.PoolIndex].Cancel(); 
+#endif  //strategy till here -------------------------------------------------------------------------------------------
+        
         playbackService.StopAudio(handle);
     }
 
