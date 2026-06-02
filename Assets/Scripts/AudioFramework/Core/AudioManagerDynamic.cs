@@ -1,6 +1,4 @@
 #define USE_UNITASK
-using System;
-using System.Threading;
 using UnityEngine;
 
 using AudioFramework.Core;
@@ -16,8 +14,9 @@ using AudioFramework.Interfaces;
 public class AudioManagerDynamic : MonoBehaviour
 {
     [Header("--- System Config ---")]
-    [SerializeField] private AudioSystemConfigSO systemConfig;
-    [SerializeField] private Transform playerAudioListenerTransform;
+    [SerializeField] private AudioSystemConfig systemConfig;
+
+    private static AudioManagerDynamic instance;
 
     private readonly AudioManagerDictionaryProvider dictionaryProvider = new AudioManagerDictionaryProvider();
 
@@ -26,40 +25,33 @@ public class AudioManagerDynamic : MonoBehaviour
     private AudioPauseService pauseService;
     private AudioPlaybackService playbackService;
 
-    public static Func<AudioDataObject, AudioHandle> AcquireFreeAudioSource;
-    public static Action<AudioHandle> HandledAudioSourceStop;
-
-    public static Action GlobalPauseAllEvent;
-    public static Action GlobalUnpauseAllEvent;
-
-#if USE_UNITASK
-    private CancellationTokenSource[] poolTokenSources;
-    private CancellationTokenSource linkedMasterTokenSource;
-#endif
-
     private void Awake()
     {
+        if (instance != null)
+        {
+            Debug.LogWarning("[AudioTool] Multiple AudioManagerDynamic instances detected. Destroying duplicate.");
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+
         if (systemConfig == null) return;
 
         dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.CutOffFrequenciesPerLayer);
         dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
 
-        playerAudioListenerTransform = FindFirstObjectByType<AudioListener>().transform;
+        Transform playerAudioListenerTransform = FindFirstObjectByType<AudioListener>().transform;
 
         poolAcquisitionService = new AudioPoolAcquisitionService(systemConfig, transform);
         pauseService = new AudioPauseService(poolAcquisitionService.PoolArray);
 
-#if !USE_UNITASK // strategy from---------------------------------------------------------------------------------------
+#if !USE_UNITASK
         wallCheckService = new AudioCoroutineWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider, this);
         Debug.Log("[AudioTool] Internal Coroutine mode was initialized (not recommended)");
 #else
         wallCheckService = new AudioUniTaskWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider);
         Debug.Log("[AudioTool] UniTask mode was initialized (recommended)");
-
-        poolTokenSources = new CancellationTokenSource[systemConfig.NumbersOfAudioSources];
-        linkedMasterTokenSource = new CancellationTokenSource();
-        for (int i = 0; i < poolTokenSources.Length; i++) poolTokenSources[i] = new CancellationTokenSource();
-#endif // strategy till here--------------------------------------------------------------------------------------------
+#endif
 
         playbackService = new AudioPlaybackService(
             poolAcquisitionService,
@@ -69,67 +61,25 @@ public class AudioManagerDynamic : MonoBehaviour
         );
     }
 
-    private void OnEnable()
+    public static AudioHandle Play(AudioDataObject data)
     {
-        AcquireFreeAudioSource += DispatchAudioFromBus;
-        HandledAudioSourceStop += StopAudioFromBus;
-
-        GlobalPauseAllEvent += PauseAllSources;
-        GlobalUnpauseAllEvent += UnpauseAllSources;
-    }
-
-    private void OnDisable()
-    {
-        AcquireFreeAudioSource -= DispatchAudioFromBus;
-        HandledAudioSourceStop -= StopAudioFromBus;
-
-        GlobalPauseAllEvent -= PauseAllSources;
-        GlobalUnpauseAllEvent -= UnpauseAllSources;
-    }
-
-    private AudioHandle DispatchAudioFromBus(AudioDataObject data)
-    {
-#if USE_UNITASK //strategy from here------------------------------------------------------------------------------------
-        if (data != null && data.UseWallCheck)
+        if (instance == null)
         {
-            int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
-            if (poolIndex != -1)
-            {
-                poolTokenSources[poolIndex].Cancel();
-                poolTokenSources[poolIndex].Dispose();
-                poolTokenSources[poolIndex] = CancellationTokenSource.CreateLinkedTokenSource(linkedMasterTokenSource.Token);
-            }
+            Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+            return new AudioHandle(-1);
         }
-#endif
-        return playbackService.DispatchAudio(data);
+        return instance.playbackService.DispatchAudio(data);
     }
 
-    private void StopAudioFromBus(AudioHandle handle)
-    {
-#if USE_UNITASK
-        if (handle.IsValid) poolTokenSources[handle.PoolIndex].Cancel(); 
-#endif  //strategy till here -------------------------------------------------------------------------------------------
-        
-        playbackService.StopAudio(handle);
-    }
+    public static void Stop(AudioHandle handle) => instance?.playbackService.StopAudio(handle);
 
-    public void PauseAllSources() => pauseService?.PauseAll();
-    public void UnpauseAllSources() => pauseService?.UnpauseAll();
+    public static void PauseAll() => instance?.pauseService?.PauseAll();
+
+    public static void UnpauseAll() => instance?.pauseService?.UnpauseAll();
 
     private void OnDestroy()
     {
         wallCheckService?.StopAllChecks();
-#if USE_UNITASK
-        if (linkedMasterTokenSource != null)
-        {
-            linkedMasterTokenSource.Cancel();
-            linkedMasterTokenSource.Dispose();
-        }
-        if (poolTokenSources != null)
-        {
-            for (int i = 0; i < poolTokenSources.Length; i++)
-                if (poolTokenSources[i] != null) poolTokenSources[i].Dispose();
-        }
-#endif
+        instance = null;
     }
 }

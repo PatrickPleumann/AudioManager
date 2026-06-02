@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace AudioFramework.Data
 {
-    [CreateAssetMenu(fileName = "AudioVolumes_TransferObject", menuName = "Scriptable Objects/AudioVolumes_TransferObject")]
     public class AudioVolumesTransferObject : ScriptableObject
     {
         private string[] allAudioSourceVolumes;

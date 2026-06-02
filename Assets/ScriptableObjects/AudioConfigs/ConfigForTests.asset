@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioFramework.Configuration.AudioSystemConfigSO_Test
   NumbersOfAudioSources: 50
   defaultCuttoffFreqValue: 5000
+  MinCutoffFreqValue: 100
   TimeIntervalBetweenPositionChecks: 0.25
   CutOffFrequenciesPerLayer:
   - SingleLayer: 9
-    CutoffFrequencyValue: 4000
+    CutoffFrequencyValue: 500
   - SingleLayer: 10
-    CutoffFrequencyValue: 3000
+    CutoffFrequencyValue: 700
   - SingleLayer: 11
     CutoffFrequencyValue: 2000
   TransferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}

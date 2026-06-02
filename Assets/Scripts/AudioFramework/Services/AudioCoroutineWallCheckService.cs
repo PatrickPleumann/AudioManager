@@ -14,7 +14,7 @@ namespace AudioFramework.Services.WallCheck
     public class AudioCoroutineWallCheckService : IAudioWallCheckService
     {
         private readonly AudioObject[] poolArray;
-        private readonly AudioSystemConfigSO config;
+        private readonly AudioSystemConfig config;
         private readonly Transform playerListener;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
         private readonly MonoBehaviour routineRunner;
@@ -23,10 +23,11 @@ namespace AudioFramework.Services.WallCheck
         private readonly WaitForSeconds intervalWait;
         private readonly WaitForSeconds pauseWait;
         private int automaticallyGeneratedWallLayerMask;
+        private readonly RaycastHit[] wallHitBuffer = new RaycastHit[8];
 
         public AudioCoroutineWallCheckService(
             AudioObject[] _poolArray,
-            AudioSystemConfigSO _config,
+            AudioSystemConfig _config,
             Transform _playerListener,
             AudioManagerDictionaryProvider _dictionaryProvider,
             MonoBehaviour _routineRunner)
@@ -62,60 +63,64 @@ namespace AudioFramework.Services.WallCheck
         /// <param name="originPos"></param>
         /// <param name="hitInfo"></param>
         /// <returns></returns>
-        public bool CheckIfPlayerIsBehindWall(Vector3 originPos, out RaycastHit hitInfo)
-        {
-            hitInfo = default;
-            if (playerListener == false) return false;
-            Vector3 direction = playerListener.position - originPos;
-            return Physics.Raycast(originPos, direction.normalized, out hitInfo, direction.magnitude, automaticallyGeneratedWallLayerMask);
-        }
-
-        /// <summary>
-        /// Method starts the interval based WallCheck loop 
-        /// </summary>
-        /// <param name="audioDataObject">The object which holds all relevant audio clip data.</param>
-        /// <param name="poolIndex">poolIndex refers to the AudioObject position in the array.</param>
-        /// <param name="clipLength">Clip length is used for the amount of interval checks.</param>
-        public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex, float clipLength)
+        public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
             StopActiveCheck(poolIndex);
-            Coroutine newCheck = routineRunner.StartCoroutine(CheckIfPlayerBehindWallRoutine(audioDataObject, poolIndex, clipLength));
+            Coroutine newCheck = routineRunner.StartCoroutine(WallCheckLoop(audioDataObject, poolIndex));
             activeCoroutineChecks.Add(poolIndex, newCheck);
         }
 
-        private IEnumerator CheckIfPlayerBehindWallRoutine(AudioDataObject audioDataObject, int poolIndex, float clipLength)
+        private IEnumerator WallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
-            float elapsedPlayTime = 0f;
             AudioSource targetSource = poolArray[poolIndex].Source;
             AudioLowPassFilter filter = poolArray[poolIndex].Filter;
 
-            while (elapsedPlayTime < clipLength)
+            while (ShouldContinueLoop(audioDataObject, poolIndex))
             {
                 if (audioDataObject == false || targetSource == false) yield break;
 
-                bool isSoundPlaying = targetSource.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
-                if (!isSoundPlaying)
-                {
-                    yield return pauseWait;
-                    continue;
-                }
-
-                Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
-                if (CheckIfPlayerIsBehindWall(currentPos, out RaycastHit tempHit))
-                {
-                    if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(tempHit.transform.gameObject.layer, out float targetValue))
-                        filter.cutoffFrequency = targetValue;
-                }
-                else if (filter != false)
-                {
-                    filter.cutoffFrequency = config.defaultCuttoffFreqValue;
-                }
+                if (IsCurrentlyActive(poolIndex))
+                    ApplyWallCheckFilter(poolIndex, filter);
 
                 yield return intervalWait;
-                elapsedPlayTime += config.TimeIntervalBetweenPositionChecks;
             }
 
             activeCoroutineChecks.Remove(poolIndex);
+        }
+
+        private bool IsCurrentlyActive(int poolIndex) =>
+            poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+
+        private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
+        {
+            if (audioDataObject.IsOneShot)
+                return poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+            return poolArray[poolIndex].Source.isPlaying;
+        }
+
+        private void ApplyWallCheckFilter(int poolIndex, AudioLowPassFilter filter)
+        {
+            Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
+            filter.cutoffFrequency = CalculateCutoffFrequency(currentPos);
+        }
+
+        private float CalculateCutoffFrequency(Vector3 originPos)
+        {
+            if (playerListener == false) return config.defaultCuttoffFreqValue;
+
+            Vector3 direction = playerListener.position - originPos;
+            int hitCount = Physics.RaycastNonAlloc(originPos, direction.normalized, wallHitBuffer, direction.magnitude, automaticallyGeneratedWallLayerMask);
+
+            if (hitCount == 0) return config.defaultCuttoffFreqValue;
+
+            float cutoff = config.defaultCuttoffFreqValue;
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float reduction))
+                    cutoff -= reduction;
+            }
+
+            return Mathf.Max(cutoff, config.MinCutoffFreqValue);
         }
 
         /// <summary>

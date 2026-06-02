@@ -9,12 +9,12 @@ namespace AudioFramework.Pooling
     public class AudioPoolAcquisitionService  : IGetPoolIndex
     {
         private readonly AudioObject[] poolArray;
-        private readonly AudioSystemConfigSO config;
+        private readonly AudioSystemConfig config;
         private readonly Transform parentTransform;
 
         public AudioObject[] PoolArray => poolArray;
 
-        public AudioPoolAcquisitionService(AudioSystemConfigSO _config, Transform _parentTransform)
+        public AudioPoolAcquisitionService(AudioSystemConfig _config, Transform _parentTransform)
         {
             config = _config;
             parentTransform = _parentTransform;

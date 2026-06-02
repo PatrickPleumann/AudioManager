@@ -58,17 +58,17 @@ namespace AudioFramework.Services.Playback
                 source.PlayOneShot(chosenClip);
 
                 if (audioDataObject.UseWallCheck)
-                    wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
+                    wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
 
-                return new AudioHandle(-1);
+                return audioDataObject.canHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
             }
             poolAcquisitionService.ResetSlotBusy(poolIndex);
 
-            if (audioDataObject.UseWallCheck)
-                wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex, chosenClip.length);
-
             source.Play();
-            return new AudioHandle(poolIndex);
+
+            if (audioDataObject.UseWallCheck)
+                wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
+            return audioDataObject.canHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
         }
 
         public void StopAudio(AudioHandle handle)

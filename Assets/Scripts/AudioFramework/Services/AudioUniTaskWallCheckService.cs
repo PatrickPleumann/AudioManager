@@ -1,6 +1,5 @@
 #define USE_UNITASK
 #if USE_UNITASK
-using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
@@ -13,21 +12,22 @@ using AudioFramework.Interfaces;
 
 namespace AudioFramework.Services.WallCheck
 {
-
     public class AudioUniTaskWallCheckService : IAudioWallCheckService
     {
         private readonly AudioObject[] poolArray;
-        private readonly AudioSystemConfigSO config;
+        private readonly AudioSystemConfig config;
         private readonly Transform playerListener;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
 
         private readonly CancellationTokenSource[] poolTokenSources;
         private readonly CancellationTokenSource linkedMasterTokenSource;
+        private readonly int checkIntervalMs;
         private int automaticallyGeneratedWallLayerMask;
+        private readonly RaycastHit[] wallHitBuffer = new RaycastHit[8];
 
         public AudioUniTaskWallCheckService(
             AudioObject[] _poolArray,
-            AudioSystemConfigSO _config,
+            AudioSystemConfig _config,
             Transform _playerListener,
             AudioManagerDictionaryProvider _dictionaryProvider)
         {
@@ -35,14 +35,13 @@ namespace AudioFramework.Services.WallCheck
             config = _config;
             playerListener = _playerListener;
             dictionaryProvider = _dictionaryProvider;
+            checkIntervalMs = (int)(config.TimeIntervalBetweenPositionChecks * 1000);
 
             poolTokenSources = new CancellationTokenSource[config.NumbersOfAudioSources];
             linkedMasterTokenSource = new CancellationTokenSource();
 
             for (int i = 0; i < poolTokenSources.Length; i++)
-            {
                 poolTokenSources[i] = new CancellationTokenSource();
-            }
 
             GenerateLayerMaskFromDictionary();
         }
@@ -51,90 +50,79 @@ namespace AudioFramework.Services.WallCheck
         {
             int combinedBitmask = 0;
             if (dictionaryProvider.WallLayerMaskDictionary != null)
-            {
                 foreach (int layerKey in dictionaryProvider.WallLayerMaskDictionary.Keys)
-                {
                     combinedBitmask |= (1 << layerKey);
-                }
-            }
             automaticallyGeneratedWallLayerMask = combinedBitmask;
         }
 
-        public bool CheckIfPlayerIsBehindWall(Vector3 originPos, out RaycastHit hitInfo)
-        {
-            hitInfo = default;
-
-            if (playerListener == false)
-                return false;
-
-            Vector3 direction = playerListener.position - originPos;
-
-            return Physics.Raycast(originPos, direction.normalized, out hitInfo, direction.magnitude, automaticallyGeneratedWallLayerMask);
-        }
-
-        public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex, float clipLength)
+        public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
             poolTokenSources[poolIndex].Cancel();
             poolTokenSources[poolIndex].Dispose();
             poolTokenSources[poolIndex] = CancellationTokenSource.CreateLinkedTokenSource(linkedMasterTokenSource.Token);
 
-            CheckIfPlayerBehindWallUniTaskVoid(poolTokenSources[poolIndex].Token, audioDataObject, poolIndex, clipLength).Forget();
+            WallCheckLoop(poolTokenSources[poolIndex].Token, audioDataObject, poolIndex).Forget();
         }
 
-        private async UniTaskVoid CheckIfPlayerBehindWallUniTaskVoid(CancellationToken token, AudioDataObject audioDataObject, int poolIndex, float clipLength)
+        private async UniTaskVoid WallCheckLoop(CancellationToken token, AudioDataObject audioDataObject, int poolIndex)
         {
-            AudioSource targetSource = poolArray[poolIndex].Source;
-            AudioLowPassFilter filter = poolArray[poolIndex].Filter;
-            int checkIntervalMs = (int)(config.TimeIntervalBetweenPositionChecks * 1000);
-            float elapsedPlayTime = 0f;
-
-            while (elapsedPlayTime < clipLength)
+            while (ShouldContinueLoop(audioDataObject, poolIndex))
             {
                 if (token.IsCancellationRequested) return;
-                if (audioDataObject == false || targetSource == false) return;
+                if (audioDataObject == false) return;
 
-                bool isSoundPlaying = targetSource.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
-                if (!isSoundPlaying)
-                {
-                    bool isCanceled = await UniTask.Delay(100, delayType: DelayType.DeltaTime, cancellationToken: token).SuppressCancellationThrow();
-                    if (isCanceled) return;
-                    continue;
-                }
+                if (IsCurrentlyActive(poolIndex))
+                    ApplyWallCheckFilter(poolIndex);
 
-                Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
-                if (CheckIfPlayerIsBehindWall(currentPos, out RaycastHit tempHit))
-                {
-                    if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(tempHit.transform.gameObject.layer, out float targetValue))
-                        filter.cutoffFrequency = targetValue;
-                }
-                else if (filter != null)
-                {
-                    filter.cutoffFrequency = config.defaultCuttoffFreqValue;
-                }
-
-                bool canceledDuringWait = await UniTask.Delay(checkIntervalMs, delayType: DelayType.DeltaTime, cancellationToken: token).SuppressCancellationThrow();
-                if (canceledDuringWait)
-                    return;
-
-                elapsedPlayTime += config.TimeIntervalBetweenPositionChecks;
+                bool canceled = await UniTask.Delay(checkIntervalMs, delayType: DelayType.DeltaTime, cancellationToken: token).SuppressCancellationThrow();
+                if (canceled) return;
             }
         }
 
-        public void StopActiveCheck(int poolIndex)
+        private bool IsCurrentlyActive(int poolIndex) =>
+            poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+
+        private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
         {
-            poolTokenSources[poolIndex].Cancel();
+            if (audioDataObject.IsOneShot)
+                return poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+            return poolArray[poolIndex].Source.isPlaying;
         }
+
+        private void ApplyWallCheckFilter(int poolIndex)
+        {
+            Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
+            AudioLowPassFilter filter = poolArray[poolIndex].Filter;
+            filter.cutoffFrequency = CalculateCutoffFrequency(currentPos);
+        }
+
+        private float CalculateCutoffFrequency(Vector3 originPos)
+        {
+            if (playerListener == false) return config.defaultCuttoffFreqValue;
+
+            Vector3 direction = playerListener.position - originPos;
+            int hitCount = Physics.RaycastNonAlloc(originPos, direction.normalized, wallHitBuffer, direction.magnitude, automaticallyGeneratedWallLayerMask);
+
+            if (hitCount == 0) return config.defaultCuttoffFreqValue;
+
+            float cutoff = config.defaultCuttoffFreqValue;
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float reduction))
+                    cutoff -= reduction;
+            }
+
+            return Mathf.Max(cutoff, config.MinCutoffFreqValue);
+        }
+
+        public void StopActiveCheck(int poolIndex) => poolTokenSources[poolIndex].Cancel();
 
         public void StopAllChecks()
         {
             linkedMasterTokenSource.Cancel();
             linkedMasterTokenSource.Dispose();
-
             for (int i = 0; i < poolTokenSources.Length; i++)
-            {
-                if (poolTokenSources[i] != null)
-                    poolTokenSources[i].Dispose();
-            }
+                if (poolTokenSources[i] != null) poolTokenSources[i].Dispose();
         }
     }
 }

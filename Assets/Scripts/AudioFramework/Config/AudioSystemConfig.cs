@@ -3,8 +3,8 @@ using UnityEngine;
 using AudioFramework.Data;
 namespace AudioFramework.Configuration
 {
-    [CreateAssetMenu(fileName = "AudioSystemConfigSO", menuName = "Audio Tool Test/System Config")]
-    public class AudioSystemConfigSO : ScriptableObject
+    [CreateAssetMenu(fileName = "AudioSystemConfig", menuName = "Audio Tool Test/System Config")]
+    public class AudioSystemConfig : ScriptableObject
     {
         [Header(" --- General values --- ")]
         [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. " +
@@ -15,6 +15,10 @@ namespace AudioFramework.Configuration
         [Tooltip("The default Frequency on the AudioLowPassFilter -> This is usually between 5000-5007." +
             " So whenever the [AudioTool] cannot find a specific value  - it uses the default value")]
         public float defaultCuttoffFreqValue = 5000f;
+        [Space]
+
+        [Tooltip("The minimum cutoff frequency value. The wall check will never reduce the frequency below this value.")]
+        public float MinCutoffFreqValue = 100f;
         [Space]
 
         [Header(" --- Wallcheck Interval --- ")]
