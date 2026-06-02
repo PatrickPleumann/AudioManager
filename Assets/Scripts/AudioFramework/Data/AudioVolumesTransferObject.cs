@@ -11,10 +11,10 @@ namespace AudioFramework.Data
         public AudioSourceVolume[] AudioVolumes;
 
 
-        private void Awake()
-        {
-            GetAllAudioSourceVolumes();
-        }
+        // private void Awake()
+        // {
+        //     GetAllAudioSourceVolumes();
+        // }
         public void GetAllAudioSourceVolumes()
         {
             allAudioSourceVolumes = AssetDatabase.FindAssets("t:AudioSourceVolume");

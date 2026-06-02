@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioDataObject
   CurrentClips:
   - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
+  - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
+  - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
+  - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
   CurrentType: 5
   CallerTransform: {fileID: 0}
   SetCallerAsParent: 0
   IsOneShot: 0
-  canHandleAudioSource: 1
+  canHandleAudioSource: 0
   UseWallCheck: 1
