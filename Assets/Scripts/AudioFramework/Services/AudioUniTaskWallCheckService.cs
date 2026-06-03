@@ -83,6 +83,10 @@ namespace AudioFramework.Services.WallCheck
 
         private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
         {
+            // While paused, keep the loop alive (it idles - IsCurrentlyActive is false, so no filter is applied).
+            // Without this a paused wall-checked sound would end its check and never resume occlusion on unpause.
+            if (poolArray[poolIndex].IsPaused) return true;
+
             if (audioDataObject.IsOneShot)
                 return poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
             return poolArray[poolIndex].Source.isPlaying;

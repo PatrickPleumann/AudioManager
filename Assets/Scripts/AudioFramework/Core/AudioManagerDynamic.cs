@@ -72,6 +72,7 @@ namespace AudioFramework.Core
                 poolAcquisitionService,
                 dictionaryProvider,
                 wallCheckService,
+                pauseService,
                 systemConfig.DefaultCutoffFreqValue
             );
 

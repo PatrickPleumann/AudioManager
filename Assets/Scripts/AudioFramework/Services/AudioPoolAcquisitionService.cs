@@ -44,7 +44,9 @@ namespace AudioFramework.Pooling
             float currentTime = Time.time;
             for (int i = 0; i < poolArray.Length; i++)
             {
-                if (!poolArray[i].Source.isPlaying && currentTime >= poolArray[i].BusyUntilTime)
+                // A paused AudioSource reports isPlaying == false, so without the IsPaused guard the acquisition
+                // would hand out a paused slot as "free" and overwrite a sound the player paused.
+                if (!poolArray[i].Source.isPlaying && currentTime >= poolArray[i].BusyUntilTime && !poolArray[i].IsPaused)
                 {
                     return i;
                 }
@@ -54,6 +56,22 @@ namespace AudioFramework.Pooling
 
         public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.time + duration;
         public void ResetSlotBusy(int poolIndex) => poolArray[poolIndex].BusyUntilTime = 0f;
+
+        // Mirror the ADO's pause policy onto the slot and clear any stale paused state. Called every dispatch
+        // (control-surface): a freshly (re)used slot is never paused.
+        public void SetPausePolicy(int poolIndex, bool respectsGlobalPause)
+        {
+            poolArray[poolIndex].RespectsGlobalPause = respectsGlobalPause;
+            poolArray[poolIndex].IsPaused = false;
+        }
+
+        // Clear the paused flag when a slot is released by any path other than UnpauseAll (explicit Stop, follow-target
+        // destroyed). Otherwise the slot would stay invisible to acquisition and UnpauseAll could revive a dead sound.
+        public void ResetPauseState(int poolIndex) => poolArray[poolIndex].IsPaused = false;
+
+        // Mark a freshly dispatched slot as paused because a global PauseAll() is currently in effect. UnpauseAll()
+        // will then resume it together with the sounds that were already playing when PauseAll() ran.
+        public void MarkSlotPaused(int poolIndex) => poolArray[poolIndex].IsPaused = true;
 
         // Pass the emitter Transform to make this slot follow it, or null to stop following.
         public void SetFollowTarget(int poolIndex, Transform target)

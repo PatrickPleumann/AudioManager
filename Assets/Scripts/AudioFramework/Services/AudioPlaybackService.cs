@@ -5,6 +5,7 @@ using AudioFramework.Core;
 using AudioFramework.Pooling;
 using AudioFramework.Utilities;
 using AudioFramework.Interfaces;
+using AudioFramework.Pause;
 
 namespace AudioFramework.Services.Playback
 {
@@ -13,17 +14,20 @@ namespace AudioFramework.Services.Playback
         private readonly AudioPoolAcquisitionService poolAcquisitionService;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
         private readonly IAudioWallCheckService wallCheckService;
+        private readonly AudioPauseService pauseService;
         private readonly float defaultCutoffValue;
 
         public AudioPlaybackService(
             AudioPoolAcquisitionService _poolAcquisitionService,
             AudioManagerDictionaryProvider _dictionaryProvider,
             IAudioWallCheckService _wallCheckService,
+            AudioPauseService _pauseService,
             float _defaultCutoffValue)
         {
             poolAcquisitionService = _poolAcquisitionService;
             dictionaryProvider = _dictionaryProvider;
             wallCheckService = _wallCheckService;
+            pauseService = _pauseService;
             defaultCutoffValue = _defaultCutoffValue;
         }
 
@@ -76,6 +80,9 @@ namespace AudioFramework.Services.Playback
             // Always written, so a pooled slot never carries the previous sound's spatialization.
             source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
 
+            // Always written (control-surface), so a reused slot can't keep the previous sound's pause policy.
+            poolAcquisitionService.SetPausePolicy(poolIndex, audioDataObject.RespectsGlobalPause);
+
             if (isSpatial)
             {
                 poolObject.GameObject.transform.position = sourceTransform.position;
@@ -94,6 +101,7 @@ namespace AudioFramework.Services.Playback
             {
                 poolAcquisitionService.SetSlotBusy(poolIndex, currentClip.length);
                 source.PlayOneShot(currentClip);
+                HonorActiveGlobalPause(source, audioDataObject, poolIndex);
 
                 if (isSpatial && audioDataObject.UseWallCheck)
                     wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
@@ -103,10 +111,24 @@ namespace AudioFramework.Services.Playback
             poolAcquisitionService.ResetSlotBusy(poolIndex);
 
             source.Play();
+            HonorActiveGlobalPause(source, audioDataObject, poolIndex);
 
             if (isSpatial && audioDataObject.UseWallCheck)
                 wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
             return audioDataObject.CanHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
+        }
+
+        // If a global PauseAll() is currently in effect, a sound that respects the global pause must start paused too
+        // (matches AudioListener.pause semantics), so it stays silent until UnpauseAll() instead of blaring through the
+        // pause. Play()-then-Pause() in the same frame produces no audible output. Sounds that ignore the global pause
+        // (RespectsGlobalPause == false, e.g. UI/music) are left playing.
+        private void HonorActiveGlobalPause(AudioSource source, AudioDataObject audioDataObject, int poolIndex)
+        {
+            if (pauseService.IsGloballyPaused && audioDataObject.RespectsGlobalPause)
+            {
+                source.Pause();
+                poolAcquisitionService.MarkSlotPaused(poolIndex);
+            }
         }
 
         public void StopAudio(AudioHandle handle)
@@ -118,6 +140,7 @@ namespace AudioFramework.Services.Playback
                 poolAcquisitionService.PoolArray[targetIndex].Source.Stop();
 
             poolAcquisitionService.ResetSlotBusy(targetIndex);
+            poolAcquisitionService.ResetPauseState(targetIndex);
             wallCheckService.StopActiveCheck(targetIndex);
         }
     }

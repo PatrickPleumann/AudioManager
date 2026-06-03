@@ -252,6 +252,7 @@ Das `AudioDataObject` (kurz: ADO) ist das zentrale Konfigurationsobjekt für jed
 | **Is One Shot** | Wenn aktiv, wird der Sound einmalig abgespielt und gibt die AudioSource danach automatisch frei. |
 | **Can Handle Audio Source** | Wenn aktiv, gibt `PlaySpatial()` / `PlayNonSpatial()` einen gültigen `AudioHandle` zurück mit dem der Sound manuell gestoppt werden kann. |
 | **Use Wall Check** | Wenn aktiv, prüft das System bei räumlichen Sounds in regelmäßigen Intervallen ob sich eine Wand zwischen Sound und Spieler befindet und dämpft den Sound entsprechend. |
+| **Respects Global Pause** | Wenn aktiv (Standard), reagiert dieser Sound auf die globalen Methoden `PauseAll()` / `UnpauseAll()`. Deaktivieren für Sounds die während der Spielpause weiterlaufen müssen — z.B. UI-Klicks, Menü-Musik oder globale Stinger. Betrifft nur die globale Pause, unabhängig von `Stop(handle)`. |
 
 ---
 
@@ -309,7 +310,7 @@ AudioManagerDynamic.PauseAll();
 AudioManagerDynamic.UnpauseAll();
 ```
 
-Pausiert oder setzt alle aktuell spielenden Sounds fort — z.B. beim Öffnen eines Pause-Menüs.
+Pausiert oder setzt alle aktuell spielenden Sounds fort — z.B. beim Öffnen eines Pause-Menüs. Sounds, deren ADO **Respects Global Pause** deaktiviert hat, laufen dabei weiter (z.B. UI/Musik). `PauseAll()` wirkt wie ein anhaltender Zustand: Auch Sounds, die *während* der Pause gestartet werden, starten pausiert (sofern **Respects Global Pause** aktiv ist) und werden von `UnpauseAll()` mit fortgesetzt.
 
 ---
 

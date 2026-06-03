@@ -252,6 +252,7 @@ The `AudioDataObject` (ADO for short) is the central configuration object for ev
 | **Is One Shot** | If enabled, the sound plays once and automatically releases the AudioSource afterwards. |
 | **Can Handle Audio Source** | If enabled, `PlaySpatial()` / `PlayNonSpatial()` return a valid `AudioHandle` that can be used to stop the sound manually. |
 | **Use Wall Check** | If enabled, the system checks at regular intervals (for spatial sounds) whether a wall exists between the sound and the player, and muffles the sound accordingly. |
+| **Respects Global Pause** | If enabled (default), this sound responds to the global `PauseAll()` / `UnpauseAll()` methods. Disable for sounds that must keep playing while the game is paused — e.g. UI clicks, menu music or global stingers. Only affects the global pause; unrelated to `Stop(handle)`. |
 
 ---
 
@@ -309,7 +310,7 @@ AudioManagerDynamic.PauseAll();
 AudioManagerDynamic.UnpauseAll();
 ```
 
-Pauses or resumes all currently playing sounds — e.g. when opening a pause menu.
+Pauses or resumes all currently playing sounds — e.g. when opening a pause menu. Sounds whose ADO has **Respects Global Pause** disabled keep playing (e.g. UI/music). `PauseAll()` acts as a sustained state: sounds started *while* paused also start paused (if **Respects Global Pause** is enabled) and are resumed together by `UnpauseAll()`.
 
 ---
 

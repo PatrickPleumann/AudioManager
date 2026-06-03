@@ -41,6 +41,13 @@ namespace AudioFramework.Data
         public bool IsOneShot;
         public bool CanHandleAudioSource;
         public bool UseWallCheck;
+        [Space]
+
+        [Tooltip("If enabled (default), this sound responds to the global PauseAll() / UnpauseAll() methods. " +
+            "Disable for sounds that must keep playing while the game is paused - e.g. UI clicks, menu music or " +
+            "global stingers. This flag only affects the global pause and is unrelated to Stop(handle).")]
+        [FormerlySerializedAs("CanBePaused")]
+        public bool RespectsGlobalPause = true;
     }
 
 }

@@ -50,6 +50,7 @@ namespace AudioFramework.Services.Following
                     }
                     poolAcquisitionService.ResetSlotBusy(i);
                     poolAcquisitionService.SetFollowTarget(i, null);
+                    poolAcquisitionService.ResetPauseState(i);
                     continue;
                 }
 

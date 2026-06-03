@@ -3,6 +3,8 @@ using UnityEngine.UI;
 
 using AudioFramework.Data;
 using AudioFramework.Core;
+using UnityEngine.Events;
+
 public class TestScript : MonoBehaviour
 {
     [Space]
@@ -14,6 +16,7 @@ public class TestScript : MonoBehaviour
     public Button B_WallOnOff;
 
     public Button B_StopSource;
+    public Button B_UnPauseAll;
 
     [Space]
     [Header("Test Values")]
@@ -57,6 +60,7 @@ public class TestScript : MonoBehaviour
         B_BehindWall.onClick.AddListener(PlayBehindWallTest);
         B_WallOnOff.onClick.AddListener(SetWallOnOff);
         B_StopSource.onClick.AddListener(StopSourcePlaying);
+        B_UnPauseAll.onClick.AddListener(UnPauseAll);
     }
 
     private void PlayAmbientTest()
@@ -83,5 +87,11 @@ public class TestScript : MonoBehaviour
 
     private void StopSourcePlaying()
     {
+        AudioManagerDynamic.PauseAll();
+    }
+
+    private void UnPauseAll()
+    {
+        AudioManagerDynamic.UnpauseAll();
     }
 }
