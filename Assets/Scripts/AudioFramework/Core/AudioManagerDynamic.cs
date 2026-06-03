@@ -1,4 +1,3 @@
-#define USE_UNITASK
 using UnityEngine;
 
 using AudioFramework.Core;
@@ -33,14 +32,27 @@ public class AudioManagerDynamic : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        instance = this;
+        if (systemConfig == null)
+        {
+            Debug.LogError("[AudioTool] No AudioSystemConfig assigned. AudioManager is disabled.", this);
+            enabled = false;
+            return;
+        }
 
-        if (systemConfig == null) return;
+        AudioListener audioListener = FindFirstObjectByType<AudioListener>();
+        if (audioListener == null)
+        {
+            Debug.LogError("[AudioTool] No AudioListener found in the scene (usually on the Main Camera). AudioManager is disabled.", this);
+            enabled = false;
+            return;
+        }
+
+        instance = this;
 
         dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.CutOffFrequenciesPerLayer);
         dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
 
-        Transform playerAudioListenerTransform = FindFirstObjectByType<AudioListener>().transform;
+        Transform playerAudioListenerTransform = audioListener.transform;
 
         poolAcquisitionService = new AudioPoolAcquisitionService(systemConfig, transform);
         pauseService = new AudioPauseService(poolAcquisitionService.PoolArray);

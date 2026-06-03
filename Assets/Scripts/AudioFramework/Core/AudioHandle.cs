@@ -1,6 +1,6 @@
 namespace AudioFramework.Core
 {
-    public readonly struct AudioHandle //TODO: Check if can be readonly
+    public readonly struct AudioHandle
     {
         public readonly int PoolIndex;
 

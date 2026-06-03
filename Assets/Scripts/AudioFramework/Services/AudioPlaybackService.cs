@@ -29,6 +29,24 @@ namespace AudioFramework.Services.Playback
 
         public AudioHandle DispatchAudio(AudioDataObject audioDataObject)
         {
+            if (audioDataObject == null)
+            {
+                Debug.LogError("[AudioTool] Play() was called with a null AudioDataObject. Skipping playback.");
+                return new AudioHandle(-1);
+            }
+
+            if (audioDataObject.CurrentClips == null || audioDataObject.CurrentClips.Length == 0)
+            {
+                Debug.LogError($"[AudioTool] AudioDataObject '{audioDataObject.name}' has no CurrentClips assigned. Skipping playback.");
+                return new AudioHandle(-1);
+            }
+
+            if (audioDataObject.CallerTransform == null)
+            {
+                Debug.LogError($"[AudioTool] AudioDataObject '{audioDataObject.name}' has no CallerTransform set. Assign it before calling Play().");
+                return new AudioHandle(-1);
+            }
+
             int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
             if (poolIndex == -1) return new AudioHandle(-1);
 
@@ -73,6 +91,8 @@ namespace AudioFramework.Services.Playback
 
         public void StopAudio(AudioHandle handle)
         {
+            if (!handle.IsValid) return;
+
             int targetIndex = handle.PoolIndex;
             if (poolAcquisitionService.PoolArray[targetIndex].Source != null)
                 poolAcquisitionService.PoolArray[targetIndex].Source.Stop();

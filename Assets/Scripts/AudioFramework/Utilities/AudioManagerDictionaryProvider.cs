@@ -20,7 +20,8 @@ namespace AudioFramework.Utilities
             {
                 for (int i = 0; i < _cutoffFreqArray.Length; i++)
                 {
-                    WallLayerMaskDictionary.Add(_cutoffFreqArray[i].SingleLayer, _cutoffFreqArray[i].CutoffFrequencyValue);
+                    if (!WallLayerMaskDictionary.TryAdd(_cutoffFreqArray[i].SingleLayer, _cutoffFreqArray[i].CutoffFrequencyValue))
+                        Debug.LogWarning($"[AudioTool] Duplicate layer (index {_cutoffFreqArray[i].SingleLayer}) in CutOffFrequenciesPerLayer. Keeping the first value, ignoring the duplicate.");
                 }
             }
         }
@@ -31,25 +32,33 @@ namespace AudioFramework.Utilities
 
         public void FillDictionaryWithKeysAndValues(AudioVolumesTransferObject _transferObject)
         {
+            if (_transferObject == null)
+            {
+                Debug.LogWarning("[AudioTool] No AudioVolumesTransferObject assigned in the AudioSystemConfig.");
+                return;
+            }
             if (_transferObject.AudioVolumes == null)
             {
-                Debug.LogWarning("Transfer Object (Array) is null");
+                Debug.LogWarning("[AudioTool] AudioVolumes array is null.");
                 return;
             }
             if (_transferObject.AudioVolumes.Length <= 0)
             {
-                Debug.LogWarning("No Audio Volumes found in Transfer Object");
+                Debug.LogWarning("[AudioTool] No AudioVolumes found in the Transfer Object.");
                 return;
             }
 
-            if (_transferObject.AudioVolumes != null && _transferObject.AudioVolumes.Length > 0)
-                for (int i = 0; i < _transferObject.AudioVolumes.Length; i++)
+            for (int i = 0; i < _transferObject.AudioVolumes.Length; i++)
+            {
+                if (_transferObject.AudioVolumes[i] == null)
                 {
-                    if (_transferObject.AudioVolumes[i] != null)
-                        VolumeDictionary.Add(_transferObject.AudioVolumes[i].CurrentAudioType, _transferObject.AudioVolumes[i].Volume);
-                    else
-                        Debug.Log("Audio Volume Array position: " + i + " is null. Check if your AudioVolumesTransferObject may has a empty spot");
+                    Debug.LogWarning($"[AudioTool] AudioVolumes[{i}] is null. Check your AudioVolumesTransferObject for an empty spot.");
+                    continue;
                 }
+
+                if (!VolumeDictionary.TryAdd(_transferObject.AudioVolumes[i].CurrentAudioType, _transferObject.AudioVolumes[i].Volume))
+                    Debug.LogWarning($"[AudioTool] Duplicate AudioType '{_transferObject.AudioVolumes[i].CurrentAudioType}' in the volume list. Keeping the first value, ignoring the duplicate.");
+            }
         }
     }
 }
