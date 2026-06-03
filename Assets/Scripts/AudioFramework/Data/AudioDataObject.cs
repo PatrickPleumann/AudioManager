@@ -1,4 +1,3 @@
-using System.Threading;
 using UnityEngine;
 
 namespace AudioFramework.Data
@@ -31,10 +30,8 @@ namespace AudioFramework.Data
         ////    "Uncheck this, if you are sure, the sound won´t appear behind wall")]
         ////public bool SourceOriginCouldBeBehindWall;
 
-        public int PoolIndex { get; set; } = -1;
         public bool IsOneShot;
         public bool canHandleAudioSource;
-        public CancellationToken CancellationToken;
         public bool UseWallCheck;
     }
 
