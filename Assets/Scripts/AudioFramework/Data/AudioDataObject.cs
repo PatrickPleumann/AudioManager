@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace AudioFramework.Data
 {
@@ -23,9 +24,12 @@ namespace AudioFramework.Data
         public float SpatialBlend = 1f;
         [Space]
 
-        [Tooltip("Performance Tooltip:  Check this, if you need the sound to be parented - " +
-            "Example: Passing car emitting sounds. Uncheck this mark if the sounds are short")]
-        public bool SetCallerAsParent;
+        [Tooltip("Enable for sounds emitted by a MOVING object that must follow it while playing - " +
+            "example: the engine loop of a passing car. The sound continuously tracks the source Transform's position. " +
+            "If that object is destroyed while the sound is still playing, the sound stops. " +
+            "Leave OFF for sounds that play at a fixed spot (footsteps, gunshots, most one-shots) - it saves a per-frame position update.")]
+        [FormerlySerializedAs("SetCallerAsParent")]
+        public bool FollowEmitter;
         //[Space]
 
         ////[Tooltip("Performance Tooltip:  Check this box, if the Source could be behind a wall. " +

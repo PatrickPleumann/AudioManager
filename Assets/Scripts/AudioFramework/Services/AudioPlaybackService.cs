@@ -67,20 +67,26 @@ namespace AudioFramework.Services.Playback
 
             if (dictionaryProvider.VolumeDictionary.TryGetValue(audioDataObject.CurrentType, out float curVolume))
                 source.volume = curVolume;
+            else
+            {
+                source.volume = 1f; // fallback: full volume, so a pooled slot never carries the previous sound's volume
+                Debug.LogWarning($"[AudioTool] No volume configured for type '{audioDataObject.CurrentType}' on '{audioDataObject.name}'. Falling back to 1.0.", audioDataObject);
+            }
 
             // Always written, so a pooled slot never carries the previous sound's spatialization.
             source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
 
             if (isSpatial)
             {
-                if (audioDataObject.SetCallerAsParent) //not cheap in performance
-                {
-                    poolObject.GameObject.transform.SetParent(sourceTransform);
-                    poolObject.GameObject.transform.position = sourceTransform.position;
-                }
-                else
-                    poolObject.GameObject.transform.position = sourceTransform.position;
+                poolObject.GameObject.transform.position = sourceTransform.position;
+                // Follow via tracked position, never via SetParent: the pooled slot must never become a child of a
+                // caller-owned object, or destroying that caller would destroy the pooled AudioObject. AudioFollowService
+                // copies the position each frame while playing. Written every dispatch so a reused slot can't keep
+                // following a previous emitter (control-surface principle).
+                poolAcquisitionService.SetFollowTarget(poolIndex, audioDataObject.FollowEmitter ? sourceTransform : null);
             }
+            else
+                poolAcquisitionService.SetFollowTarget(poolIndex, null);
 
             filter.cutoffFrequency = defaultCutoffValue;
 

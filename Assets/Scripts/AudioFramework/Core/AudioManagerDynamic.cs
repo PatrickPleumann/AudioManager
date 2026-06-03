@@ -4,6 +4,7 @@ using AudioFramework.Core;
 using AudioFramework.Configuration;
 using AudioFramework.Services.WallCheck;
 using AudioFramework.Services.Playback;
+using AudioFramework.Services.Following;
 using AudioFramework.Data;
 using AudioFramework.Pause;
 using AudioFramework.Pooling;
@@ -23,6 +24,7 @@ public class AudioManagerDynamic : MonoBehaviour
     private AudioPoolAcquisitionService poolAcquisitionService;
     private AudioPauseService pauseService;
     private AudioPlaybackService playbackService;
+    private AudioFollowService followService;
 
     private void Awake()
     {
@@ -71,7 +73,12 @@ public class AudioManagerDynamic : MonoBehaviour
             wallCheckService,
             systemConfig.defaultCuttoffFreqValue
         );
+
+        followService = new AudioFollowService(poolAcquisitionService, wallCheckService);
     }
+
+    // LateUpdate (not Update) so following sounds use the emitter's final position for this frame — no positional lag.
+    private void LateUpdate() => followService?.UpdateFollowers();
 
     /// <summary>
     /// Plays a sound as positional 3D audio at <paramref name="source"/>. The sound is attenuated by distance and,

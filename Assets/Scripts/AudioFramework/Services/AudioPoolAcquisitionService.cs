@@ -54,5 +54,12 @@ namespace AudioFramework.Pooling
 
         public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.time + duration;
         public void ResetSlotBusy(int poolIndex) => poolArray[poolIndex].BusyUntilTime = 0f;
+
+        // Pass the emitter Transform to make this slot follow it, or null to stop following.
+        public void SetFollowTarget(int poolIndex, Transform target)
+        {
+            poolArray[poolIndex].FollowTarget = target;
+            poolArray[poolIndex].IsFollowing = target != null;
+        }
     }
 }
