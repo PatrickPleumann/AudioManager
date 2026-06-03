@@ -4,6 +4,6 @@ namespace AudioFramework.Data
 {
     public class AudioVolumesTransferObject : ScriptableObject
     {
-        public AudioSourceVolume[] AudioVolumes;
+        public AudioSourceVolumes[] AudioVolumes;
     }
 }

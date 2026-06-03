@@ -471,7 +471,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManagerDynamicMerged_Test
   systemConfig: {fileID: 11400000, guid: e89cd559422361e44a8f421b167dae18, type: 2}
-  playerAudioListenerTransform: {fileID: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0

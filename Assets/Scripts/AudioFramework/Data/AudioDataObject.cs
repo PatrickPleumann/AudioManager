@@ -16,9 +16,11 @@ namespace AudioFramework.Data
         public AudioTypeProvider CurrentType;
         [Space]
 
-        [Tooltip("This is the root transform where your AudioObject is spawned. " +
-            "Example: Your enemies have Voicelines. The enemy prefab head, would be the root transform you put in here")]
-        public Transform CallerTransform;
+        [Range(0f, 1f)]
+        [Tooltip("Spatialization of this sound. 1 = full 3D (positional, attenuated by distance), 0 = full 2D " +
+            "(non-positional, same level everywhere). NOTE: This value only takes effect when you play the sound WITH a " +
+            "source Transform via PlaySpatial(ado, transform). Calling PlayNonSpatial(ado) forces 2D (0), ignoring this value.")]
+        public float SpatialBlend = 1f;
         [Space]
 
         [Tooltip("Performance Tooltip:  Check this, if you need the sound to be parented - " +
@@ -31,7 +33,7 @@ namespace AudioFramework.Data
         ////public bool SourceOriginCouldBeBehindWall;
 
         public bool IsOneShot;
-        public bool canHandleAudioSource;
+        public bool CanHandleAudioSource;
         public bool UseWallCheck;
     }
 

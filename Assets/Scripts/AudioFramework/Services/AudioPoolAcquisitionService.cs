@@ -54,6 +54,5 @@ namespace AudioFramework.Pooling
 
         public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.time + duration;
         public void ResetSlotBusy(int poolIndex) => poolArray[poolIndex].BusyUntilTime = 0f;
-
     }
 }

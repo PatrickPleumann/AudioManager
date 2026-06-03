@@ -27,7 +27,21 @@ namespace AudioFramework.Services.Playback
             defaultCutoffValue = _defaultCutoffValue;
         }
 
-        public AudioHandle DispatchAudio(AudioDataObject audioDataObject)
+        public AudioHandle DispatchAudio(AudioDataObject audioDataObject, Transform source)
+        {
+            if (source == null)
+            {
+                string adoName = audioDataObject != null ? audioDataObject.name : "null";
+                Debug.LogError($"[AudioTool] PlaySpatial() was called for '{adoName}' without a source Transform. Use PlayNonSpatial() for 2D sounds.");
+                return new AudioHandle(-1);
+            }
+            return Dispatch(audioDataObject, source, isSpatial: true);
+        }
+
+        public AudioHandle DispatchAudioNonSpatial(AudioDataObject audioDataObject)
+            => Dispatch(audioDataObject, null, isSpatial: false);
+
+        private AudioHandle Dispatch(AudioDataObject audioDataObject, Transform sourceTransform, bool isSpatial)
         {
             if (audioDataObject == null)
             {
@@ -41,12 +55,6 @@ namespace AudioFramework.Services.Playback
                 return new AudioHandle(-1);
             }
 
-            if (audioDataObject.CallerTransform == null)
-            {
-                Debug.LogError($"[AudioTool] AudioDataObject '{audioDataObject.name}' has no CallerTransform set. Assign it before calling Play().");
-                return new AudioHandle(-1);
-            }
-
             int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
             if (poolIndex == -1) return new AudioHandle(-1);
 
@@ -54,39 +62,45 @@ namespace AudioFramework.Services.Playback
             AudioSource source = poolObject.Source;
             AudioLowPassFilter filter = poolObject.Filter;
 
-            AudioClip chosenClip = audioDataObject.CurrentClips[Random.Range(0, audioDataObject.CurrentClips.Length)];
-            source.clip = chosenClip;
+            AudioClip currentClip = audioDataObject.CurrentClips[Random.Range(0, audioDataObject.CurrentClips.Length)];
+            source.clip = currentClip;
 
             if (dictionaryProvider.VolumeDictionary.TryGetValue(audioDataObject.CurrentType, out float curVolume))
                 source.volume = curVolume;
 
-            if (audioDataObject.SetCallerAsParent)
+            // Always written, so a pooled slot never carries the previous sound's spatialization.
+            source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
+
+            if (isSpatial)
             {
-                poolObject.GameObject.transform.SetParent(audioDataObject.CallerTransform);
-                poolObject.GameObject.transform.position = audioDataObject.CallerTransform.position;
+                if (audioDataObject.SetCallerAsParent) //not cheap in performance
+                {
+                    poolObject.GameObject.transform.SetParent(sourceTransform);
+                    poolObject.GameObject.transform.position = sourceTransform.position;
+                }
+                else
+                    poolObject.GameObject.transform.position = sourceTransform.position;
             }
-            else
-                poolObject.GameObject.transform.position = audioDataObject.CallerTransform.position;
 
             filter.cutoffFrequency = defaultCutoffValue;
 
             if (audioDataObject.IsOneShot)
             {
-                poolAcquisitionService.SetSlotBusy(poolIndex, chosenClip.length);
-                source.PlayOneShot(chosenClip);
+                poolAcquisitionService.SetSlotBusy(poolIndex, currentClip.length);
+                source.PlayOneShot(currentClip);
 
-                if (audioDataObject.UseWallCheck)
+                if (isSpatial && audioDataObject.UseWallCheck)
                     wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
 
-                return audioDataObject.canHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
+                return audioDataObject.CanHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
             }
             poolAcquisitionService.ResetSlotBusy(poolIndex);
 
             source.Play();
 
-            if (audioDataObject.UseWallCheck)
+            if (isSpatial && audioDataObject.UseWallCheck)
                 wallCheckService.StartWallCheckLoop(audioDataObject, poolIndex);
-            return audioDataObject.canHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
+            return audioDataObject.CanHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
         }
 
         public void StopAudio(AudioHandle handle)

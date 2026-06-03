@@ -30,10 +30,10 @@ public class TestScript : MonoBehaviour
 
     [Space]
     [Header("Audio Volumes")]
-    public AudioSourceVolume AmbientVol;
-    public AudioSourceVolume PlayerVol;
-    public AudioSourceVolume SFXVol;
-    public AudioSourceVolume BehindWallVol;
+    public AudioSourceVolumes AmbientVol;
+    public AudioSourceVolumes PlayerVol;
+    public AudioSourceVolumes SFXVol;
+    public AudioSourceVolumes BehindWallVol;
 
     [Space]
     [Header("Test Transforms")]
@@ -60,23 +60,16 @@ public class TestScript : MonoBehaviour
     }
 
     private void PlayAmbientTest()
-    {
-        Ambient.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-        AudioManagerDynamic.Play(Ambient);
-    }
+        => AudioManagerDynamic.PlaySpatial(Ambient, transforms[Random.Range(0, transforms.Length)]);
+
     private void PlayPlayerTest()
-    {
-        Player.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-    }
+        => AudioManagerDynamic.PlaySpatial(Player, transforms[Random.Range(0, transforms.Length)]);
+
     private void PlaySFXTest()
-    {
-        SFX.CallerTransform = transforms[Random.Range(0, transforms.Length)];
-    }
+        => AudioManagerDynamic.PlaySpatial(SFX, transforms[Random.Range(0, transforms.Length)]);
+
     private void PlayBehindWallTest()
-    {
-        BehindWall.CallerTransform = BehindWallPos;
-        AudioManagerDynamic.Play(BehindWall);
-    }
+        => AudioManagerDynamic.PlaySpatial(BehindWall, BehindWallPos);
 
     private void SetWallOnOff()
     {

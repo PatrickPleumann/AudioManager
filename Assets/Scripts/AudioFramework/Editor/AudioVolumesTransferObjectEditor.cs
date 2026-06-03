@@ -28,12 +28,12 @@ namespace AudioFramework.EditorTools
         /// </summary>
         private static void PopulateVolumes(AudioVolumesTransferObject transferObject)
         {
-            string[] guids = AssetDatabase.FindAssets("t:AudioSourceVolume");
-            transferObject.AudioVolumes = new AudioSourceVolume[guids.Length];
+            string[] guids = AssetDatabase.FindAssets("t:AudioSourceVolumes");
+            transferObject.AudioVolumes = new AudioSourceVolumes[guids.Length];
             for (int i = 0; i < guids.Length; i++)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                transferObject.AudioVolumes[i] = AssetDatabase.LoadAssetAtPath<AudioSourceVolume>(path);
+                transferObject.AudioVolumes[i] = AssetDatabase.LoadAssetAtPath<AudioSourceVolumes>(path);
             }
 
             EditorUtility.SetDirty(transferObject);
