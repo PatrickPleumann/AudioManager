@@ -18,7 +18,7 @@ namespace AudioFramework.Pooling
         {
             config = _config;
             parentTransform = _parentTransform;
-            poolArray = new AudioObject[config.NumbersOfAudioSources];
+            poolArray = new AudioObject[config.NumberOfAudioSources];
 
             InitializePool();
         }

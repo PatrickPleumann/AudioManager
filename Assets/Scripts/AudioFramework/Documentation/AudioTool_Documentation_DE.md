@@ -10,19 +10,21 @@
 
 ## Vorteile
 
-- **Kein manuelles AudioSource-Management** — Das Tool verwaltet einen vorallokierten Pool aus `AudioSource`-Objekten. Zur Laufzeit werden keine neuen Objekte instanziiert, was Garbage Collection und Performance-Spitzen vermeidet.
+- **Kein manuelles AudioSource-Management** — Das Tool verwaltet einen vorallokierten Pool aus `AudioSource`-Objekten. Zur Laufzeit werden keine neuen Pool-Objekte instanziiert, was Garbage Collection und Performance-Spitzen vermeidet.
 
 - **Automatische Wand-Okklusion (Wall Check)** — Sounds die hinter Wänden oder Hindernissen entstehen, werden automatisch mit einem `AudioLowPassFilter` gedämpft. Mehrere Wände auf dem Weg zum Spieler dämpfen den Sound stärker als eine einzelne — konfigurierbar pro Unity-Layer.
 
 - **Organisiertes Volumen-System** — Sounds werden kategorisiert (z.B. Ambient, SFX, Player). Jede Kategorie hat ein eigenes `AudioSourceVolume`-Asset dessen Wert zur Laufzeit überschrieben werden kann — ideal für Lautstärke-Slider in einem Einstellungsmenü.
 
+- **2D- und 3D-Sounds** — Räumliche Sounds (`PlaySpatial`) werden an einer Weltposition abgespielt, distanzabhängig gedämpft und optional wand-geprüft. Nicht-räumliche Sounds (`PlayNonSpatial`) spielen überall gleich laut — ideal für UI-Klicks, Musik oder globale Stinger.
+
 - **Fire-and-Forget oder steuerbar** — Der Entwickler entscheidet pro Sound ob er einen `AudioHandle` zurückbekommen möchte um den Sound später manuell zu stoppen, oder ob der Sound einfach durchläuft.
 
-- **Einfache API** — Sounds abspielen und stoppen geschieht über selbsterklärende statische Methoden. Kein Event-System, kein Boilerplate-Code.
+- **Einfache API** — Sounds abspielen und stoppen geschieht über selbsterklärende statische Methoden. Kein Boilerplate-Code.
 
 - **ScriptableObject-getrieben** — Die gesamte Konfiguration erfolgt über Assets im Inspector. Kein Code nötig um neue Sounds einzubinden.
 
-- **UniTask-basiert** — Die interne Async-Logik nutzt UniTask für minimalen Overhead. Eine Coroutine-Variante steht als Fallback zur Verfügung.
+- **UniTask-basiert** — Die interne Async-Logik nutzt UniTask für minimalen Overhead. Eine Coroutine-Variante steht als automatischer Fallback zur Verfügung.
 
 ---
 
@@ -31,21 +33,24 @@
 ### Voraussetzungen
 
 - Unity 6 oder höher
-- **UniTask** — empfohlen, muss separat installiert werden:
+- Ein **AudioListener** in der Szene (standardmäßig auf der Main Camera). Ohne AudioListener deaktiviert sich der `AudioManagerDynamic` selbst und gibt einen Fehler aus.
+- **UniTask** (ab Version **2.3.0**) — empfohlen, muss separat installiert werden:
   [https://github.com/Cysharp/UniTask](https://github.com/Cysharp/UniTask)
-  *(Eine Coroutine-Variante steht als Fallback zur Verfügung, wird aber nicht empfohlen.)*
+  *(Ist UniTask nicht oder in einer älteren Version installiert, schaltet das Tool automatisch auf die Coroutine-Variante um. Diese funktioniert vollständig, wird aber nicht empfohlen.)*
 
 ---
 
 ### Schritt 1 — AudioManagerDynamic in die Szene einbinden
 
-Erstelle ein leeres GameObject in deiner Szene und füge die Komponente `AudioManagerDynamic` hinzu. Dieses Objekt ist der zentrale Einstiegspunkt des Tools und muss **einmal pro Szene** vorhanden sein.
+Erstelle ein leeres GameObject in deiner Szene und füge die Komponente `AudioManagerDynamic` hinzu. Dieses Objekt ist der zentrale Einstiegspunkt des Tools und muss **einmal pro Szene** vorhanden sein. Mehrfach vorhandene Instanzen werden automatisch erkannt und zerstört.
 
 ---
 
 ### Schritt 2 — System Config zuweisen
 
 Das mitgelieferte `AudioSystemConfig`-Asset ist bereits vollständig vorkonfiguriert. Weise es im Inspector des `AudioManagerDynamic`-GameObjects dem Feld **System Config** zu.
+
+> **Wichtig:** Ist keine System Config zugewiesen, deaktiviert sich der AudioManager beim Start und gibt einen Fehler aus.
 
 > Auf alle Felder der System Config wird später in einem eigenen Abschnitt detailliert eingegangen.
 
@@ -61,7 +66,7 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 
 | Feld | Beschreibung | Empfehlung |
 |---|---|---|
-| **Numbers Of Audio Sources** | Anzahl der vorallokierten `AudioSource`-Objekte im Pool. Je mehr Sounds gleichzeitig abgespielt werden sollen, desto höher sollte dieser Wert sein. Zu viele Objekte erhöhen den Speicherverbrauch. | 20–50 für die meisten Projekte |
+| **Number Of Audio Sources** | Anzahl der vorallokierten `AudioSource`-Objekte im Pool. Je mehr Sounds gleichzeitig abgespielt werden sollen, desto höher sollte dieser Wert sein. Zu viele Objekte erhöhen den Speicherverbrauch. | 20–50 für die meisten Projekte |
 | **Default Cutoff Freq Value** | Der Standard-Frequenzwert des `AudioLowPassFilter` wenn kein Wandkontakt besteht. Bei diesem Wert klingt der Sound normal und ungefiltert. | 5000 – 5007 |
 | **Min Cutoff Freq Value** | Die untere Grenze der Cutoff Frequency. Die Frequenz wird nie unter diesen Wert gesenkt — egal wie viele Wände sich zwischen Sound und Spieler befinden. Auf 10 setzen wenn Sounds bei vielen Wänden komplett unhörbar werden sollen. | 10 – 1000 |
 
@@ -77,7 +82,7 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 
 ### Cutoff Frequencies Per Layer
 
-Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionswert. Für jeden Layer-Treffer des Raycasts wird die Cutoff Frequency um den definierten Wert reduziert. Mehrere Treffer werden addiert.
+Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionswert. Für jeden Layer-Treffer des Raycasts wird die Cutoff Frequency um den definierten Wert reduziert. Mehrere Treffer werden addiert (maximal 8 Wände pro Raycast werden berücksichtigt).
 
 | Feld | Beschreibung |
 |---|---|
@@ -91,7 +96,7 @@ Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionsw
 | Feld | Beschreibung |
 |---|---|
 | **Transfer Object** | Das mitgelieferte `AudioVolumesTransferObject`-Asset. Enthält alle `AudioSourceVolume`-Assets die vom System verwaltet werden. |
-| **Audio GameObject Prefab** | Das mitgelieferte `3DAudioSourceObject`-Prefab. Wird für jeden Pool-Slot instanziiert. Dieses Feld nicht verändern. |
+| **Audio GameObject Prefab** | Das mitgelieferte Audio-Source-Prefab. Wird für jeden Pool-Slot instanziiert. Dieses Feld nicht verändern. |
 
 ---
 
@@ -99,7 +104,7 @@ Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionsw
 
 ### Pool-Größe
 
-**Numbers Of Audio Sources** hat direkten Einfluss auf den Speicherverbrauch. Alle Pool-Objekte werden beim Start der Szene instanziiert — auch wenn sie nie genutzt werden. Setze den Wert so niedrig wie möglich, aber hoch genug um alle gleichzeitig erwarteten Sounds abdecken zu können.
+**Number Of Audio Sources** hat direkten Einfluss auf den Speicherverbrauch. Alle Pool-Objekte werden beim Start der Szene instanziiert — auch wenn sie nie genutzt werden. Setze den Wert so niedrig wie möglich, aber hoch genug um alle gleichzeitig erwarteten Sounds abdecken zu können.
 
 > Faustregel: Lieber mit einem niedrigen Wert starten und bei Bedarf erhöhen, als von Anfang an zu hoch ansetzen.
 
@@ -113,9 +118,9 @@ Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionsw
 
 ---
 
-### Set Caller As Parent
+### Follow Emitter
 
-**Set Caller As Parent** im ADO sollte nur aktiviert werden wenn der Sound sich wirklich mit einem Objekt mitbewegen muss — z.B. ein fahrendes Fahrzeug. Für kurze Sounds wie Schüsse oder Explosionen ist diese Option unnötig und kostet Performance.
+**Follow Emitter** im ADO sollte nur aktiviert werden wenn der Sound sich wirklich mit einem Objekt mitbewegen muss — z.B. ein fahrendes Fahrzeug. Der Sound verfolgt dann jede Frame die Position des übergebenen Transforms. Für kurze Sounds wie Schüsse oder Explosionen ist diese Option unnötig und kostet eine Positionsaktualisierung pro Frame.
 
 > Faustregel: Bei kurzen Sounds immer deaktiviert lassen.
 
@@ -123,7 +128,7 @@ Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionsw
 
 ### Use Wall Check
 
-**Use Wall Check** sollte nur aktiviert werden wenn der Sound wirklich hinter einer Wand entstehen kann. Für Sounds die immer in offenen Bereichen abgespielt werden — z.B. UI-Sounds oder Musik — ist der Wall Check unnötige Raycast-Last.
+**Use Wall Check** sollte nur aktiviert werden wenn der Sound wirklich hinter einer Wand entstehen kann. Für Sounds die immer in offenen Bereichen abgespielt werden — z.B. UI-Sounds oder Musik — ist der Wall Check unnötige Raycast-Last. (Der Wall Check wirkt ohnehin nur bei räumlichen Sounds via `PlaySpatial`.)
 
 > Faustregel: Im Zweifel deaktiviert lassen und nur gezielt aktivieren.
 
@@ -139,21 +144,24 @@ Jeder aktive Sound mit **Use Wall Check** feuert in regelmäßigen Intervallen e
 
 ## Volumen-System einrichten
 
-### Schritt 3 — AudioTypeProvider anpassen
+### Schritt 3 — AudioCategory anpassen
 
-Der `AudioTypeProvider` ist ein Enum der die verfügbaren Lautstärke-Kategorien definiert. Er befindet sich unter:
-> `AudioFramework/Core/AudioTypeProvider.cs`
+`AudioCategory` ist ein Enum der die verfügbaren Lautstärke-Kategorien definiert. Er befindet sich unter:
+> `AudioFramework/Core/AudioCategory.cs`
 
 Die vorhandenen Werte sind **ausschließlich Beispielwerte** und sollen vollständig durch eigene Kategorien ersetzt werden:
 
 ```csharp
-public enum AudioTypeProvider
+namespace AudioFramework.Core
 {
-    // Beispielwerte - bitte vollständig durch eigene Kategorien ersetzen:
-    Ambient = 1,
-    Music,
-    SFX,
-    // ...
+    public enum AudioCategory
+    {
+        // Beispielwerte - bitte vollständig durch eigene Kategorien ersetzen:
+        Ambient = 1,
+        Music,
+        SFX,
+        // ...
+    }
 }
 ```
 
@@ -163,14 +171,14 @@ public enum AudioTypeProvider
 
 ### Schritt 4 — AudioSourceVolume Assets anlegen
 
-Das Tool verwaltet Lautstärken über `AudioSourceVolume`-Assets. Jedes Asset repräsentiert eine Lautstärke-Kategorie aus dem `AudioTypeProvider`.
+Das Tool verwaltet Lautstärken über `AudioSourceVolume`-Assets. Jedes Asset repräsentiert eine Lautstärke-Kategorie aus `AudioCategory`.
 
 Erstelle für jede gewünschte Kategorie ein neues Asset über:
 > **Rechtsklick im Project-Fenster → Create → Scriptable Objects → AudioSourceVolume**
 
 | Feld | Beschreibung |
 |---|---|
-| **Current Audio Type** | Die Kategorie dieses Assets — muss mit dem `AudioTypeProvider`-Wert im zugehörigen `AudioDataObject` übereinstimmen. |
+| **Current Audio Type** | Die Kategorie dieses Assets — muss mit dem `AudioCategory`-Wert im zugehörigen `AudioDataObject` übereinstimmen. |
 | **Volume** | Der Standardlautstärkewert (0.0 – 1.0). Dieser Wert kann zur Laufzeit überschrieben werden, z.B. durch einen Einstellungs-Slider. |
 
 ---
@@ -238,32 +246,49 @@ Das `AudioDataObject` (kurz: ADO) ist das zentrale Konfigurationsobjekt für jed
 | Feld | Beschreibung |
 |---|---|
 | **Current Clips** | Die AudioClips die für diesen Sound verwendet werden. Ein ADO repräsentiert immer genau eine Klang-Kategorie — z.B. mehrere Footstep-Varianten oder eine einzelne Explosion. Bei mehreren Clips wählt das System bei jedem Abspielen zufällig einen aus. Ein einzelner Clip ist völlig ausreichend. |
-| **Current Type** | Die Lautstärke-Kategorie dieses Sounds — muss einem vorhandenen `AudioTypeProvider`-Wert entsprechen. |
-| **Caller Transform** | Die Position in der Welt an der der Sound abgespielt wird. Wird zur Laufzeit per Code gesetzt. |
-| **Set Caller As Parent** | Wenn aktiv, wird das Audio-Objekt an den `CallerTransform` gehängt und bewegt sich mit ihm — z.B. für einen fahrenden Wagen. Für kurze Sounds deaktiviert lassen. |
+| **Current Type** | Die Lautstärke-Kategorie dieses Sounds — muss einem vorhandenen `AudioCategory`-Wert entsprechen. |
+| **Spatial Blend** | Die Räumlichkeit des Sounds (0.0 – 1.0). 1 = volles 3D (positionsabhängig, distanzgedämpft), 0 = volles 2D (überall gleich laut). Dieser Wert wirkt nur beim Abspielen mit `PlaySpatial(ado, transform)`. `PlayNonSpatial(ado)` erzwingt immer 2D (0) und ignoriert diesen Wert. |
+| **Follow Emitter** | Wenn aktiv, verfolgt der Sound jede Frame die Position des an `PlaySpatial` übergebenen Transforms — z.B. der Motor-Loop eines vorbeifahrenden Fahrzeugs. Wird dieses Objekt zerstört während der Sound noch spielt, stoppt der Sound. Für Sounds an einer festen Position (Schüsse, Explosionen, die meisten One-Shots) deaktiviert lassen — das spart eine Positionsaktualisierung pro Frame. |
 | **Is One Shot** | Wenn aktiv, wird der Sound einmalig abgespielt und gibt die AudioSource danach automatisch frei. |
-| **Can Handle Audio Source** | Wenn aktiv, gibt `Play()` einen `AudioHandle` zurück mit dem der Sound manuell gestoppt werden kann. |
-| **Use Wall Check** | Wenn aktiv, prüft das System in regelmäßigen Intervallen ob sich eine Wand zwischen Sound und Spieler befindet und dämpft den Sound entsprechend. |
+| **Can Handle Audio Source** | Wenn aktiv, gibt `PlaySpatial()` / `PlayNonSpatial()` einen gültigen `AudioHandle` zurück mit dem der Sound manuell gestoppt werden kann. |
+| **Use Wall Check** | Wenn aktiv, prüft das System bei räumlichen Sounds in regelmäßigen Intervallen ob sich eine Wand zwischen Sound und Spieler befindet und dämpft den Sound entsprechend. |
 
 ---
 
 ## API Referenz
 
-### Sound abspielen
+> **Namespaces:** Die öffentliche API-Klasse `AudioManagerDynamic` liegt im Namespace `AudioFramework.Core`, die Typen `AudioDataObject` und `SoundRequest` in `AudioFramework.Data`. Dein Code benötigt entsprechend `using AudioFramework.Core;` und `using AudioFramework.Data;`.
+
+### Sound abspielen — räumlich (3D)
 
 ```csharp
-AudioHandle handle = AudioManagerDynamic.Play(myAudioDataObject);
+AudioHandle handle = AudioManagerDynamic.PlaySpatial(myAudioDataObject, sourceTransform);
 ```
 
-Spielt den Sound des übergebenen `AudioDataObject` ab. Gibt einen `AudioHandle` zurück wenn **Can Handle Audio Source** im ADO aktiviert ist, andernfalls einen ungültigen Handle.
+Spielt den Sound des übergebenen `AudioDataObject` als räumlichen 3D-Sound an der Position von `sourceTransform` ab. Der Sound wird distanzabhängig gedämpft und — falls im ADO aktiviert — wand-geprüft. Gibt einen gültigen `AudioHandle` zurück wenn **Can Handle Audio Source** im ADO aktiviert ist und ein Pool-Slot frei war, andernfalls einen ungültigen Handle.
 
-> **Wichtig:** Der `CallerTransform` muss vor dem Aufruf gesetzt sein — er definiert die Position des Sounds in der Welt.
+> **Wichtig:** Die Position des Sounds wird durch das übergebene `Transform` bestimmt. Für räumliche Sounds darf es nicht `null` sein.
 
 ```csharp
-// Beispiel: Sound an einer bestimmten Position abspielen
-myAudioDataObject.CallerTransform = transform;
-AudioHandle handle = AudioManagerDynamic.Play(myAudioDataObject);
+// Beispiel: Sound an der Position dieses GameObjects abspielen
+AudioHandle handle = AudioManagerDynamic.PlaySpatial(myAudioDataObject, transform);
 ```
+
+Alternativ kann ein `SoundRequest` (ADO + Transform gebündelt) übergeben werden — praktisch für event-getriebenes Abspielen, bei dem die Anfrage als eine einzige Nutzlast durch ein Event gereicht wird:
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.PlaySpatial(new SoundRequest(myAudioDataObject, transform));
+```
+
+---
+
+### Sound abspielen — nicht-räumlich (2D)
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.PlayNonSpatial(myAudioDataObject);
+```
+
+Spielt den Sound ohne Position ab: keine Distanzdämpfung, kein Wall Check, überall gleich laut. Ideal für UI-Klicks, Musik und globale Stinger. Der `SpatialBlend`-Wert des ADO wird dabei ignoriert (immer 2D).
 
 ---
 
@@ -273,7 +298,7 @@ AudioHandle handle = AudioManagerDynamic.Play(myAudioDataObject);
 AudioManagerDynamic.Stop(handle);
 ```
 
-Stoppt den Sound des übergebenen `AudioHandle`. Nur verfügbar wenn **Can Handle Audio Source** im ADO aktiviert ist.
+Stoppt den Sound des übergebenen `AudioHandle`. Nur wirksam wenn **Can Handle Audio Source** im ADO aktiviert war (sonst ist der Handle ungültig).
 
 ---
 
@@ -300,7 +325,8 @@ Erstelle ein neues `AudioDataObject` und konfiguriere es im Inspector:
 |---|---|
 | **Current Clips** | ExplosionClip |
 | **Current Type** | SFX |
-| **Set Caller As Parent** | false |
+| **Spatial Blend** | 1 (volles 3D) |
+| **Follow Emitter** | false |
 | **Is One Shot** | true |
 | **Can Handle Audio Source** | false |
 | **Use Wall Check** | true |
@@ -314,8 +340,7 @@ public class ExplosionHandler : MonoBehaviour
 
     public void Explode()
     {
-        explosionADO.CallerTransform = transform;
-        AudioManagerDynamic.Play(explosionADO);
+        AudioManagerDynamic.PlaySpatial(explosionADO, transform);
     }
 }
 ```
@@ -324,7 +349,7 @@ public class ExplosionHandler : MonoBehaviour
 
 ## Beispiel: Motor-Loop mit Stop
 
-In diesem Beispiel wird ein Motor-Sound geloopt der manuell gestoppt werden kann — z.B. wenn das Fahrzeug abschaltet.
+In diesem Beispiel wird ein Motor-Sound geloopt der manuell gestoppt werden kann — z.B. wenn das Fahrzeug abschaltet. Da **Follow Emitter** aktiv ist, folgt der Sound dem Fahrzeug während es fährt.
 
 **1. ADO konfigurieren**
 
@@ -332,7 +357,8 @@ In diesem Beispiel wird ein Motor-Sound geloopt der manuell gestoppt werden kann
 |---|---|
 | **Current Clips** | EngineLoopClip |
 | **Current Type** | Ambient |
-| **Set Caller As Parent** | true |
+| **Spatial Blend** | 1 (volles 3D) |
+| **Follow Emitter** | true |
 | **Is One Shot** | false |
 | **Can Handle Audio Source** | true |
 | **Use Wall Check** | false |
@@ -347,8 +373,7 @@ public class VehicleEngine : MonoBehaviour
 
     public void StartEngine()
     {
-        engineADO.CallerTransform = transform;
-        engineHandle = AudioManagerDynamic.Play(engineADO);
+        engineHandle = AudioManagerDynamic.PlaySpatial(engineADO, transform);
     }
 
     public void StopEngine()
@@ -357,3 +382,5 @@ public class VehicleEngine : MonoBehaviour
     }
 }
 ```
+
+> **Hinweis:** Wird das Fahrzeug-GameObject zerstört während der Motor-Loop noch läuft, stoppt der Sound automatisch (Verhalten von **Follow Emitter**).

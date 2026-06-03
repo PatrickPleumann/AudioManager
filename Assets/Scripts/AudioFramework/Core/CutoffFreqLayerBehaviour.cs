@@ -1,8 +1,11 @@
 using System;
 
-[Serializable]
-public struct CutoffFreqLayerBehaviour
+namespace AudioFramework.Core
 {
-    [SingleLayer] public int SingleLayer;
-    public float CutoffFrequencyValue;
+    [Serializable]
+    public struct CutoffFreqLayerBehaviour
+    {
+        [SingleLayer] public int SingleLayer;
+        public float CutoffFrequencyValue;
+    }
 }

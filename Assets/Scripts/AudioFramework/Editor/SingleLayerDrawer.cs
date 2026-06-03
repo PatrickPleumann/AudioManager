@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 
+using AudioFramework.Core;
+
 namespace AudioFramework.EditorTools
 {
     [CustomPropertyDrawer(typeof(SingleLayerAttribute))]

@@ -1,20 +1,24 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
+using AudioFramework.Core;
 using AudioFramework.Data;
 namespace AudioFramework.Configuration
 {
-    [CreateAssetMenu(fileName = "AudioSystemConfig", menuName = "Audio Tool Test/System Config")]
+    [CreateAssetMenu(fileName = "AudioSystemConfig", menuName = "Audio Tool/System Config")]
     public class AudioSystemConfig : ScriptableObject
     {
         [Header(" --- General values --- ")]
         [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. " +
                  " More objects = lower performance.")]
-        [Range(1, 100)] public int NumbersOfAudioSources = 50;
+        [FormerlySerializedAs("NumbersOfAudioSources")]
+        [Range(1, 100)] public int NumberOfAudioSources = 50;
         [Space]
 
         [Tooltip("The default Frequency on the AudioLowPassFilter -> This is usually between 5000-5007." +
             " So whenever the [AudioTool] cannot find a specific value  - it uses the default value")]
-        public float defaultCuttoffFreqValue = 5000f;
+        [FormerlySerializedAs("defaultCuttoffFreqValue")]
+        public float DefaultCutoffFreqValue = 5000f;
         [Space]
 
         [Tooltip("The minimum cutoff frequency value. The wall check will never reduce the frequency below this value.")]
@@ -34,7 +38,7 @@ namespace AudioFramework.Configuration
         [Space]
 
         [Header(" --- References ---")]
-        [Tooltip("This transfer object contains all the audio source volumes which will be handled automaticly by the " +
+        [Tooltip("This transfer object contains all the audio source volumes which will be handled automatically by the " +
                  " [AudioTool]. Double click on this element to see which audio source volumes are handled at the moment")]
         public AudioVolumesTransferObject TransferObject;
         [Space]

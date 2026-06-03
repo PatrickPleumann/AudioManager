@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using AudioFramework.Core;
 using AudioFramework.Data;
 
 namespace AudioFramework.Utilities
@@ -8,7 +9,7 @@ namespace AudioFramework.Utilities
     public class AudioManagerDictionaryProvider
     {
         public readonly Dictionary<int, float> WallLayerMaskDictionary = new();
-        public readonly Dictionary<AudioTypeProvider, float> VolumeDictionary = new();
+        public readonly Dictionary<AudioCategory, float> VolumeDictionary = new();
 
         /// <summary>
         /// Fills the Dictionary With LayerMask values as key and sound related "Cutoff Frequency"-floats as value.
@@ -26,7 +27,7 @@ namespace AudioFramework.Utilities
             }
         }
         /// <summary>
-        /// Fills a Dictionary With a pair of AudioTypeProvider & specific Volume.
+        /// Fills a Dictionary With a pair of AudioCategory & specific Volume.
         /// </summary>
         /// <param name="_transferObject"></param>
 

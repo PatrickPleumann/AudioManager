@@ -106,14 +106,14 @@ namespace AudioFramework.Services.WallCheck
 
         private float CalculateCutoffFrequency(Vector3 originPos)
         {
-            if (playerListener == false) return config.defaultCuttoffFreqValue;
+            if (playerListener == false) return config.DefaultCutoffFreqValue;
 
             Vector3 direction = playerListener.position - originPos;
             int hitCount = Physics.RaycastNonAlloc(originPos, direction.normalized, wallHitBuffer, direction.magnitude, automaticallyGeneratedWallLayerMask);
 
-            if (hitCount == 0) return config.defaultCuttoffFreqValue;
+            if (hitCount == 0) return config.DefaultCutoffFreqValue;
 
-            float cutoff = config.defaultCuttoffFreqValue;
+            float cutoff = config.DefaultCutoffFreqValue;
             for (int i = 0; i < hitCount; i++)
             {
                 if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float reduction))

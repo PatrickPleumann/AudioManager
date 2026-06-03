@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
+using AudioFramework.Core;
+
 namespace AudioFramework.Data
 {
     [CreateAssetMenu(fileName = "AudioDataObject", menuName = "Scriptable Objects/AudioDataObject")]
@@ -14,7 +16,7 @@ namespace AudioFramework.Data
 
         [Tooltip("You most likely will have different sound volumes like: " +
             "Ambient, SFX, Music etc. This field defines which kind of source volume you wanna use for this AudioDataObject")]
-        public AudioTypeProvider CurrentType;
+        public AudioCategory CurrentType;
         [Space]
 
         [Range(0f, 1f)]
