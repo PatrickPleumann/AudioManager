@@ -94,7 +94,6 @@ namespace AudioFramework.Core
             occlusionSmoothingService = new AudioOcclusionSmoothingService(poolAcquisitionService, systemConfig);
         }
 
-        // LateUpdate (not Update) so following sounds use the emitter's final position for this frame — no positional lag.
         private void LateUpdate()
         {
             followService?.UpdateFollowers();
@@ -233,9 +232,6 @@ namespace AudioFramework.Core
 
         private void OnDestroy()
         {
-            // Only the real singleton instance may tear down the static state.
-            // A duplicate destroyed in Awake() runs its OnDestroy() at end of frame too —
-            // without this guard it would null out the static reference to the living instance.
             if (instance != this) return;
 
             wallCheckService?.StopAllChecks();

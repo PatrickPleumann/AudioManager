@@ -83,9 +83,6 @@ namespace AudioFramework.Services.WallCheck
 
         private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
         {
-            // If the pooled source was destroyed externally (e.g. someone deleted the internal "Pooled Audio Source"
-            // GameObject, or the manager was torn down), stop the loop gracefully instead of throwing a
-            // MissingReferenceException on Source.isPlaying below.
             if (poolArray[poolIndex].Source == null)
             {
 #if UNITY_EDITOR
@@ -93,9 +90,6 @@ namespace AudioFramework.Services.WallCheck
 #endif
                 return false;
             }
-
-            // While paused, keep the loop alive (it idles - IsCurrentlyActive is false, so no filter is applied).
-            // Without this a paused wall-checked sound would end its check and never resume occlusion on unpause.
             if (poolArray[poolIndex].IsPaused) return true;
 
             if (audioDataObject.IsOneShot)
@@ -106,8 +100,6 @@ namespace AudioFramework.Services.WallCheck
         private void ApplyWallCheckFilter(int poolIndex)
         {
             Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
-            // Write the TARGET, not the live cutoff: AudioOcclusionSmoothingService glides the filter toward it each
-            // frame, so moving in/out of occlusion no longer pops.
             poolArray[poolIndex].TargetCutoff = CalculateCutoffFrequency(currentPos);
         }
 

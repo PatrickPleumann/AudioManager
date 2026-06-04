@@ -82,9 +82,6 @@ namespace AudioFramework.Services.Playback
             return Dispatch(audioDataObject, source, isSpatial: true, startSilent: true, out targetVolume);
         }
 
-        // Returns the raw pool index of the dispatched slot, or -1 on failure. Turning that into a user-facing
-        // AudioHandle (gated by CanHandleAudioSource) is done by the public Play callers via Gate(), so the fade
-        // path can still get the index even when an ADO opts out of handles.
         private int Dispatch(AudioDataObject audioDataObject, Transform sourceTransform, bool isSpatial, bool startSilent, out float resolvedVolume)
         {
             resolvedVolume = 0f;
@@ -104,8 +101,6 @@ namespace AudioFramework.Services.Playback
             int poolIndex = poolAcquisitionService.GetFreeAudioSourcePoolIndex();
             if (poolIndex == -1) return -1;
 
-            // A recycled slot must never carry a previous fade, or the next Tick would write a stale volume over this
-            // new sound. Cleared every dispatch (control-surface principle), same as pause/follow state.
             fadeService.ClearFade(poolIndex);
 
             AudioObject poolObject = poolAcquisitionService.PoolArray[poolIndex];
@@ -116,36 +111,23 @@ namespace AudioFramework.Services.Playback
             source.clip = currentClip;
 
             resolvedVolume = ResolveVolume(audioDataObject);
-            // Always written, so a pooled slot never carries the previous sound's volume. A fade-in starts silent and
-            // the fade service ramps source.volume up to resolvedVolume.
             source.volume = startSilent ? 0f : resolvedVolume;
 
-            // Always written, so a pooled slot never carries the previous sound's spatialization.
             source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
 
-            // Always written (control-surface), so a reused slot can't keep the previous sound's pause policy.
             poolAcquisitionService.SetPausePolicy(poolIndex, audioDataObject.RespectsGlobalPause);
 
             if (isSpatial)
             {
                 poolObject.GameObject.transform.position = sourceTransform.position;
-                // Follow via tracked position, never via SetParent: the pooled slot must never become a child of a
-                // caller-owned object, or destroying that caller would destroy the pooled AudioObject. AudioFollowService
-                // copies the position each frame while playing. Written every dispatch so a reused slot can't keep
-                // following a previous emitter (control-surface principle).
                 poolAcquisitionService.SetFollowTarget(poolIndex, audioDataObject.FollowEmitter ? sourceTransform : null);
             }
             else
                 poolAcquisitionService.SetFollowTarget(poolIndex, null);
 
-            // Control-surface: written every dispatch so a reused slot can't keep the previous sound's filter state.
-            // Only wall-checked sounds keep the low-pass enabled (the wall-check loop rides the cutoff down); every
-            // other sound bypasses it entirely for transparent sound and zero DSP cost.
             LowPassDispatchState lowPass = LowPassDispatchPolicy.Resolve(audioDataObject.UseWallCheck, defaultCutoffValue);
             filter.enabled = lowPass.Enabled;
             filter.cutoffFrequency = lowPass.CutoffFrequency;
-            // Seed the occlusion glide target to the same open value so the smoothing service has nothing to do until
-            // the wall-check loop sets a real (occluded) target.
             poolAcquisitionService.SetTargetCutoff(poolIndex, lowPass.CutoffFrequency);
 
             if (audioDataObject.IsOneShot)
@@ -174,24 +156,16 @@ namespace AudioFramework.Services.Playback
             if (dictionaryProvider.VolumeDictionary.TryGetValue(audioDataObject.CurrentType, out float curVolume))
                 return curVolume;
 
-            // Fallback: full volume, so a pooled slot never carries the previous sound's volume on a dictionary miss.
             Debug.LogWarning($"[AudioTool] No volume configured for type '{audioDataObject.CurrentType}' on '{audioDataObject.name}'. Falling back to 1.0.", audioDataObject);
             return 1f;
         }
 
-        // Turn a raw pool index into the user-facing handle: valid only when a slot was acquired AND the ADO opts into
-        // handle-based control. Mirrors the original gating that lived at the end of Dispatch.
         private AudioHandle Gate(int poolIndex, AudioDataObject audioDataObject)
             => poolIndex >= 0 && audioDataObject.CanHandleAudioSource ? MakeHandle(poolIndex) : AudioHandle.Invalid;
 
-        // Build the user-facing handle for a freshly dispatched slot, stamping the slot's current generation so the
-        // handle goes stale the moment the slot is reused. Used by the gated Play path and the (ungated) fade path.
+      
         public AudioHandle MakeHandle(int poolIndex) => new AudioHandle(poolIndex, poolAcquisitionService.CurrentGeneration(poolIndex));
 
-        // If a global PauseAll() is currently in effect, a sound that respects the global pause must start paused too
-        // (matches AudioListener.pause semantics), so it stays silent until UnpauseAll() instead of blaring through the
-        // pause. Play()-then-Pause() in the same frame produces no audible output. Sounds that ignore the global pause
-        // (RespectsGlobalPause == false, e.g. UI/music) are left playing.
         private void HonorActiveGlobalPause(AudioSource source, AudioDataObject audioDataObject, int poolIndex)
         {
             if (pauseService.IsGloballyPaused && audioDataObject.RespectsGlobalPause)
@@ -203,10 +177,8 @@ namespace AudioFramework.Services.Playback
 
         public void StopAudio(AudioHandle handle)
         {
-            // Not just IsValid: a stale handle whose slot was reused must NOT stop the new sound now on that slot.
             if (!poolAcquisitionService.IsHandleCurrent(handle)) return;
-            // Cancel any in-progress fade first, then stop the audio — a hard Stop means stop now, so the fade must
-            // not keep writing volume to a slot that may get reused.
+           
             fadeService.ClearFade(handle.PoolIndex);
             stopService.StopSlot(handle.PoolIndex);
         }

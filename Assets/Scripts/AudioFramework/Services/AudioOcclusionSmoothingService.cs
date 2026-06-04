@@ -33,11 +33,8 @@ namespace AudioFramework.Services.WallCheck
                 AudioSource source = pool[i].Source;
                 AudioLowPassFilter filter = pool[i].Filter;
 
-                // Only wall-checked slots run the filter (W2 enables it solely for UseWallCheck sounds). The null
-                // checks defend against a slot whose GameObject was destroyed externally (Unity == null on a dead one).
                 if (source == null || filter == null || !filter.enabled) continue;
 
-                // Skip idle slots, so a freed slot doesn't keep gliding. Mirrors the wall-check "is active" test.
                 if (!source.isPlaying && Time.time >= pool[i].BusyUntilTime) continue;
 
                 filter.cutoffFrequency = OcclusionSmoothing.Step(filter.cutoffFrequency, pool[i].TargetCutoff, deltaTime, speed);

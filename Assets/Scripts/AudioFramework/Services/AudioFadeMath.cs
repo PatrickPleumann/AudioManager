@@ -12,13 +12,11 @@ namespace AudioFramework.Services.Fading
         /// </summary>
         public static float Evaluate(float from, float to, float elapsed, float duration)
         {
-            // A zero/negative duration is an instant fade — jump to target, and dodge the div-by-zero below.
             if (duration <= 0f)
                 return to;
 
             float t = elapsed / duration;
 
-            // Clamp outside the fade window so we never overshoot the target or undershoot the start.
             if (t <= 0f) return from;
             if (t >= 1f) return to;
 

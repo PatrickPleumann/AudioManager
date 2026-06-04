@@ -40,7 +40,6 @@ namespace AudioFramework.Services.Following
 
                 bool isActive = pool[i].Source != null && pool[i].Source.isPlaying;
 
-                // Unity overloads == so a destroyed Transform compares equal to null.
                 if (pool[i].FollowTarget == null)
                 {
                     if (isActive)
@@ -55,8 +54,7 @@ namespace AudioFramework.Services.Following
                     poolAcquisitionService.ResetSlotBusy(i);
                     poolAcquisitionService.SetFollowTarget(i, null);
                     poolAcquisitionService.ResetPauseState(i);
-                    // A spatial fade can be running while following an emitter; if that emitter is destroyed the slot
-                    // is freed here, so the fade must be cleared too or its next Tick would clobber a reused slot.
+                   
                     fadeService.ClearFade(i);
                     continue;
                 }

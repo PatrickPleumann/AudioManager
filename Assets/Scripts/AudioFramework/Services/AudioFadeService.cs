@@ -29,7 +29,6 @@ namespace AudioFramework.Services.Fading
                 Op = new FadeOperation(from, to, duration),
                 StopOnEnd = stopOnEnd
             };
-            // Apply the start value now so this frame is already correct (no one-frame blip before the first Tick).
             targets[index].Volume = from;
         }
 
@@ -38,8 +37,6 @@ namespace AudioFramework.Services.Fading
         {
             for (int i = 0; i < fades.Length; i++)
             {
-                // Skip inactive slots, and FREEZE fades on paused slots: a paused fade must not advance, or it would
-                // run its ramp through silence and be finished (or stopped) by the time the slot is unpaused.
                 if (!fades[i].Active || targets[i].IsPaused) continue;
 
                 fades[i].Op = fades[i].Op.Advanced(deltaTime);

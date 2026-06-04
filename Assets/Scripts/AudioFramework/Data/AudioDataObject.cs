@@ -32,12 +32,6 @@ namespace AudioFramework.Data
             "Leave OFF for sounds that play at a fixed spot (footsteps, gunshots, most one-shots) - it saves a per-frame position update.")]
         [FormerlySerializedAs("SetCallerAsParent")]
         public bool FollowEmitter;
-        //[Space]
-
-        ////[Tooltip("Performance Tooltip:  Check this box, if the Source could be behind a wall. " +
-        ////    "Uncheck this, if you are sure, the sound won´t appear behind wall")]
-        ////public bool SourceOriginCouldBeBehindWall;
-
         public bool IsOneShot;
         public bool CanHandleAudioSource;
         public bool UseWallCheck;
