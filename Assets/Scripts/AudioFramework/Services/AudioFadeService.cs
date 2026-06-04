@@ -55,6 +55,12 @@ namespace AudioFramework.Services.Fading
         /// slot is stopped or recycled, so a stale fade can never clobber a reused slot.</summary>
         public void ClearFade(int index) => fades[index].Active = false;
 
+        /// <summary>Fade the slot's CURRENT volume down to zero and stop it on completion. Convenience over
+        /// StartFade for fade-out, where the start value is wherever the sound currently sits (mid-fade, or a
+        /// quieter category volume), never a hardcoded 1.</summary>
+        public void StartFadeOut(int index, float duration)
+            => StartFade(index, targets[index].Volume, 0f, duration, stopOnEnd: true);
+
         private struct SlotFade
         {
             public bool Active;
