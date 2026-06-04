@@ -92,10 +92,10 @@ AudioManagerDynamic.UnpauseAll();                       // Alle Sounds fortsetze
 
 ### Vor Release (1.0) — fest eingeplant
 
-- **Fade-Familie** — drei Methoden auf gemeinsamem `AudioFadeService` (LateUpdate-getrieben, analog `AudioFollowService`):
-  - `FadeIn(ado, dauer)` — Sound startet leise, rampt hoch auf Kategorie-Volume
-  - `FadeOut(handle, dauer)` — Sound rampt runter, dann Stop über den bestehenden Stop-Pfad
-  - `Crossfade(handle, ado, dauer)` — Komposition aus FadeOut(alt) + FadeIn(neu), z. B. Ambient → Combat ohne harten Schnitt
+- **✅ Fade-Familie (fertig & getestet)** — `AudioFadeService` (LateUpdate-getrieben, analog `AudioFollowService`). Public API: `FadeInNonSpatial` / `FadeOut` / `CrossfadeNonSpatial` + spatiale Varianten `FadeInSpatial` / `CrossfadeSpatial`. Crossfade = Komposition aus FadeOut + FadeIn. 30 EditMode-Tests, pause-aware, alle Reset-Punkte geschlossen.
+- **Mixer/Bus + Ducking** — Lautstärke-Kategorien an Unity-AudioMixer-Groups koppeln, Laufzeit-Volume (Settings-Menü) und Ducking (z. B. Dialog senkt Musik). Baut auf dem bestehenden `AudioCategory`/VolumeDictionary-System auf. Höchster Verkaufshebel.
+- **Random Pitch/Volume-Variation** — pro ADO optionale Streuung gegen den „Maschinengewehr-Effekt" bei wiederholten One-Shots (Footsteps, Hülsen).
+- **Adaptives/interaktives Musik-Layer** — mehrere Musik-Stems, die je nach Spielzustand ein-/ausgeblendet werden (nutzt die Fade-Familie). Größter Abstand zu FMOD/MasterAudio, größter „Wow"-Effekt — und der größte Brocken.
 - **Tooltips** — alle Inspector-Felder sollen vor Veröffentlichung vollständige Tooltips bekommen (insb. `IsOneShot`, `canHandleAudioSource`, `UseWallCheck`)
 - **`IGetPoolIndex` entfernen** — zweckloser Platzhalter (Lightweight-Pool nicht mehr geplant, Rationale via per-Sound-Flags gelöst)
 - **Null-Einträge in `CurrentClips`** validieren — Editor-Warnung statt lautlosem Sound

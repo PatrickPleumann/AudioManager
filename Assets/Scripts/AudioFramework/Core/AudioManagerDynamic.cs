@@ -229,6 +229,11 @@ namespace AudioFramework.Core
 
         private void OnDestroy()
         {
+            // Only the real singleton instance may tear down the static state.
+            // A duplicate destroyed in Awake() runs its OnDestroy() at end of frame too —
+            // without this guard it would null out the static reference to the living instance.
+            if (instance != this) return;
+
             wallCheckService?.StopAllChecks();
             instance = null;
         }
