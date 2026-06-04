@@ -88,15 +88,32 @@ AudioManagerDynamic.UnpauseAll();                       // Alle Sounds fortsetze
 
 ## Offene Punkte / Geplante Features
 
-- **Lightweight Pool** — zweiter Pool ohne WallCheck für viele kleine Sounds (Footsteps, Patronenhülsen etc.) — `IGetPoolIndex` ist bewusst vorbereitet dafür
+> **Test-Pflicht (nicht verhandelbar):** Jedes neue Feature wird test-first gebaut — kein Test wird grün, bevor wir ihn rot gesehen haben. Tests sind Teil jedes Features, kein separater Punkt. Bestandscode wird später sukzessive nachgetestet (gesonderte Aufgabe unten).
+
+### Vor Release (1.0) — fest eingeplant
+
+- **Fade-Familie** — drei Methoden auf gemeinsamem `AudioFadeService` (LateUpdate-getrieben, analog `AudioFollowService`):
+  - `FadeIn(ado, dauer)` — Sound startet leise, rampt hoch auf Kategorie-Volume
+  - `FadeOut(handle, dauer)` — Sound rampt runter, dann Stop über den bestehenden Stop-Pfad
+  - `Crossfade(handle, ado, dauer)` — Komposition aus FadeOut(alt) + FadeIn(neu), z. B. Ambient → Combat ohne harten Schnitt
+- **Tooltips** — alle Inspector-Felder sollen vor Veröffentlichung vollständige Tooltips bekommen (insb. `IsOneShot`, `canHandleAudioSource`, `UseWallCheck`)
+- **`IGetPoolIndex` entfernen** — zweckloser Platzhalter (Lightweight-Pool nicht mehr geplant, Rationale via per-Sound-Flags gelöst)
+- **Null-Einträge in `CurrentClips`** validieren — Editor-Warnung statt lautlosem Sound
+- **PDF-Dokumentation** — `.md`-Dateien existieren, Konvertierung zu PDF noch offen
+- **Ordnerstruktur für Asset Store** — noch nicht definiert
+
+### Weitere geplante Features (Priorität offen — können auch noch vor 1.0 rein)
+
+- **Layer-basierte reaktive Geräusche** — Sounds sollen je nach getroffenem Layer unterschiedlich sein. Beispiel: Footstep auf Holz vs. auf Boden vs. auf Metall. Vermutlich Mapping von Layer/Material → AudioClip(-Gruppe), analog zum bestehenden Layer→Cutoff-Dictionary-Ansatz.
+- **Multiplayer & VOIP** — networked Sound-Positionen + Proximity-Voice mit Wall-Occlusion (VOIP = Live-PCM-Stream → braucht „bring-your-own-AudioSource"-Pfad).
 - **VR-Optimierung via RaycastCommand** — aktuell feuern Wall-Checks `Physics.Raycast` einzeln auf dem Main Thread. Für mobiles VR (Quest) ist das bei vielen gleichzeitigen Quellen kritisch. Umstieg auf `RaycastCommand` (gebatcht, jobified über Burst/Job System) verteilt die Raycasts über mehrere Threads. Konkreter nächster Schritt wenn VR als Zielgruppe genannt werden soll.
   - Architektur ist sonst schon VR-tauglich (kein GC zur Laufzeit, Pooling, UniTask, ein AudioListener)
   - Wichtig bei Positionierung: Wall-Check ist **lightweight occlusion** (simpler Low-Pass), KEIN voller Spatializer wie Steam Audio/Oculus. Das ist ein Verkaufsargument, kein Nachteil — klar so kommunizieren.
-- **Layer-basierte reaktive Geräusche** — Sounds sollen je nach getroffenem Layer unterschiedlich sein. Beispiel: Footstep auf Holz vs. auf Boden vs. auf Metall. Vermutlich Mapping von Layer/Material → AudioClip(-Gruppe), analog zum bestehenden Layer→Cutoff-Dictionary-Ansatz.
-- **Unit Tests** — noch nicht vorhanden
-- **Tooltips** — alle Inspector-Felder sollen vor Veröffentlichung vollständige Tooltips bekommen
-- **PDF-Dokumentation** — `.md`-Dateien existieren, Konvertierung zu PDF noch offen
-- **Ordnerstruktur für Asset Store** — noch nicht definiert
+- **CTS-Reuse im WallCheck** — pro `Play()` wird aktuell eine CancellationTokenSource alloziert ("Zero GC" stimmt deshalb noch nicht ganz).
+
+### Gesonderte Aufgabe (nach den ersten Features)
+
+- **Bestandscode nachtesten** — bestehende Methoden (wo sinnvoll möglich) sukzessive mit Unit Tests abdecken; ggf. kleine Refactorings für Testbarkeit (pure Logik aus Unity-Abhängigkeiten herausziehen).
 
 ---
 
