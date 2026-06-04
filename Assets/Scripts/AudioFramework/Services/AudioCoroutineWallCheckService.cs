@@ -132,10 +132,10 @@ namespace AudioFramework.Services.WallCheck
             for (int i = 0; i < hitCount; i++)
             {
                 if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float reduction))
-                    cutoff -= reduction;
+                    cutoff = WallOcclusionMath.ApplyWall(cutoff, reduction);
             }
 
-            return Mathf.Max(cutoff, config.MinCutoffFreqValue);
+            return WallOcclusionMath.ClampToFloor(cutoff, config.MinCutoffFreqValue);
         }
 
         /// <summary>

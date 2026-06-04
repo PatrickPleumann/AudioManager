@@ -138,7 +138,12 @@ namespace AudioFramework.Services.Playback
             else
                 poolAcquisitionService.SetFollowTarget(poolIndex, null);
 
-            filter.cutoffFrequency = defaultCutoffValue;
+            // Control-surface: written every dispatch so a reused slot can't keep the previous sound's filter state.
+            // Only wall-checked sounds keep the low-pass enabled (the wall-check loop rides the cutoff down); every
+            // other sound bypasses it entirely for transparent sound and zero DSP cost.
+            LowPassDispatchState lowPass = LowPassDispatchPolicy.Resolve(audioDataObject.UseWallCheck, defaultCutoffValue);
+            filter.enabled = lowPass.Enabled;
+            filter.cutoffFrequency = lowPass.CutoffFrequency;
 
             if (audioDataObject.IsOneShot)
             {

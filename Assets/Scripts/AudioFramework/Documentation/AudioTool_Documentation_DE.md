@@ -67,7 +67,7 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 | Feld | Beschreibung | Empfehlung |
 |---|---|---|
 | **Number Of Audio Sources** | Anzahl der vorallokierten `AudioSource`-Objekte im Pool. Je mehr Sounds gleichzeitig abgespielt werden sollen, desto höher sollte dieser Wert sein. Zu viele Objekte erhöhen den Speicherverbrauch. | 20–50 für die meisten Projekte |
-| **Default Cutoff Freq Value** | Der Standard-Frequenzwert des `AudioLowPassFilter` wenn kein Wandkontakt besteht. Bei diesem Wert klingt der Sound normal und ungefiltert. | 5000 – 5007 |
+| **Default Cutoff Freq Value** | Der „offene" (nicht verdeckte) Frequenzwert des `AudioLowPassFilter`. Auf diesen Wert kehrt ein wand-geprüfter Sound zurück, wenn keine Wand zwischen ihm und dem Listener liegt, und davon werden die Layer-Reduktionen abgezogen. Bei ~22000 Hz (Obergrenze des menschlichen Gehörs) klingt ein nicht verdeckter Sound vollständig transparent; niedrigere Werte dämpfen hörbar die Höhen (klingt dumpf, wie hinter einer Wand). | 22000 |
 | **Min Cutoff Freq Value** | Die untere Grenze der Cutoff Frequency. Die Frequenz wird nie unter diesen Wert gesenkt — egal wie viele Wände sich zwischen Sound und Spieler befinden. Auf 10 setzen wenn Sounds bei vielen Wänden komplett unhörbar werden sollen. | 10 – 1000 |
 
 ---

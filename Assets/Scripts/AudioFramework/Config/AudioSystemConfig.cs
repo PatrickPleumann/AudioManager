@@ -15,10 +15,12 @@ namespace AudioFramework.Configuration
         [Range(1, 1000)] public int NumberOfAudioSources = 50;
         [Space]
 
-        [Tooltip("The default Frequency on the AudioLowPassFilter -> This is usually between 5000-5007." +
-            " So whenever the [AudioTool] cannot find a specific value  - it uses the default value")]
+        [Tooltip("The 'open' (un-occluded) cutoff frequency of the AudioLowPassFilter. This is the value a wall-checked " +
+            "sound returns to when no wall is between it and the listener, and the baseline the per-layer reductions are " +
+            "subtracted from. Keep it at ~22000 Hz (the top of human hearing) so an un-occluded sound is fully transparent; " +
+            "lower values audibly dampen the high end (sounds muffled, as if behind a wall).")]
         [FormerlySerializedAs("defaultCuttoffFreqValue")]
-        public float DefaultCutoffFreqValue = 5000f;
+        public float DefaultCutoffFreqValue = 22000f;
         [Space]
 
         [Tooltip("The minimum cutoff frequency value. The wall check will never reduce the frequency below this value.")]

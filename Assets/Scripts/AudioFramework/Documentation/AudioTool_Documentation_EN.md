@@ -67,7 +67,7 @@ The `AudioSystemConfig` asset is the central configuration file of the tool. All
 | Field | Description | Recommendation |
 |---|---|---|
 | **Number Of Audio Sources** | Number of pre-allocated `AudioSource` objects in the pool. The more sounds you expect to play simultaneously, the higher this value should be. Too many objects increase memory usage. | 20–50 for most projects |
-| **Default Cutoff Freq Value** | The default frequency value of the `AudioLowPassFilter` when no wall contact is detected. At this value the sound plays normally without any filtering. | 5000 – 5007 |
+| **Default Cutoff Freq Value** | The "open" (un-occluded) frequency value of the `AudioLowPassFilter`. A wall-checked sound returns to this value when no wall is between it and the listener, and the per-layer reductions are subtracted from it. At ~22000 Hz (the top of human hearing) an un-occluded sound is fully transparent; lower values audibly dampen the high end (sounds muffled, as if behind a wall). | 22000 |
 | **Min Cutoff Freq Value** | The lower limit of the cutoff frequency. The frequency will never drop below this value — regardless of how many walls are between the sound and the player. Set to 10 if sounds should become completely inaudible behind many walls. | 10 – 1000 |
 
 ---

@@ -110,6 +110,7 @@ AudioManagerDynamic.UnpauseAll();                       // Alle Sounds fortsetze
   - Architektur ist sonst schon VR-tauglich (kein GC zur Laufzeit, Pooling, UniTask, ein AudioListener)
   - Wichtig bei Positionierung: Wall-Check ist **lightweight occlusion** (simpler Low-Pass), KEIN voller Spatializer wie Steam Audio/Oculus. Das ist ein Verkaufsargument, kein Nachteil — klar so kommunizieren.
 - **CTS-Reuse im WallCheck** — pro `Play()` wird aktuell eine CancellationTokenSource alloziert ("Zero GC" stimmt deshalb noch nicht ganz).
+- **Logarithmischer Frequenzabfall bei Occlusion** — die Cutoff-Reduktion pro Wand ist aktuell **linear** (fixe Hz-Subtraktion vom offenen Cutoff). Das menschliche Gehör ist aber näherungsweise logarithmisch: von ~22000 Hz aus tut ein fixer Hz-Abzug fast nichts, weiter unten wirkt derselbe Abzug stark. Ein multiplikatives/logarithmisches Modell (z. B. „jede Wand halbiert den Cutoff" oder Reduktion als Faktor statt Hz) skaliert wahrnehmungsgerecht und macht die Layer-Werte baseline-unabhängig. **Strukturell vorbereitet** über `WallOcclusionMath` (pro-Wand-Schritt als austauschbarer Seam) — der Modellwechsel ist dann eine Einzelstelle. Vor dem Umstieg klären: Layer-Werte bleiben „Hz-Reduktion" oder werden zu „Faktor" umgedeutet?
 
 ### Gesonderte Aufgabe (nach den ersten Features)
 
