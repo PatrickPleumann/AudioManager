@@ -4,6 +4,7 @@ using AudioFramework.Configuration;
 using AudioFramework.Services.WallCheck;
 using AudioFramework.Services.Playback;
 using AudioFramework.Services.Following;
+using AudioFramework.Services.Fading;
 using AudioFramework.Data;
 using AudioFramework.Pause;
 using AudioFramework.Pooling;
@@ -24,8 +25,10 @@ namespace AudioFramework.Core
         private IAudioWallCheckService wallCheckService;
         private AudioPoolAcquisitionService poolAcquisitionService;
         private AudioPauseService pauseService;
+        private AudioStopService stopService;
         private AudioPlaybackService playbackService;
         private AudioFollowService followService;
+        private AudioFadeService fadeService;
 
         private void Awake()
         {
@@ -68,11 +71,21 @@ namespace AudioFramework.Core
             Debug.Log("[AudioTool] UniTask mode was initialized (recommended)");
 #endif
 
+            stopService = new AudioStopService(poolAcquisitionService, wallCheckService);
+
+            AudioObject[] pool = poolAcquisitionService.PoolArray;
+            var fadeTargets = new IFadeTarget[pool.Length];
+            for (int i = 0; i < fadeTargets.Length; i++)
+                fadeTargets[i] = new PooledFadeTarget(pool[i].Source, stopService, i);
+            fadeService = new AudioFadeService(fadeTargets);
+
             playbackService = new AudioPlaybackService(
                 poolAcquisitionService,
                 dictionaryProvider,
                 wallCheckService,
                 pauseService,
+                stopService,
+                fadeService,
                 systemConfig.DefaultCutoffFreqValue
             );
 
@@ -80,7 +93,11 @@ namespace AudioFramework.Core
         }
 
         // LateUpdate (not Update) so following sounds use the emitter's final position for this frame — no positional lag.
-        private void LateUpdate() => followService?.UpdateFollowers();
+        private void LateUpdate()
+        {
+            followService?.UpdateFollowers();
+            fadeService?.Tick(Time.deltaTime);
+        }
 
         /// <summary>
         /// Plays a sound as positional 3D audio at <paramref name="source"/>. The sound is attenuated by distance and,
@@ -129,6 +146,50 @@ namespace AudioFramework.Core
         }
 
         public static void Stop(AudioHandle handle) => instance?.playbackService.StopAudio(handle);
+
+        /// <summary>
+        /// Plays a NON-spatial 2D sound that fades IN from silence up to its category volume over
+        /// <paramref name="duration"/> seconds. Returns a handle to the faded sound so it can later be stopped, faded
+        /// out or crossfaded — a fade is always a managed sound, so (unlike PlayNonSpatial) the handle does NOT depend
+        /// on the ADO's CanHandleAudioSource.
+        /// </summary>
+        public static AudioHandle FadeInNonSpatial(AudioDataObject data, float duration)
+        {
+            if (instance == null)
+            {
+                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                return new AudioHandle(-1);
+            }
+
+            int poolIndex = instance.playbackService.DispatchSilentNonSpatial(data, out float targetVolume);
+            if (poolIndex < 0) return new AudioHandle(-1);
+
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
+            return new AudioHandle(poolIndex);
+        }
+
+        /// <summary>
+        /// Fades an already-playing sound OUT to silence over <paramref name="duration"/> seconds, then stops it.
+        /// No-op if the handle is invalid. Works for spatial and non-spatial sounds alike — it just ramps the existing
+        /// slot down, so it needs no spatial variant.
+        /// </summary>
+        public static void FadeOut(AudioHandle handle, float duration)
+        {
+            if (instance == null) return;
+            if (!handle.IsValid) return;
+            instance.fadeService.StartFadeOut(handle.PoolIndex, duration);
+        }
+
+        /// <summary>
+        /// Crossfades into a new NON-spatial sound over <paramref name="duration"/> seconds: the old sound
+        /// (<paramref name="from"/>) fades out and stops while the new one (<paramref name="to"/>) fades in.
+        /// Composition of FadeOut + FadeInNonSpatial. If <paramref name="from"/> is invalid, only the fade-in runs.
+        /// </summary>
+        public static AudioHandle CrossfadeNonSpatial(AudioHandle from, AudioDataObject to, float duration)
+        {
+            FadeOut(from, duration);
+            return FadeInNonSpatial(to, duration);
+        }
 
         public static void PauseAll() => instance?.pauseService?.PauseAll();
 

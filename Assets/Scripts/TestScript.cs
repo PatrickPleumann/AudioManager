@@ -18,6 +18,14 @@ public class TestScript : MonoBehaviour
     public Button B_StopSource;
     public Button B_UnPauseAll;
 
+    public Button B_StopBehindWall;
+
+    public Button B_FadeInSpatial;
+    public Button B_FadeOut;
+    public Button B_CrossFade;
+    
+    
+
     [Space]
     [Header("Test Values")]
     public float AmbientVolume;
@@ -30,7 +38,9 @@ public class TestScript : MonoBehaviour
     public AudioDataObject Player;
     public AudioDataObject SFX;
     public AudioDataObject BehindWall;
-
+    
+    private AudioHandle behindWallHandle;
+    
     [Space]
     [Header("Audio Volumes")]
     public AudioSourceVolumes AmbientVol;
@@ -61,6 +71,12 @@ public class TestScript : MonoBehaviour
         B_WallOnOff.onClick.AddListener(SetWallOnOff);
         B_StopSource.onClick.AddListener(StopSourcePlaying);
         B_UnPauseAll.onClick.AddListener(UnPauseAll);
+
+        B_StopBehindWall.onClick.AddListener(StopBehindWall);
+
+        B_FadeInSpatial.onClick.AddListener(FadeInNonSpatial);
+        B_FadeOut.onClick.AddListener(FadeOutSound);
+        B_CrossFade.onClick.AddListener(CrossFade);
     }
 
     private void PlayAmbientTest()
@@ -73,7 +89,9 @@ public class TestScript : MonoBehaviour
         => AudioManagerDynamic.PlaySpatial(SFX, transforms[Random.Range(0, transforms.Length)]);
 
     private void PlayBehindWallTest()
-        => AudioManagerDynamic.PlaySpatial(BehindWall, BehindWallPos);
+    { 
+        behindWallHandle = AudioManagerDynamic.PlaySpatial(BehindWall, BehindWallPos);
+    }
 
     private void SetWallOnOff()
     {
@@ -93,5 +111,26 @@ public class TestScript : MonoBehaviour
     private void UnPauseAll()
     {
         AudioManagerDynamic.UnpauseAll();
+    }
+
+
+    private void StopBehindWall()
+    {
+        AudioManagerDynamic.Stop(behindWallHandle);
+    }
+
+    private void FadeInNonSpatial()
+    {
+        behindWallHandle = AudioManagerDynamic.FadeInNonSpatial(BehindWall, 3f);
+    }
+
+    private void FadeOutSound()
+    {
+        AudioManagerDynamic.FadeOut(behindWallHandle, 2f);
+    }
+
+    private void CrossFade()
+    {
+        AudioManagerDynamic.CrossfadeNonSpatial(behindWallHandle, BehindWall, 2f);
     }
 }

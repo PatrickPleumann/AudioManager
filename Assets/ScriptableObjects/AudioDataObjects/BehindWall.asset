@@ -21,6 +21,6 @@ MonoBehaviour:
   SpatialBlend: 1
   FollowEmitter: 0
   IsOneShot: 0
-  CanHandleAudioSource: 0
+  CanHandleAudioSource: 1
   UseWallCheck: 1
   RespectsGlobalPause: 1
