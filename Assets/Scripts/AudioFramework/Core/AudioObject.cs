@@ -9,6 +9,10 @@ namespace AudioFramework.Core
         public AudioLowPassFilter Filter;
         public float BusyUntilTime;
 
+        // Bumped on every (re)acquisition of this slot. An AudioHandle captures the generation it was issued for, so a
+        // stale handle (slot reused since) can be detected and ignored instead of stopping/fading the new sound here.
+        public int Generation;
+
         // The cutoff frequency the wall check wants this slot at right now. The wall-check loop writes it (every
         // ~interval); AudioOcclusionSmoothingService glides Filter.cutoffFrequency toward it every frame so moving
         // in/out of occlusion does not pop. Only meaningful while Filter.enabled (i.e. a wall-checked sound).

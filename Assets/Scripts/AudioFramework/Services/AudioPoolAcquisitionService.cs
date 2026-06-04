@@ -52,6 +52,9 @@ namespace AudioFramework.Pooling
                 // would hand out a paused slot as "free" and overwrite a sound the player paused.
                 if (!poolArray[i].Source.isPlaying && currentTime >= poolArray[i].BusyUntilTime && !poolArray[i].IsPaused)
                 {
+                    // One acquisition = one new generation. Any handle issued for this dispatch carries this value;
+                    // handles from the slot's previous occupation are now stale and become no-ops.
+                    poolArray[i].Generation++;
                     return i;
                 }
             }
@@ -87,5 +90,16 @@ namespace AudioFramework.Pooling
         // Seed the occlusion target (control-surface): a freshly (re)used slot starts un-occluded at the open cutoff,
         // so a reused slot never glides from a previous sound's occluded target. The wall-check loop updates it later.
         public void SetTargetCutoff(int poolIndex, float cutoff) => poolArray[poolIndex].TargetCutoff = cutoff;
+
+        // The generation a handle issued for this slot right now must carry. Read when building a handle for a dispatch.
+        public int CurrentGeneration(int poolIndex) => poolArray[poolIndex].Generation;
+
+        // True only if the handle still refers to the exact sound currently on its slot: in range AND same generation.
+        // Bounds-checked before indexing so a bogus/out-of-range handle can never dereference the pool (P6).
+        public bool IsHandleCurrent(AudioHandle handle)
+        {
+            if (handle.PoolIndex < 0 || handle.PoolIndex >= poolArray.Length) return false;
+            return AudioHandleValidator.IsCurrent(handle.PoolIndex, handle.Generation, poolArray[handle.PoolIndex].Generation, poolArray.Length);
+        }
     }
 }

@@ -44,7 +44,7 @@ namespace AudioFramework.Services.Playback
             {
                 string adoName = audioDataObject != null ? audioDataObject.name : "null";
                 Debug.LogError($"[AudioTool] PlaySpatial() was called for '{adoName}' without a source Transform. Use PlayNonSpatial() for 2D sounds.");
-                return new AudioHandle(-1);
+                return AudioHandle.Invalid;
             }
             int poolIndex = Dispatch(audioDataObject, source, isSpatial: true, startSilent: false, out _);
             return Gate(poolIndex, audioDataObject);
@@ -181,8 +181,12 @@ namespace AudioFramework.Services.Playback
 
         // Turn a raw pool index into the user-facing handle: valid only when a slot was acquired AND the ADO opts into
         // handle-based control. Mirrors the original gating that lived at the end of Dispatch.
-        private static AudioHandle Gate(int poolIndex, AudioDataObject audioDataObject)
-            => poolIndex >= 0 && audioDataObject.CanHandleAudioSource ? new AudioHandle(poolIndex) : new AudioHandle(-1);
+        private AudioHandle Gate(int poolIndex, AudioDataObject audioDataObject)
+            => poolIndex >= 0 && audioDataObject.CanHandleAudioSource ? MakeHandle(poolIndex) : AudioHandle.Invalid;
+
+        // Build the user-facing handle for a freshly dispatched slot, stamping the slot's current generation so the
+        // handle goes stale the moment the slot is reused. Used by the gated Play path and the (ungated) fade path.
+        public AudioHandle MakeHandle(int poolIndex) => new AudioHandle(poolIndex, poolAcquisitionService.CurrentGeneration(poolIndex));
 
         // If a global PauseAll() is currently in effect, a sound that respects the global pause must start paused too
         // (matches AudioListener.pause semantics), so it stays silent until UnpauseAll() instead of blaring through the
@@ -199,7 +203,8 @@ namespace AudioFramework.Services.Playback
 
         public void StopAudio(AudioHandle handle)
         {
-            if (!handle.IsValid) return;
+            // Not just IsValid: a stale handle whose slot was reused must NOT stop the new sound now on that slot.
+            if (!poolAcquisitionService.IsHandleCurrent(handle)) return;
             // Cancel any in-progress fade first, then stop the audio — a hard Stop means stop now, so the fade must
             // not keep writing volume to a slot that may get reused.
             fadeService.ClearFade(handle.PoolIndex);

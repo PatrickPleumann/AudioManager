@@ -115,7 +115,7 @@ namespace AudioFramework.Core
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
-                return new AudioHandle(-1);
+                return AudioHandle.Invalid;
             }
             return instance.playbackService.DispatchAudio(data, source);
         }
@@ -143,7 +143,7 @@ namespace AudioFramework.Core
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
-                return new AudioHandle(-1);
+                return AudioHandle.Invalid;
             }
             return instance.playbackService.DispatchAudioNonSpatial(data);
         }
@@ -161,14 +161,14 @@ namespace AudioFramework.Core
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
-                return new AudioHandle(-1);
+                return AudioHandle.Invalid;
             }
 
             int poolIndex = instance.playbackService.DispatchSilentNonSpatial(data, out float targetVolume);
-            if (poolIndex < 0) return new AudioHandle(-1);
+            if (poolIndex < 0) return AudioHandle.Invalid;
 
             instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
-            return new AudioHandle(poolIndex);
+            return instance.playbackService.MakeHandle(poolIndex);
         }
 
         /// <summary>
@@ -179,7 +179,8 @@ namespace AudioFramework.Core
         public static void FadeOut(AudioHandle handle, float duration)
         {
             if (instance == null) return;
-            if (!handle.IsValid) return;
+            // Not just IsValid: a stale handle whose slot was reused must NOT fade out the new sound on that slot.
+            if (!instance.poolAcquisitionService.IsHandleCurrent(handle)) return;
             instance.fadeService.StartFadeOut(handle.PoolIndex, duration);
         }
 
@@ -204,14 +205,14 @@ namespace AudioFramework.Core
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
-                return new AudioHandle(-1);
+                return AudioHandle.Invalid;
             }
 
             int poolIndex = instance.playbackService.DispatchSilentSpatial(data, source, out float targetVolume);
-            if (poolIndex < 0) return new AudioHandle(-1);
+            if (poolIndex < 0) return AudioHandle.Invalid;
 
             instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
-            return new AudioHandle(poolIndex);
+            return instance.playbackService.MakeHandle(poolIndex);
         }
 
         /// <summary>
