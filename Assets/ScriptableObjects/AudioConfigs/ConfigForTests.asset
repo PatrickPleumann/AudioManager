@@ -15,6 +15,7 @@ MonoBehaviour:
   NumberOfAudioSources: 50
   DefaultCutoffFreqValue: 22000
   MinCutoffFreqValue: 100
+  OcclusionSmoothingSpeed: 50000
   TimeIntervalBetweenPositionChecks: 0.25
   CutOffFrequenciesPerLayer:
   - SingleLayer: 9

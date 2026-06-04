@@ -28,6 +28,7 @@ namespace AudioFramework.Core
         private AudioStopService stopService;
         private AudioPlaybackService playbackService;
         private AudioFollowService followService;
+        private AudioOcclusionSmoothingService occlusionSmoothingService;
         private AudioFadeService fadeService;
 
         private void Awake()
@@ -90,12 +91,14 @@ namespace AudioFramework.Core
             );
 
             followService = new AudioFollowService(poolAcquisitionService, wallCheckService, fadeService);
+            occlusionSmoothingService = new AudioOcclusionSmoothingService(poolAcquisitionService, systemConfig);
         }
 
         // LateUpdate (not Update) so following sounds use the emitter's final position for this frame — no positional lag.
         private void LateUpdate()
         {
             followService?.UpdateFollowers();
+            occlusionSmoothingService?.Tick(Time.deltaTime);
             fadeService?.Tick(Time.deltaTime);
         }
 

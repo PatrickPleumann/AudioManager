@@ -106,8 +106,9 @@ namespace AudioFramework.Services.WallCheck
         private void ApplyWallCheckFilter(int poolIndex)
         {
             Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
-            AudioLowPassFilter filter = poolArray[poolIndex].Filter;
-            filter.cutoffFrequency = CalculateCutoffFrequency(currentPos);
+            // Write the TARGET, not the live cutoff: AudioOcclusionSmoothingService glides the filter toward it each
+            // frame, so moving in/out of occlusion no longer pops.
+            poolArray[poolIndex].TargetCutoff = CalculateCutoffFrequency(currentPos);
         }
 
         private float CalculateCutoffFrequency(Vector3 originPos)

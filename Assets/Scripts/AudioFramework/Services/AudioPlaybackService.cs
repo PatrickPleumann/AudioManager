@@ -144,6 +144,9 @@ namespace AudioFramework.Services.Playback
             LowPassDispatchState lowPass = LowPassDispatchPolicy.Resolve(audioDataObject.UseWallCheck, defaultCutoffValue);
             filter.enabled = lowPass.Enabled;
             filter.cutoffFrequency = lowPass.CutoffFrequency;
+            // Seed the occlusion glide target to the same open value so the smoothing service has nothing to do until
+            // the wall-check loop sets a real (occluded) target.
+            poolAcquisitionService.SetTargetCutoff(poolIndex, lowPass.CutoffFrequency);
 
             if (audioDataObject.IsOneShot)
             {

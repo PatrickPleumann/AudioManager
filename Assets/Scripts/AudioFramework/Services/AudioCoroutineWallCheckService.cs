@@ -73,14 +73,13 @@ namespace AudioFramework.Services.WallCheck
         private IEnumerator WallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
             AudioSource targetSource = poolArray[poolIndex].Source;
-            AudioLowPassFilter filter = poolArray[poolIndex].Filter;
 
             while (ShouldContinueLoop(audioDataObject, poolIndex))
             {
                 if (audioDataObject == false || targetSource == false) yield break;
 
                 if (IsCurrentlyActive(poolIndex))
-                    ApplyWallCheckFilter(poolIndex, filter);
+                    ApplyWallCheckFilter(poolIndex);
 
                 yield return intervalWait;
             }
@@ -113,10 +112,12 @@ namespace AudioFramework.Services.WallCheck
             return poolArray[poolIndex].Source.isPlaying;
         }
 
-        private void ApplyWallCheckFilter(int poolIndex, AudioLowPassFilter filter)
+        private void ApplyWallCheckFilter(int poolIndex)
         {
             Vector3 currentPos = poolArray[poolIndex].GameObject.transform.position;
-            filter.cutoffFrequency = CalculateCutoffFrequency(currentPos);
+            // Write the TARGET, not the live cutoff: AudioOcclusionSmoothingService glides the filter toward it each
+            // frame, so moving in/out of occlusion no longer pops.
+            poolArray[poolIndex].TargetCutoff = CalculateCutoffFrequency(currentPos);
         }
 
         private float CalculateCutoffFrequency(Vector3 originPos)

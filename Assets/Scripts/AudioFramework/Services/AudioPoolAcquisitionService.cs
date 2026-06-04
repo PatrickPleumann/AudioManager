@@ -83,5 +83,9 @@ namespace AudioFramework.Pooling
             poolArray[poolIndex].FollowTarget = target;
             poolArray[poolIndex].IsFollowing = target != null;
         }
+
+        // Seed the occlusion target (control-surface): a freshly (re)used slot starts un-occluded at the open cutoff,
+        // so a reused slot never glides from a previous sound's occluded target. The wall-check loop updates it later.
+        public void SetTargetCutoff(int poolIndex, float cutoff) => poolArray[poolIndex].TargetCutoff = cutoff;
     }
 }

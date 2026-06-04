@@ -27,6 +27,13 @@ namespace AudioFramework.Configuration
         public float MinCutoffFreqValue = 100f;
         [Space]
 
+        [Tooltip("How fast the low-pass cutoff glides toward its target when a sound moves in or out of occlusion, " +
+            "in Hz per second. Smooths the transition so stepping out from behind a wall does not 'pop'. A higher " +
+            "value tracks faster; 0 disables smoothing (the cutoff snaps instantly). Tune by ear — ~50000 transitions " +
+            "a typical wall in roughly a third of a second.")]
+        public float OcclusionSmoothingSpeed = 50000f;
+        [Space]
+
         [Header(" --- Wallcheck Interval --- ")]
         [Tooltip("--Performance Tooltip-- : The time between two interval checks in seconds -> For human hearing: " +
                  " the sweet spot is between 0.1 to 0.25 -> Higher values means lower performance cost.")]

@@ -9,6 +9,11 @@ namespace AudioFramework.Core
         public AudioLowPassFilter Filter;
         public float BusyUntilTime;
 
+        // The cutoff frequency the wall check wants this slot at right now. The wall-check loop writes it (every
+        // ~interval); AudioOcclusionSmoothingService glides Filter.cutoffFrequency toward it every frame so moving
+        // in/out of occlusion does not pop. Only meaningful while Filter.enabled (i.e. a wall-checked sound).
+        public float TargetCutoff;
+
         // Set when the current sound should follow a moving emitter. We track the Transform and copy its position
         // each frame (see AudioFollowService) instead of SetParent-ing the slot — parenting would let caller code
         // own and destroy the pooled GameObject. IsFollowing distinguishes "no follow" from "target destroyed",
