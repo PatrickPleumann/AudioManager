@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6db332b9a6d6bf048ace0f7666ede124, type: 3}
   m_Name: ConfigForTests
   m_EditorClassIdentifier: Assembly-CSharp::AudioFramework.Configuration.AudioSystemConfigSO_Test
-  NumbersOfAudioSources: 50
-  defaultCuttoffFreqValue: 5000
+  NumberOfAudioSources: 50
+  DefaultCutoffFreqValue: 5000
   MinCutoffFreqValue: 100
   TimeIntervalBetweenPositionChecks: 0.25
   CutOffFrequenciesPerLayer:

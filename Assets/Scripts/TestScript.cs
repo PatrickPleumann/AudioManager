@@ -20,11 +20,12 @@ public class TestScript : MonoBehaviour
 
     public Button B_StopBehindWall;
 
-    public Button B_FadeInSpatial;
-    public Button B_FadeOut;
+    public Button B_FadeInNonSpatial;
     public Button B_CrossFade;
+    public Button B_FadeOut;
     
-    
+    public Button B_FadeInSpatial;
+    public Button B_CrossFadeSpatial;
 
     [Space]
     [Header("Test Values")]
@@ -74,9 +75,12 @@ public class TestScript : MonoBehaviour
 
         B_StopBehindWall.onClick.AddListener(StopBehindWall);
 
-        B_FadeInSpatial.onClick.AddListener(FadeInNonSpatial);
+        B_FadeInNonSpatial.onClick.AddListener(FadeInNonSpatial);
         B_FadeOut.onClick.AddListener(FadeOutSound);
         B_CrossFade.onClick.AddListener(CrossFade);
+        
+        B_FadeInSpatial.onClick.AddListener(FadeInSpatial);
+        B_CrossFadeSpatial.onClick.AddListener(CrossFadeSpatial);
     }
 
     private void PlayAmbientTest()
@@ -133,4 +137,15 @@ public class TestScript : MonoBehaviour
     {
         behindWallHandle = AudioManagerDynamic.CrossfadeNonSpatial(behindWallHandle, BehindWall, 6f);
     }
+    
+    
+    private void CrossFadeSpatial()
+    {
+        behindWallHandle = AudioManagerDynamic.CrossfadeSpatial(behindWallHandle, BehindWall, BehindWallPos,6f);
+    }
+    private void FadeInSpatial()
+    {
+        behindWallHandle = AudioManagerDynamic.FadeInSpatial(BehindWall, BehindWallPos,6f);
+    }
+
 }

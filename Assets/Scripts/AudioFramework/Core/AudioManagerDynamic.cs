@@ -89,7 +89,7 @@ namespace AudioFramework.Core
                 systemConfig.DefaultCutoffFreqValue
             );
 
-            followService = new AudioFollowService(poolAcquisitionService, wallCheckService);
+            followService = new AudioFollowService(poolAcquisitionService, wallCheckService, fadeService);
         }
 
         // LateUpdate (not Update) so following sounds use the emitter's final position for this frame — no positional lag.
@@ -189,6 +189,38 @@ namespace AudioFramework.Core
         {
             FadeOut(from, duration);
             return FadeInNonSpatial(to, duration);
+        }
+
+        /// <summary>
+        /// Plays a positional 3D sound at <paramref name="source"/> that fades IN from silence up to its category
+        /// volume over <paramref name="duration"/> seconds. Spatial counterpart of <see cref="FadeInNonSpatial"/>;
+        /// always returns a valid handle (a fade is a managed sound). Must not be called with a null source.
+        /// </summary>
+        public static AudioHandle FadeInSpatial(AudioDataObject data, Transform source, float duration)
+        {
+            if (instance == null)
+            {
+                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                return new AudioHandle(-1);
+            }
+
+            int poolIndex = instance.playbackService.DispatchSilentSpatial(data, source, out float targetVolume);
+            if (poolIndex < 0) return new AudioHandle(-1);
+
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
+            return new AudioHandle(poolIndex);
+        }
+
+        /// <summary>
+        /// Crossfades into a new positional 3D sound at <paramref name="source"/> over <paramref name="duration"/>
+        /// seconds: the old sound (<paramref name="from"/>) fades out and stops while the new one (<paramref name="to"/>)
+        /// fades in at its position. Composition of FadeOut + FadeInSpatial — e.g. a looping engine crossfading into a
+        /// positional engine-cutout sound at the same place. If <paramref name="from"/> is invalid, only the fade-in runs.
+        /// </summary>
+        public static AudioHandle CrossfadeSpatial(AudioHandle from, AudioDataObject to, Transform source, float duration)
+        {
+            FadeOut(from, duration);
+            return FadeInSpatial(to, source, duration);
         }
 
         public static void PauseAll() => instance?.pauseService?.PauseAll();

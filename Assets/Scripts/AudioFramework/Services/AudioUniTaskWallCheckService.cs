@@ -83,6 +83,17 @@ namespace AudioFramework.Services.WallCheck
 
         private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
         {
+            // If the pooled source was destroyed externally (e.g. someone deleted the internal "Pooled Audio Source"
+            // GameObject, or the manager was torn down), stop the loop gracefully instead of throwing a
+            // MissingReferenceException on Source.isPlaying below.
+            if (poolArray[poolIndex].Source == null)
+            {
+#if UNITY_EDITOR
+                Debug.LogWarning($"[AudioTool] Pooled audio source (slot {poolIndex}) was destroyed externally — its wall-check was stopped. Do not destroy the internal 'Pooled Audio Source NNN' GameObjects; they belong to the pool.");
+#endif
+                return false;
+            }
+
             // While paused, keep the loop alive (it idles - IsCurrentlyActive is false, so no filter is applied).
             // Without this a paused wall-checked sound would end its check and never resume occlusion on unpause.
             if (poolArray[poolIndex].IsPaused) return true;

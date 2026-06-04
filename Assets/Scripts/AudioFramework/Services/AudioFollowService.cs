@@ -3,6 +3,7 @@ using UnityEngine;
 using AudioFramework.Core;
 using AudioFramework.Pooling;
 using AudioFramework.Interfaces;
+using AudioFramework.Services.Fading;
 
 namespace AudioFramework.Services.Following
 {
@@ -18,13 +19,16 @@ namespace AudioFramework.Services.Following
     {
         private readonly AudioPoolAcquisitionService poolAcquisitionService;
         private readonly IAudioWallCheckService wallCheckService;
+        private readonly AudioFadeService fadeService;
 
         public AudioFollowService(
             AudioPoolAcquisitionService _poolAcquisitionService,
-            IAudioWallCheckService _wallCheckService)
+            IAudioWallCheckService _wallCheckService,
+            AudioFadeService _fadeService)
         {
             poolAcquisitionService = _poolAcquisitionService;
             wallCheckService = _wallCheckService;
+            fadeService = _fadeService;
         }
 
         public void UpdateFollowers()
@@ -51,6 +55,9 @@ namespace AudioFramework.Services.Following
                     poolAcquisitionService.ResetSlotBusy(i);
                     poolAcquisitionService.SetFollowTarget(i, null);
                     poolAcquisitionService.ResetPauseState(i);
+                    // A spatial fade can be running while following an emitter; if that emitter is destroyed the slot
+                    // is freed here, so the fade must be cleared too or its next Tick would clobber a reused slot.
+                    fadeService.ClearFade(i);
                     continue;
                 }
 

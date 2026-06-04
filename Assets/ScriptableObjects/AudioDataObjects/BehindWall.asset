@@ -19,7 +19,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 5bef4cb091e8b0348b5dc093c1cbfb11, type: 3}
   CurrentType: 5
   SpatialBlend: 1
-  FollowEmitter: 0
+  FollowEmitter: 1
   IsOneShot: 0
   CanHandleAudioSource: 1
   UseWallCheck: 1

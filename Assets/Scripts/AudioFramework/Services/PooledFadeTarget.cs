@@ -25,10 +25,13 @@ namespace AudioFramework.Services.Fading
             this.index = index;
         }
 
+        // Guarded against external destruction of the pooled slot: if someone deletes the "Pooled Audio Source"
+        // GameObject mid-fade, the setter would otherwise throw a MissingReferenceException on the next Tick. We
+        // degrade silently instead — the fade still completes by elapsed time and clears itself.
         public float Volume
         {
-            get => source.volume;
-            set => source.volume = value;
+            get => source != null ? source.volume : 0f;
+            set { if (source != null) source.volume = value; }
         }
 
         // Reads the live pause flag the pause service writes onto the slot; only the bool field is read, the struct

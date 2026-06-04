@@ -12,7 +12,7 @@ namespace AudioFramework.Configuration
         [Tooltip("--Performance Tooltip-- : The total amount of audio source objects which are instantiated beforehand. " +
                  " More objects = lower performance.")]
         [FormerlySerializedAs("NumbersOfAudioSources")]
-        [Range(1, 100)] public int NumberOfAudioSources = 50;
+        [Range(1, 1000)] public int NumberOfAudioSources = 50;
         [Space]
 
         [Tooltip("The default Frequency on the AudioLowPassFilter -> This is usually between 5000-5007." +

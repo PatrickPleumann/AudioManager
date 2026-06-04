@@ -28,6 +28,10 @@ namespace AudioFramework.Pooling
             for (int i = 0; i < poolArray.Length; i++)
             {
                 var go = Object.Instantiate(config.AudioGameObjectPrefab,parentTransform);
+                // Clear, internal-looking name so developers don't mistake a pooled slot (which is moved to a world
+                // position for spatial sounds) for one of their own objects and delete it. Index is zero-padded to 3
+                // digits; the pool is capped at 1000 (indices 000–999), well above Unity's practical voice limit.
+                go.name = $"Pooled Audio Source {i:000}";
 
                 poolArray[i] = new AudioObject
                 {

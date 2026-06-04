@@ -65,6 +65,23 @@ namespace AudioFramework.Services.Playback
         public int DispatchSilentNonSpatial(AudioDataObject audioDataObject, out float targetVolume)
             => Dispatch(audioDataObject, null, isSpatial: false, startSilent: true, out targetVolume);
 
+        /// <summary>
+        /// Spatial counterpart of <see cref="DispatchSilentNonSpatial"/>: dispatch a positional 3D sound that starts
+        /// SILENT for a fade-in at <paramref name="source"/>, reporting the category volume to ramp up to. Returns the
+        /// raw pool index (-1 if no slot, misconfigured, or null source) — not gated by CanHandleAudioSource.
+        /// </summary>
+        public int DispatchSilentSpatial(AudioDataObject audioDataObject, Transform source, out float targetVolume)
+        {
+            targetVolume = 0f;
+            if (source == null)
+            {
+                string adoName = audioDataObject != null ? audioDataObject.name : "null";
+                Debug.LogError($"[AudioTool] FadeInSpatial() was called for '{adoName}' without a source Transform. Use FadeInNonSpatial() for 2D sounds.");
+                return -1;
+            }
+            return Dispatch(audioDataObject, source, isSpatial: true, startSilent: true, out targetVolume);
+        }
+
         // Returns the raw pool index of the dispatched slot, or -1 on failure. Turning that into a user-facing
         // AudioHandle (gated by CanHandleAudioSource) is done by the public Play callers via Gate(), so the fade
         // path can still get the index even when an ADO opts out of handles.
