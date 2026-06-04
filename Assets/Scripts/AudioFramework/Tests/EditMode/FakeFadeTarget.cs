@@ -9,6 +9,7 @@ namespace AudioFramework.Tests.EditMode
     internal class FakeFadeTarget : IFadeTarget
     {
         public float Volume { get; set; }
+        public bool IsPaused { get; set; }
         public int StopCallCount { get; private set; }
         public void Stop() => StopCallCount++;
     }

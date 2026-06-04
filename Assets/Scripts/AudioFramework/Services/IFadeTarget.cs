@@ -11,5 +11,12 @@ namespace AudioFramework.Services.Fading
     {
         float Volume { get; set; }
         void Stop();
+
+        /// <summary>
+        /// External slot state the fade must RESPECT — it is NOT fade-internal. True while the slot is globally
+        /// paused. A paused fade must be frozen (Tick may not advance it), so it resumes correctly on unpause instead
+        /// of running its ramp through silence.
+        /// </summary>
+        bool IsPaused { get; }
     }
 }

@@ -38,7 +38,9 @@ namespace AudioFramework.Services.Fading
         {
             for (int i = 0; i < fades.Length; i++)
             {
-                if (!fades[i].Active) continue;
+                // Skip inactive slots, and FREEZE fades on paused slots: a paused fade must not advance, or it would
+                // run its ramp through silence and be finished (or stopped) by the time the slot is unpaused.
+                if (!fades[i].Active || targets[i].IsPaused) continue;
 
                 fades[i].Op = fades[i].Op.Advanced(deltaTime);
                 targets[i].Volume = fades[i].Op.CurrentVolume;

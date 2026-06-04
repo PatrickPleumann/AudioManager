@@ -76,7 +76,7 @@ namespace AudioFramework.Core
             AudioObject[] pool = poolAcquisitionService.PoolArray;
             var fadeTargets = new IFadeTarget[pool.Length];
             for (int i = 0; i < fadeTargets.Length; i++)
-                fadeTargets[i] = new PooledFadeTarget(pool[i].Source, stopService, i);
+                fadeTargets[i] = new PooledFadeTarget(pool[i].Source, stopService, pool, i);
             fadeService = new AudioFadeService(fadeTargets);
 
             playbackService = new AudioPlaybackService(

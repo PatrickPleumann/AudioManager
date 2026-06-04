@@ -121,16 +121,16 @@ public class TestScript : MonoBehaviour
 
     private void FadeInNonSpatial()
     {
-        behindWallHandle = AudioManagerDynamic.FadeInNonSpatial(BehindWall, 3f);
+        behindWallHandle = AudioManagerDynamic.FadeInNonSpatial(BehindWall, 6f);
     }
 
     private void FadeOutSound()
     {
-        AudioManagerDynamic.FadeOut(behindWallHandle, 2f);
+        AudioManagerDynamic.FadeOut(behindWallHandle, 6f);
     }
 
     private void CrossFade()
     {
-        AudioManagerDynamic.CrossfadeNonSpatial(behindWallHandle, BehindWall, 2f);
+        behindWallHandle = AudioManagerDynamic.CrossfadeNonSpatial(behindWallHandle, BehindWall, 6f);
     }
 }
