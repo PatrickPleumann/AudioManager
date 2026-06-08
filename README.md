@@ -2,7 +2,7 @@
 
 **A zero-allocation audio management framework for Unity 6 — built to demonstrate clean architecture, strict test discipline, and disciplined AI-assisted development.**
 
-> **What this repo demonstrates:** SOLID service design in C# · test-driven development with a frozen-test contract · zero-GC runtime patterns · and the ability to *direct* an AI coding agent under real engineering discipline — not just prompt it.
+> **What this repo demonstrates:** SOLID service design in C# · test-driven development with a frozen-test contract · zero-GC runtime patterns · and directing an AI coding agent against a written spec and a frozen test suite.
 
 ---
 
@@ -10,7 +10,7 @@
 
 This is a portfolio project. It is a working Unity audio framework — pooled `AudioSource` management, lightweight occlusion, fades, pause, follow — but the reason it is public is to show **how I build**: the architectural decisions, the testing discipline behind them, and how I use AI as a power tool without letting it erode code quality.
 
-If you only skim one thing, skim [Engineering discipline](#engineering-discipline). That is the part most "I built X with AI" repos cannot show.
+If you only read one section, read [Engineering discipline](#engineering-discipline) — it's where the actual decisions live.
 
 ---
 
@@ -121,7 +121,7 @@ I built this in partnership with an AI coding agent (Claude). I think how that w
 - **The frozen-test loop constrains the AI, not the other way round.** Tests are written red-first and then frozen. The AI's job is to make a *fixed* specification pass — it cannot quietly weaken a test to get green, because the rule forbids it and the mutation check would expose a test that protects nothing.
 - **Architecture decisions are mine.** The pure-logic seams, the Strategy split for the async backend, the no-re-parenting follow model, the generation guard against stale handles — those are deliberate calls, made for testability and correctness, then implemented with AI assistance.
 
-The takeaway I'd want a reader to leave with: this is what AI-assisted development looks like when the human stays the engineer — AI as a force multiplier on a disciplined process, not a substitute for one.
+The point is simple: the engineering judgement stays human, and the AI accelerates the execution of a disciplined process.
 
 ---
 
