@@ -45,17 +45,7 @@ namespace AudioFramework.Services.WallCheck
         }
 
         private void GenerateLayerMaskFromDictionary()
-        {
-            int combinedBitmask = 0;
-            if (dictionaryProvider.WallLayerMaskDictionary != null)
-            {
-                foreach (int layerKey in dictionaryProvider.WallLayerMaskDictionary.Keys)
-                {
-                    combinedBitmask |= (1 << layerKey);
-                }
-            }
-            automaticallyGeneratedWallLayerMask = combinedBitmask;
-        }
+            => automaticallyGeneratedWallLayerMask = WallLayerMask.FromLayers(dictionaryProvider.WallLayerMaskDictionary?.Keys);
 
         /// <summary>
         /// Raycast based position check, if the AudioListener position is behind a wall.

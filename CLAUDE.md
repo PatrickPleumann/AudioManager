@@ -52,7 +52,7 @@ DIE Regel für jede neue Methode/jedes Feature. Formalisiert von Patrick, binden
 - **Erwartungswerte kommen aus der SPEZIFIKATION, nicht aus dem Code.** Vor dem Blick auf die Implementierung aus dem Vertrag hand-ableiten. Wenn „korrekt" ohne Code-Lesen nicht sagbar ist → STOP, erst das Soll mit Patrick klären.
 - **Erstes Rot darf ein „laufendes Rot" sein:** neuen Typ/Member als `NotImplementedException`-Stub anlegen, damit das Test-Assembly kompiliert und die Tests *laufen* und scheitern (klarer als ein bloßer Compile-Fehler).
 - **Aktuell testen wir NUR neuen Code.** Bestandscode nachzutesten ist eine separate, aufgeschobene Aufgabe (siehe BACKLOG) — nie still mit reingezogen.
-- **Ehrliche Tests gewinnen Design-Trade-offs** („Ehrliche Tests sind besser"). Wenn die Wahl zwischen einer leicht-ehrlich-testbaren Architektur (Seam/Interface → EditMode-testbar mit Fake) und einer ohne Abstraktion (nur per langsamem/vagem PlayMode prüfbar) steht: die testbare wählen. Ein kleiner Seam ist es wert. Konkret umgesetzt: die pure-Logik-Klassen `AudioFadeMath`, `WallOcclusionMath`, `OcclusionSmoothing`, `LowPassDispatchPolicy`, `AudioHandleValidator` — Unity-frei, EditMode-getestet.
+- **Ehrliche Tests gewinnen Design-Trade-offs** („Ehrliche Tests sind besser"). Wenn die Wahl zwischen einer leicht-ehrlich-testbaren Architektur (Seam/Interface → EditMode-testbar mit Fake) und einer ohne Abstraktion (nur per langsamem/vagem PlayMode prüfbar) steht: die testbare wählen. Ein kleiner Seam ist es wert. Konkret umgesetzt: die pure-Logik-Klassen `AudioFadeMath`, `WallOcclusionMath`, `OcclusionSmoothing`, `LowPassDispatchPolicy`, `AudioHandleValidator`, `WallLayerMask` — Unity-frei, EditMode-getestet.
 
 Patricks Kernangst sind tautologische / Change-Detector-Tests. Red-first + Einfrieren + Mutation Check sind die konkreten Schutzwälle.
 
@@ -66,7 +66,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 ├── AudioPlaybackService           → Dispatching (Play/FadeIn-Silent), Stop-Einstieg, Volume-Resolve, Handle-Gating
 │   └── AudioStopService           → einziger „Slot stoppen"-Pfad (Source.Stop + Reset + WallCheck stop), fade-frei
 ├── AudioUniTaskWallCheckService   → Raycast-Loop per UniTask (empfohlen)   ┐ setzen nur noch TargetCutoff
-├── AudioCoroutineWallCheckService → Raycast-Loop per Coroutine (Fallback)  ┘ (geteilte WallOcclusionMath)
+├── AudioCoroutineWallCheckService → Raycast-Loop per Coroutine (Fallback)  ┘ (geteilte WallOcclusionMath + WallLayerMask)
 ├── AudioOcclusionSmoothingService → gleitet Filter.cutoffFrequency pro Frame Richtung TargetCutoff (LateUpdate)
 ├── AudioFollowService             → kopiert Emitter-Position pro Frame (LateUpdate), ohne Parenting
 ├── AudioFadeService               → treibt alle Fades pro Frame (LateUpdate) über IFadeTarget[]
@@ -74,7 +74,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 └── AudioManagerDictionaryProvider → Volume- & LayerMask-Dictionaries
 ```
 
-**Pure, Unity-freie Logik-Klassen (EditMode-getestet):** `AudioFadeMath`, `WallOcclusionMath` (Pro-Wand-Cutoff-Schritt + Floor-Clamp), `OcclusionSmoothing` (Per-Frame-Glide), `LowPassDispatchPolicy` (Filter-Zustand pro Dispatch), `AudioHandleValidator` (Handle-Currency: Bounds + Generation).
+**Pure, Unity-freie Logik-Klassen (EditMode-getestet):** `AudioFadeMath`, `WallOcclusionMath` (Pro-Wand-Cutoff-Schritt + Floor-Clamp), `OcclusionSmoothing` (Per-Frame-Glide), `LowPassDispatchPolicy` (Filter-Zustand pro Dispatch), `AudioHandleValidator` (Handle-Currency: Bounds + Generation), `WallLayerMask` (Layer-Indizes → Bitmask, von beiden WallCheck-Services geteilt).
 
 ### Wichtige Klassen & Dateien
 

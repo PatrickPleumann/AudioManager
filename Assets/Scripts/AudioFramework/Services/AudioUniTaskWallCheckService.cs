@@ -46,13 +46,7 @@ namespace AudioFramework.Services.WallCheck
         }
 
         private void GenerateLayerMaskFromDictionary()
-        {
-            int combinedBitmask = 0;
-            if (dictionaryProvider.WallLayerMaskDictionary != null)
-                foreach (int layerKey in dictionaryProvider.WallLayerMaskDictionary.Keys)
-                    combinedBitmask |= (1 << layerKey);
-            automaticallyGeneratedWallLayerMask = combinedBitmask;
-        }
+            => automaticallyGeneratedWallLayerMask = WallLayerMask.FromLayers(dictionaryProvider.WallLayerMaskDictionary?.Keys);
 
         public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
