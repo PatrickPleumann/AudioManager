@@ -46,10 +46,8 @@ namespace AudioFramework.Pooling
             float currentTime = Time.time;
             for (int i = 0; i < poolArray.Length; i++)
             {
-
-                if (!poolArray[i].Source.isPlaying && currentTime >= poolArray[i].BusyUntilTime && !poolArray[i].IsPaused)
+                if (PoolSlotAvailability.IsFree(poolArray[i].Source.isPlaying, currentTime, poolArray[i].BusyUntilTime, poolArray[i].IsPaused))
                 {
-
                     poolArray[i].Generation++;
                     return i;
                 }
