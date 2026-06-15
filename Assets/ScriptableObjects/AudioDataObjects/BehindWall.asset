@@ -23,4 +23,4 @@ MonoBehaviour:
   IsOneShot: 0
   CanHandleAudioSource: 1
   UseWallCheck: 1
-  RespectsGlobalPause: 1
+  RespectsGlobalPause: 0

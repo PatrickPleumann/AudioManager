@@ -121,7 +121,7 @@ Die Rationale (lightweight vs. occlusion; UI/2D) ist via per-Sound-Flags am Einz
     - `AudioManagerDictionaryProvider.FillDictionaryWithKeysAndValues` — 6 Tests (null/empty-Guards + skip-but-continue bei null-Eintrag + keep-first).
     - `WallLayerMask.FromLayers` — neu aus beiden WallCheck-Services extrahiert (pure Bitmask-Faltung), 4 Tests (OR-Faltung). Beide Services rufen jetzt den geteilten Helper.
   - **Gruppe B — echte Entscheidungslogik, Unity-gekoppelt → kleinen Seam VOR dem Test ziehen:**
-    - [ ] `AudioPoolAcquisitionService.GetFreeAudioSourcePoolIndex` — „Slot frei?"-Prädikat pur ziehen (inkl. `IsPaused`-als-belegt).
+    - [x] **`AudioPoolAcquisitionService.GetFreeAudioSourcePoolIndex` — erledigt 2026-06-15** (Commit `e0ac058`). „Slot frei?"-Prädikat in pure `PoolSlotAvailability.IsFree(isPlaying, currentTime, busyUntilTime, isPaused)` extrahiert (Unity-frei, nimmt rohe Werte statt `AudioObject`), 5 EditMode-Tests (je eine Klausel: silent+elapsed+unpaused=frei, playing=belegt, busy-window offen=belegt, paused=belegt trotz sonst-frei, `currentTime == busyUntil`=frei [inklusive Grenze]). `IsPaused`-als-belegt mit abgedeckt.
     - [ ] `ShouldContinueLoop` (beide WallCheck-Services) — OneShot/Loop/Paused-Fortsetzungsprädikat extrahieren.
     - [ ] `CalculateCutoffFrequency` — Akkumulation über den Hit-Buffer als Fold-Helper (Pro-Wand-Schritt ist via `WallOcclusionMath` schon getestet).
     - [ ] `AudioPlaybackService.Gate` + `ResolveVolume` — Gating (`CanHandleAudioSource`) bzw. Volume-Fallback-Entscheidung.
