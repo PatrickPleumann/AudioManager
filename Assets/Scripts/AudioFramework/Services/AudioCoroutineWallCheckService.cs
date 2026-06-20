@@ -15,7 +15,7 @@ namespace AudioFramework.Services.WallCheck
     {
         private readonly AudioObject[] poolArray;
         private readonly AudioSystemConfig config;
-        private readonly Transform playerListener;
+        private readonly IAudioListenerProvider listenerProvider;
         private readonly AudioManagerDictionaryProvider dictionaryProvider;
         private readonly MonoBehaviour routineRunner;
 
@@ -28,13 +28,13 @@ namespace AudioFramework.Services.WallCheck
         public AudioCoroutineWallCheckService(
             AudioObject[] _poolArray,
             AudioSystemConfig _config,
-            Transform _playerListener,
+            IAudioListenerProvider _listenerProvider,
             AudioManagerDictionaryProvider _dictionaryProvider,
             MonoBehaviour _routineRunner)
         {
             poolArray = _poolArray;
             config = _config;
-            playerListener = _playerListener;
+            listenerProvider = _listenerProvider;
             dictionaryProvider = _dictionaryProvider;
             routineRunner = _routineRunner;
 
@@ -106,9 +106,9 @@ namespace AudioFramework.Services.WallCheck
 
         private float CalculateCutoffFrequency(Vector3 originPos)
         {
-            if (playerListener == false) return config.DefaultCutoffFreqValue;
+            if (!listenerProvider.TryGetPosition(out Vector3 listenerPos)) return config.DefaultCutoffFreqValue;
 
-            Vector3 direction = playerListener.position - originPos;
+            Vector3 direction = listenerPos - originPos;
             int hitCount = Physics.RaycastNonAlloc(originPos, direction.normalized, wallHitBuffer, direction.magnitude, automaticallyGeneratedWallLayerMask);
 
             if (hitCount == 0) return config.DefaultCutoffFreqValue;

@@ -59,16 +59,16 @@ namespace AudioFramework.Core
             dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.WallDampingPerLayer);
             dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
 
-            Transform playerAudioListenerTransform = audioListener.transform;
+            IAudioListenerProvider listenerProvider = new SceneAudioListenerProvider(audioListener);
 
             poolAcquisitionService = new AudioPoolAcquisitionService(systemConfig, transform);
             pauseService = new AudioPauseService(poolAcquisitionService.PoolArray);
 
 #if !USE_UNITASK
-            wallCheckService = new AudioCoroutineWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider, this);
+            wallCheckService = new AudioCoroutineWallCheckService(poolAcquisitionService.PoolArray, systemConfig, listenerProvider, dictionaryProvider, this);
             Debug.Log("[AudioTool] Internal Coroutine mode was initialized (not recommended)");
 #else
-            wallCheckService = new AudioUniTaskWallCheckService(poolAcquisitionService.PoolArray, systemConfig, playerAudioListenerTransform, dictionaryProvider);
+            wallCheckService = new AudioUniTaskWallCheckService(poolAcquisitionService.PoolArray, systemConfig, listenerProvider, dictionaryProvider);
             Debug.Log("[AudioTool] UniTask mode was initialized (recommended)");
 #endif
 
@@ -102,21 +102,21 @@ namespace AudioFramework.Core
         }
 
         /// <summary>
-        /// Plays a sound as positional 3D audio at <paramref name="source"/>. The sound is attenuated by distance and,
+        /// Plays a sound as positional 3D audio at <paramref name="_source"/>. The sound is attenuated by distance and,
         /// if enabled on the ADO, wall-checked. Use this for anything that happens at a place in the world (footsteps,
         /// gunshots, enemy voice lines). The actual 3D-ness is governed by the ADO's SpatialBlend field (1 = full 3D).
         /// </summary>
-        /// <param name="data">The AudioDataObject — WHAT to play (clips, volume type, spatial blend, flags).</param>
-        /// <param name="source">The Transform the sound originates from — WHERE it plays. Must not be null for 3D.</param>
+        /// <param name="_data">The AudioDataObject — WHAT to play (clips, volume type, spatial blend, flags).</param>
+        /// <param name="_source">The Transform the sound originates from — WHERE it plays. Must not be null for 3D.</param>
         /// <returns>A valid AudioHandle when the ADO has CanHandleAudioSource enabled and a slot was free; otherwise an invalid handle.</returns>
-        public static AudioHandle PlaySpatial(AudioDataObject data, Transform source)
+        public static AudioHandle PlaySpatial(AudioDataObject _data, Transform _source)
         {
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
                 return AudioHandle.Invalid;
             }
-            return instance.playbackService.DispatchAudio(data, source);
+            return instance.playbackService.DispatchAudio(_data, _source);
         }
 
         /// <summary>
@@ -124,8 +124,8 @@ namespace AudioFramework.Core
         /// positional 3D audio. Intended for event-driven dispatch, where the request travels through an event as a
         /// single payload and is handed straight to this method.
         /// </summary>
-        /// <param name="request">The bundled sound request (WHAT + WHERE).</param>
-        public static AudioHandle PlaySpatial(SoundRequest request) => PlaySpatial(request.Ado, request.Source);
+        /// <param name="_request">The bundled sound request (WHAT + WHERE).</param>
+        public static AudioHandle PlaySpatial(SoundRequest _request) => PlaySpatial(_request.Ado, _request.Source);
 
         /// <summary>
         /// Plays a sound as NON-spatial 2D audio. The sound has no position: it ignores distance, ignores wall-check,
@@ -136,26 +136,26 @@ namespace AudioFramework.Core
         /// <see cref="PlaySpatial(AudioDataObject, Transform)"/> and supply a source Transform.
         /// </para>
         /// </summary>
-        /// <param name="data">The AudioDataObject — WHAT to play.</param>
-        public static AudioHandle PlayNonSpatial(AudioDataObject data)
+        /// <param name="_data">The AudioDataObject — WHAT to play.</param>
+        public static AudioHandle PlayNonSpatial(AudioDataObject _data)
         {
             if (instance == null)
             {
                 Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
                 return AudioHandle.Invalid;
             }
-            return instance.playbackService.DispatchAudioNonSpatial(data);
+            return instance.playbackService.DispatchAudioNonSpatial(_data);
         }
 
-        public static void Stop(AudioHandle handle) => instance?.playbackService.StopAudio(handle);
+        public static void Stop(AudioHandle _handle) => instance?.playbackService.StopAudio(_handle);
 
         /// <summary>
         /// Plays a NON-spatial 2D sound that fades IN from silence up to its category volume over
-        /// <paramref name="duration"/> seconds. Returns a handle to the faded sound so it can later be stopped, faded
+        /// <paramref name="_duration"/> seconds. Returns a handle to the faded sound so it can later be stopped, faded
         /// out or crossfaded — a fade is always a managed sound, so (unlike PlayNonSpatial) the handle does NOT depend
         /// on the ADO's CanHandleAudioSource.
         /// </summary>
-        public static AudioHandle FadeInNonSpatial(AudioDataObject data, float duration)
+        public static AudioHandle FadeInNonSpatial(AudioDataObject _data, float _duration)
         {
             if (instance == null)
             {
@@ -163,43 +163,43 @@ namespace AudioFramework.Core
                 return AudioHandle.Invalid;
             }
 
-            int poolIndex = instance.playbackService.DispatchSilentNonSpatial(data, out float targetVolume);
+            int poolIndex = instance.playbackService.DispatchSilentNonSpatial(_data, out float targetVolume);
             if (poolIndex < 0) return AudioHandle.Invalid;
 
-            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: _duration, stopOnEnd: false);
             return instance.playbackService.MakeHandle(poolIndex);
         }
 
         /// <summary>
-        /// Fades an already-playing sound OUT to silence over <paramref name="duration"/> seconds, then stops it.
+        /// Fades an already-playing sound OUT to silence over <paramref name="_duration"/> seconds, then stops it.
         /// No-op if the handle is invalid. Works for spatial and non-spatial sounds alike — it just ramps the existing
         /// slot down, so it needs no spatial variant.
         /// </summary>
-        public static void FadeOut(AudioHandle handle, float duration)
+        public static void FadeOut(AudioHandle _handle, float _duration)
         {
             if (instance == null) return;
-            // Not just IsValid: a stale handle whose slot was reused must NOT fade out the new sound on that slot.
-            if (!instance.poolAcquisitionService.IsHandleCurrent(handle)) return;
-            instance.fadeService.StartFadeOut(handle.PoolIndex, duration);
+
+            if (!instance.poolAcquisitionService.IsHandleCurrent(_handle)) return;
+            instance.fadeService.StartFadeOut(_handle.PoolIndex, _duration);
         }
 
         /// <summary>
-        /// Crossfades into a new NON-spatial sound over <paramref name="duration"/> seconds: the old sound
-        /// (<paramref name="from"/>) fades out and stops while the new one (<paramref name="to"/>) fades in.
-        /// Composition of FadeOut + FadeInNonSpatial. If <paramref name="from"/> is invalid, only the fade-in runs.
+        /// Crossfades into a new NON-spatial sound over <paramref name="_duration"/> seconds: the old sound
+        /// (<paramref name="_from"/>) fades out and stops while the new one (<paramref name="_to"/>) fades in.
+        /// Composition of FadeOut + FadeInNonSpatial. If <paramref name="_from"/> is invalid, only the fade-in runs.
         /// </summary>
-        public static AudioHandle CrossfadeNonSpatial(AudioHandle from, AudioDataObject to, float duration)
+        public static AudioHandle CrossfadeNonSpatial(AudioHandle _from, AudioDataObject _to, float _duration)
         {
-            FadeOut(from, duration);
-            return FadeInNonSpatial(to, duration);
+            FadeOut(_from, _duration);
+            return FadeInNonSpatial(_to, _duration);
         }
 
         /// <summary>
-        /// Plays a positional 3D sound at <paramref name="source"/> that fades IN from silence up to its category
-        /// volume over <paramref name="duration"/> seconds. Spatial counterpart of <see cref="FadeInNonSpatial"/>;
+        /// Plays a positional 3D sound at <paramref name="_source"/> that fades IN from silence up to its category
+        /// volume over <paramref name="_duration"/> seconds. Spatial counterpart of <see cref="FadeInNonSpatial"/>;
         /// always returns a valid handle (a fade is a managed sound). Must not be called with a null source.
         /// </summary>
-        public static AudioHandle FadeInSpatial(AudioDataObject data, Transform source, float duration)
+        public static AudioHandle FadeInSpatial(AudioDataObject _data, Transform _source, float _duration)
         {
             if (instance == null)
             {
@@ -207,23 +207,23 @@ namespace AudioFramework.Core
                 return AudioHandle.Invalid;
             }
 
-            int poolIndex = instance.playbackService.DispatchSilentSpatial(data, source, out float targetVolume);
+            int poolIndex = instance.playbackService.DispatchSilentSpatial(_data, _source, out float targetVolume);
             if (poolIndex < 0) return AudioHandle.Invalid;
 
-            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: duration, stopOnEnd: false);
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: _duration, stopOnEnd: false);
             return instance.playbackService.MakeHandle(poolIndex);
         }
 
         /// <summary>
-        /// Crossfades into a new positional 3D sound at <paramref name="source"/> over <paramref name="duration"/>
-        /// seconds: the old sound (<paramref name="from"/>) fades out and stops while the new one (<paramref name="to"/>)
+        /// Crossfades into a new positional 3D sound at <paramref name="_source"/> over <paramref name="_duration"/>
+        /// seconds: the old sound (<paramref name="_from"/>) fades out and stops while the new one (<paramref name="_to"/>)
         /// fades in at its position. Composition of FadeOut + FadeInSpatial — e.g. a looping engine crossfading into a
-        /// positional engine-cutout sound at the same place. If <paramref name="from"/> is invalid, only the fade-in runs.
+        /// positional engine-cutout sound at the same place. If <paramref name="_from"/> is invalid, only the fade-in runs.
         /// </summary>
-        public static AudioHandle CrossfadeSpatial(AudioHandle from, AudioDataObject to, Transform source, float duration)
+        public static AudioHandle CrossfadeSpatial(AudioHandle _from, AudioDataObject _to, Transform _source, float _duration)
         {
-            FadeOut(from, duration);
-            return FadeInSpatial(to, source, duration);
+            FadeOut(_from, _duration);
+            return FadeInSpatial(_to, _source, _duration);
         }
 
         public static void PauseAll() => instance?.pauseService?.PauseAll();

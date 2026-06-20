@@ -23,12 +23,8 @@
 ## 🟠 Wichtig (vor Release)
 
 ### W3 — AudioListener-Transform wird nur einmalig gecacht
-- [ ] **erledigt**
-- **Ort:** `AudioManagerDynamic.Awake` (~Z. 48, `FindFirstObjectByType<AudioListener>()`); genutzt in `AudioUniTaskWallCheckService.CalculateCutoffFrequency` (~Z. 113) bzw. der Coroutine-Variante.
-- **Problem:** `playerListener` wird einmal aufgelöst und lebenslang gehalten. Wechselt der aktive AudioListener zur Laufzeit (Kamerawechsel, Respawn, Vehicle-Cam), zeigt der WallCheck auf die alte/zerstörte Transform. Der `== false`-Guard fängt nur Zerstörung ab (dann kein WallCheck), nicht den Wechsel (falscher Bezugspunkt → stiller Occlusion-Fehler).
-- **Fix:** Listener nicht cachen, sondern aktuell beziehen (z. B. periodischer Refresh oder Auflösung hinter kleiner Abstraktion). Abwägung Performance vs. Korrektheit dokumentieren.
-- **Test:** WallCheck-Mathe hängt an Physics (schwer testbar). Die Listener-Auflösung hinter eine Abstraktion ziehen → diese ist testbar (Wechsel → neue Referenz).
-- **Aufwand:** M
+- [x] **erledigt 2026-06-20** — Statt roher `Transform` halten beide WallCheck-Services jetzt einen `IAudioListenerProvider`. Die Unity-Implementierung `SceneAudioListenerProvider` cached den `AudioListener`, **validiert ihn aber bei jedem Zugriff** (`cached != null && cached.isActiveAndEnabled`) und löst nur im Ungültig-Fall neu auf (`FindObjectsByType` → ersten aktiven Listener) — **kein Intervall-Polling**: der Happy Path ist ein Null-Check + ein Bool, der teure Scan feuert nur im Wechsel-Moment. Fängt sowohl Respawn (zerstört → `null`) als auch Kamerawechsel per Disable/Enable (`!isActiveAndEnabled`) ab. Reine Entscheidungslogik in `ListenerCachePolicy.NeedsResolve(hasCached, isAliveAndActive)` extrahiert (3 EditMode-Tests, mutation-geprüft: `||`→`&&` macht `CachedButStale` rot). `CalculateCutoffFrequency` nutzt `TryGetPosition(out Vector3)` → bei `false` weiterhin `DefaultCutoffFreqValue` (unverändertes „kein Listener"-Verhalten). **Offen (siehe M3-Bündel):** PlayMode-Smoke-Test für das echte Self-Heal-Verhalten des Providers (in EditMode bewusst NICHT getestet — `FindObjectsByType` würde den AudioListener der offenen Szene finden → umgebungsabhängig/brittle).
+- **Historischer Kontext (vor dem Fix):** `playerListener` wurde einmal in `Awake` aufgelöst und lebenslang gehalten; der `== false`-Guard fing nur Zerstörung ab, nicht den Wechsel auf einen anderen lebenden Listener → stiller Occlusion-Fehler bei Kamerawechsel/Respawn/Vehicle-Cam.
 
 ---
 
@@ -91,6 +87,7 @@
 - [ ] **PDF-Dokumentation** — `.md`-Dateien existieren (DE/EN), Konvertierung zu PDF offen.
 - [ ] **Ordnerstruktur für Asset Store** — noch nicht definiert.
 - [ ] **PlayMode-Smoke-Tests für die Fade-Glue** — fadet `source.volume` wirklich über Frames, gibt FadeOut den Slot frei, friert echtes `PauseAll` einen Fade ein. Locked die aktuell nur manuell verifizierte Verdrahtung. Gutes Bündel mit M3 + K1-PlayMode-Test.
+- [ ] **PlayMode-Smoke-Test für `SceneAudioListenerProvider`** (aus W3) — in kontrollierter Szene das Self-Heal beweisen: (a) `TryGetPosition` liest die *aktuelle* Listener-Position (nicht die Start-Position), (b) nach Disable des alten + Enable eines neuen Listeners liefert er den neuen, (c) nach Zerstörung des Listeners `false`. Bewusst PlayMode statt EditMode, weil `FindObjectsByType` sonst den AudioListener der offenen Editor-Szene fände. Bündelt mit M3 + K1.
 
 ## Weitere geplante Features (Priorität offen — können vor 1.0 rein)
 
@@ -128,5 +125,5 @@ Die Rationale (lightweight vs. occlusion; UI/2D) ist via per-Sound-Flags am Einz
     - [ ] `AudioPauseService.PauseAll`/`UnpauseAll` — Scope-Logik (nur wecken, was wir pausiert haben); braucht Fake/Seam übers Pause-Primitiv.
   - **Gruppe C — dünne Glue/Orchestrierung & MonoBehaviour → PlayMode oder geringer Testwert:** `AudioManagerDynamic`-API (einzige echte Logik = Crossfade-Komposition), `AudioStopService.StopSlot`, `AudioFollowService.UpdateFollowers`, `AudioOcclusionSmoothingService.Tick`, WallCheck-Token-Lebenszyklus. Bündelt mit M3 + K1-PlayMode-Tests.
 
-- [ ] **Coroutine-Variante gebündelt unter `!USE_UNITASK` gegenprüfen** — Änderungen an `AudioCoroutineWallCheckService` werden von Hand 1:1 zur UniTask-Version gespiegelt, bei aktivem UniTask aber NICHT mitkompiliert (`#if`). Statt jedes Mal umzuschalten, prüft Patrick solche Spiegelungen **gesammelt in einem Rutsch** (UniTask testweise aus → Compile + Coroutine-Smoke). **Offen seit 2026-06-08:** `GenerateLayerMaskFromDictionary` → `WallLayerMask.FromLayers`-Umstellung. Künftige Doppel-Service-Änderungen hier anhängen, bis der Sammel-Check läuft.
+- [ ] **Coroutine-Variante gebündelt unter `!USE_UNITASK` gegenprüfen** — Änderungen an `AudioCoroutineWallCheckService` werden von Hand 1:1 zur UniTask-Version gespiegelt, bei aktivem UniTask aber NICHT mitkompiliert (`#if`). Statt jedes Mal umzuschalten, prüft Patrick solche Spiegelungen **gesammelt in einem Rutsch** (UniTask testweise aus → Compile + Coroutine-Smoke). **Offen seit 2026-06-08:** `GenerateLayerMaskFromDictionary` → `WallLayerMask.FromLayers`-Umstellung. **Dazu (2026-06-20):** W3-Umstellung — Ctor-Param `Transform _playerListener` → `IAudioListenerProvider _listenerProvider` und `CalculateCutoffFrequency` (`playerListener.position`/`== false` → `listenerProvider.TryGetPosition(out …)`) in *beiden* Services gespiegelt; bei aktivem UniTask kompiliert die Coroutine-Variante nicht mit → im Sammel-Check (UniTask aus) gegenprüfen. Künftige Doppel-Service-Änderungen hier anhängen, bis der Sammel-Check läuft.
 - [ ] **Pricing-Analyse** (wenn release-reif) — Asset-Store-Preise der Konkurrenz (MasterAudio & Co.) live benchmarken (WebSearch für aktuelle Zahlen), dann wertbasiert auf die Differenzierer ankern (saubere Architektur + Tests + lightweight Occlusion + Ease-of-use vs. FMOD). Finaler Preis ist Patricks Markt-Call; ich liefere Benchmark + Begründung, kein Verdikt.

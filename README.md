@@ -1,5 +1,7 @@
 # AudioTool
 
+📖 **English** · [Deutsch](README.de.md)
+
 **A zero-allocation audio management framework for Unity 6 — built to demonstrate clean architecture, strict test discipline, and disciplined AI-assisted development.**
 
 > **What this repo demonstrates:** SOLID service design in C# · test-driven development with a frozen-test contract · zero-GC runtime patterns · and directing an AI coding agent against a written spec and a frozen test suite.
@@ -56,12 +58,13 @@ The math and policy decisions live in small **Unity-free** classes, unit-tested 
 | Class | Responsibility |
 |---|---|
 | `AudioFadeMath` | fade curve / volume-over-time |
-| `WallOcclusionMath` | per-wall cutoff step + floor clamp (the swappable occlusion model seam) |
+| `WallOcclusionMath` | per-wall multiplicative damping step (factor → cutoff) + floor clamp (the swappable occlusion model seam) |
 | `OcclusionSmoothing` | per-frame glide toward target cutoff |
 | `LowPassDispatchPolicy` | filter on/off state per dispatch |
 | `AudioHandleValidator` | handle currency: bounds + generation |
+| `ListenerCachePolicy` | when to re-resolve the active AudioListener (self-healing, no polling) |
 
-This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of ~50 tests across the pure-logic layer**.
+This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of ~75 tests across the pure-logic layer**.
 
 ### Zero allocations at runtime
 
@@ -78,7 +81,7 @@ Each slot carries a `Generation` counter, bumped on every (re)acquisition. The `
 ## Feature highlights
 
 - **Intelligent pooling** — pre-cached `AudioSource` pool; OneShot slots locked via a `BusyUntilTime` timestamp so short SFX never get cut off early.
-- **Lightweight wall occlusion** *(opt-in)* — raycasts from the listener to the source; each obstructing layer lowers an `AudioLowPassFilter` cutoff, clamped to a floor. Soft transitions via per-frame smoothing — no audible "pop" when stepping out of cover. This is intentionally a **lightweight occlusion model, not a full spatializer** (Steam Audio / Oculus) — a feature, not a shortcut.
+- **Lightweight wall occlusion** *(opt-in)* — raycasts from the listener to the source; each obstructing layer carries a **damping factor (0–1)** that multiplicatively pulls an `AudioLowPassFilter` cutoff toward a floor frequency. Because the damping is multiplicative, stacked walls are **order-independent** and approach the floor **asymptotically** rather than snapping to fixed cutoffs. Soft transitions via per-frame smoothing — no audible "pop" when stepping out of cover. This is intentionally a **lightweight occlusion model, not a full spatializer** (Steam Audio / Oculus) — a feature, not a shortcut.
 - **Fade family** — `FadeIn` / `FadeOut` / `Crossfade`, spatial and non-spatial. `Crossfade` is pure composition of `FadeOut + FadeIn`, not a special-cased path.
 - **Follow without re-parenting** — spatial sounds track an emitter by copying its position per frame, never via `SetParent` (which would hand a pooled slot to the caller and let it die with the emitter).
 - **Scope-aware global pause** — `PauseAll` / `UnpauseAll`, with per-sound opt-out of global pause.

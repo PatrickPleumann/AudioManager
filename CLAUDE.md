@@ -77,6 +77,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 │   └── AudioStopService           → einziger „Slot stoppen"-Pfad (Source.Stop + Reset + WallCheck stop), fade-frei
 ├── AudioUniTaskWallCheckService   → Raycast-Loop per UniTask (empfohlen)   ┐ setzen nur noch TargetCutoff
 ├── AudioCoroutineWallCheckService → Raycast-Loop per Coroutine (Fallback)  ┘ (geteilte WallOcclusionMath + WallLayerMask)
+│   └── SceneAudioListenerProvider  → liefert die *aktuelle* AudioListener-Position (lazy + self-heal bei Zugriff, kein Polling)
 ├── AudioOcclusionSmoothingService → gleitet Filter.cutoffFrequency pro Frame Richtung TargetCutoff (LateUpdate)
 ├── AudioFollowService             → kopiert Emitter-Position pro Frame (LateUpdate), ohne Parenting
 ├── AudioFadeService               → treibt alle Fades pro Frame (LateUpdate) über IFadeTarget[]
@@ -84,7 +85,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 └── AudioManagerDictionaryProvider → Volume- & LayerMask-Dictionaries
 ```
 
-**Pure, Unity-freie Logik-Klassen (EditMode-getestet):** `AudioFadeMath`, `WallOcclusionMath` (Pro-Wand-Cutoff-Schritt + Floor-Clamp), `OcclusionSmoothing` (Per-Frame-Glide), `LowPassDispatchPolicy` (Filter-Zustand pro Dispatch), `AudioHandleValidator` (Handle-Currency: Bounds + Generation), `WallLayerMask` (Layer-Indizes → Bitmask, von beiden WallCheck-Services geteilt).
+**Pure, Unity-freie Logik-Klassen (EditMode-getestet):** `AudioFadeMath`, `WallOcclusionMath` (Pro-Wand-Cutoff-Schritt + Floor-Clamp), `OcclusionSmoothing` (Per-Frame-Glide), `LowPassDispatchPolicy` (Filter-Zustand pro Dispatch), `AudioHandleValidator` (Handle-Currency: Bounds + Generation), `WallLayerMask` (Layer-Indizes → Bitmask, von beiden WallCheck-Services geteilt), `ListenerCachePolicy` (Resolve-Entscheidung: neu auflösen ⟺ kein Cache ODER gecachter Listener nicht mehr lebend & aktiv).
 
 ### Wichtige Klassen & Dateien
 
@@ -100,6 +101,9 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 | `AudioObject.cs` | Struct — ein Pool-Slot (GameObject, Source, Filter, BusyUntilTime, Generation, TargetCutoff, Follow-/Pause-State) |
 | `SoundRequest.cs` | Readonly struct `{ Ado, Source }` — Event-Payload für `PlaySpatial(SoundRequest)` |
 | `IAudioWallCheckService.cs` | Interface — Strategy Pattern für WallCheck (UniTask/Coroutine) |
+| `IAudioListenerProvider.cs` | Interface — liefert die aktuelle AudioListener-Position (`TryGetPosition`); Seam gegen stale Transform |
+| `SceneAudioListenerProvider.cs` | Unity-Impl — lazy Auflösung + Self-Heal des aktiven Listeners (kein Polling) |
+| `ListenerCachePolicy.cs` | Pure — „Listener neu auflösen?"-Entscheidung (EditMode-getestet) |
 | `IGetPoolIndex.cs` | Interface — toter Platzhalter, steht im BACKLOG zur Entfernung |
 
 ---
@@ -149,6 +153,7 @@ Das `AudioDataObject` ist bewusst ein serialisierter **Spiegel der AudioSource-E
 - **Filter nur für wand-geprüfte Sounds aktiv:** `filter.enabled = ado.UseWallCheck` bei jedem Dispatch (`LowPassDispatchPolicy`). Alle anderen Sounds (2D-Musik, UI, nicht-occludierte SFX) umgehen den Filter komplett → transparenter Klang + weniger DSP.
 - **Weiche Übergänge:** Der WallCheck-Loop setzt nur noch `AudioObject.TargetCutoff`; `AudioOcclusionSmoothingService` gleitet `filter.cutoffFrequency` pro Frame dorthin (`OcclusionSmoothing.Step`, MoveTowards mit `OcclusionSmoothingSpeed` Hz/s; `0` = sofort). Kein „Pop" mehr beim Aus-der-Wand-Treten.
 - WallCheck nur wenn aktiv → kein Raycast bei pausierten Sounds. `ShouldContinueLoop()` unterscheidet OneShot (BusyUntilTime) und Loop (isPlaying) und hält den Loop bei `IsPaused` am Leben (sonst kehrt Occlusion nach Unpause nicht zurück).
+- **Listener-Bezug self-healing statt gecacht:** Der WallCheck hält nicht mehr die rohe Listener-`Transform`, sondern einen `IAudioListenerProvider`. `SceneAudioListenerProvider` cached den `AudioListener`, validiert ihn aber bei **jedem** Zugriff (`!= null && isActiveAndEnabled`) und löst nur im Ungültig-Fall neu auf (`FindObjectsByType` → erster aktiver Listener). Kein Intervall-Polling — der teure Scan feuert nur im Wechsel-Moment, der Happy Path ist ein Null-Check + ein Bool. Fängt **Respawn** (zerstört → `null`) **und Kamerawechsel per Disable/Enable** (`!isActiveAndEnabled`) ab. `TryGetPosition(out)` → bei `false` weiterhin `DefaultCutoffFreqValue` (unverändertes „kein Listener"-Verhalten). Die Resolve-*Entscheidung* lebt in der pure `ListenerCachePolicy` (Modell-Seam, wie `WallOcclusionMath`).
 - **`WallOcclusionMath` ist der Modell-Seam:** Das multiplikative Dämpfungs-Modell lebt allein im `ApplyWall`-Rumpf (Einzelstelle) — ein künftiger Wechsel (z. B. echtes logarithmisches Mapping) bliebe eine lokale Änderung an dieser einen Stelle.
 
 ### Pause-Modell (ohne Multi-Pool gelöst)
