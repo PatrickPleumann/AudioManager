@@ -52,6 +52,20 @@ DIE Regel für jede neue Methode/jedes Feature. Formalisiert von Patrick, binden
 
 Patricks Kernangst sind tautologische / Change-Detector-Tests. Red-first + Einfrieren + Mutation Check sind die konkreten Schutzwälle.
 
+### Zusätzliche Schutzregeln (aus konkreten Fehlentscheidungen, 2026-06-20)
+
+Härten den Loop gegen die Patzer der Occlusion-Modell-Session. Gemeinsame Wurzel: „grün/erwartungskonform machen" wurde über „Diskrepanz verstehen" gestellt. Genau dieser Default wird hier umgedreht.
+
+- **Bei rotem Test oder verfehlter Mutation-Vorhersage: niemals reflexartig den Test anfassen — erst ganzheitlich analysieren, wo der Fehler sitzt.** Der Test ist die **letzte** Instanz im Verdacht, erreichbar nur per Ausschluss. Diagnose-Reihenfolge; eine Stufe wird erst betreten, wenn die vorige als „nicht falsch" bestätigt ist:
+  1. **Die Implementierung** — der Code unter Test.
+  2. **Mein Modell / meine Hand-Herleitung** des Erwartungswerts aus der Spec.
+  3. **Die Vorhersage selbst** — bei verfehlter Mutation-Prognose ist meist nur mein Modell *des Tests* daneben; der Mutation-Check ist ohnehin bestanden, sobald *mindestens ein* Test rot ist (Suite-Ebene, nicht pro Test).
+  4. **Der Test** — zuletzt. Er *kann* falsch sein (falscher Erwartungswert, falsche/zu schwache Assertion, falsch dimensionierte Toleranz), und diese Möglichkeit verschließe ich mir nie. Aber sie wird erst gezogen, wenn der Kontext zwingend ergibt, dass *nur noch* der Test die Quelle sein kann und nichts anderes. Dann — und nur dann — Test **nach explizitem Go** anfassen, mit benannter Begründung *warum*. Nie zählt: ändern, *damit meine Prognose stimmt*, oder Schutz ergänzen, den ein grüner Test auf Suite-Ebene schon liefert (Gold-Plating).
+
+- **Test-Änderung nur mit vorab benannter Kategorie; Default ist Veto.** Tests werden grundsätzlich nicht angefasst. Jeder Änderungsvorschlag muss *vor* der Änderung einer Kategorie zugeordnet werden: (a) echter Authoring-Defekt (z. B. falsche Toleranz), (b) bewusste Spec-Änderung mit Patricks Go, (c) obsolet durch Umbau → BACKLOG (Loop-Regel #6). Passt nichts davon → keine Änderung. Im Zweifel: Test stehen lassen und fragen.
+
+- **Float-Erwartungswerte: Toleranz aus der Rechnung ableiten, nicht aus Reflex.** Entsteht ein Erwartungswert durch verkettete float32-Arithmetik mit nicht exakt darstellbaren Faktoren (z. B. `0.3f`, `0.8f`), die Toleranz an der akkumulierten Rundung ausrichten — für Cutoff-Hz: fachlich vernachlässigbar (~`1e-2`), aber weiterhin um Größenordnungen enger als jede sinnvolle Mutation. Kein Reflex-`1e-5` auf Float-Ketten.
+
 ---
 
 ## Architektur
@@ -130,12 +144,12 @@ Das `AudioDataObject` ist bewusst ein serialisierter **Spiegel der AudioSource-E
 
 ### Wall Check (lightweight occlusion)
 - `Physics.RaycastNonAlloc` mit `RaycastHit[8]`-Buffer (max. 8 Wände).
-- Layer-basierte **Reduktionen** — jeder getroffene Layer senkt die Cutoff Frequency um einen konfigurierbaren Hz-Wert (`WallOcclusionMath.ApplyWall`, aktuell **linear**), runter bis `MinCutoffFreqValue` (`ClampToFloor`).
+- Layer-basierte **Dämpfung** — jeder getroffene Layer dämpft den laufenden Cutoff um einen konfigurierbaren **Faktor `0..1`** (`WallDampingLayer.WallDampingFactor`, `[Range(0,1)]`-geguardet) Richtung Floor (`WallOcclusionMath.ApplyWall`, **multiplikativ**: `current − (current − floor)·d`). Über N Wände skaliert der offene Bereich über dem Floor mit `∏(1 − dᵢ)` → reihenfolge-unabhängig und **asymptotisch** zum Floor; `ClampToFloor` ist nur noch Sicherheitsnetz gegen Fehlkonfig (`d>1`). `0` = Wand transparent, `1` = fällt in einer Wand auf `MinCutoffFreqValue`.
 - **Offener Cutoff = `DefaultCutoffFreqValue` ≈ 22000 Hz** (Obergrenze des Gehörs → transparent). Niedrigere Werte klingen dumpf.
 - **Filter nur für wand-geprüfte Sounds aktiv:** `filter.enabled = ado.UseWallCheck` bei jedem Dispatch (`LowPassDispatchPolicy`). Alle anderen Sounds (2D-Musik, UI, nicht-occludierte SFX) umgehen den Filter komplett → transparenter Klang + weniger DSP.
 - **Weiche Übergänge:** Der WallCheck-Loop setzt nur noch `AudioObject.TargetCutoff`; `AudioOcclusionSmoothingService` gleitet `filter.cutoffFrequency` pro Frame dorthin (`OcclusionSmoothing.Step`, MoveTowards mit `OcclusionSmoothingSpeed` Hz/s; `0` = sofort). Kein „Pop" mehr beim Aus-der-Wand-Treten.
 - WallCheck nur wenn aktiv → kein Raycast bei pausierten Sounds. `ShouldContinueLoop()` unterscheidet OneShot (BusyUntilTime) und Loop (isPlaying) und hält den Loop bei `IsPaused` am Leben (sonst kehrt Occlusion nach Unpause nicht zurück).
-- **`WallOcclusionMath` ist der Modell-Seam:** Der Wechsel auf logarithmischen/multiplikativen Abfall ist eine Einzelstelle (`ApplyWall`-Rumpf) — siehe BACKLOG.
+- **`WallOcclusionMath` ist der Modell-Seam:** Das multiplikative Dämpfungs-Modell lebt allein im `ApplyWall`-Rumpf (Einzelstelle) — ein künftiger Wechsel (z. B. echtes logarithmisches Mapping) bliebe eine lokale Änderung an dieser einen Stelle.
 
 ### Pause-Modell (ohne Multi-Pool gelöst)
 - Pro-ADO `RespectsGlobalPause` (Default true; regelt NUR die globale `PauseAll`/`UnpauseAll`, nicht `Stop(handle)`).

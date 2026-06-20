@@ -56,7 +56,7 @@ namespace AudioFramework.Core
 
             instance = this;
 
-            dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.CutOffFrequenciesPerLayer);
+            dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.WallDampingPerLayer);
             dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
 
             Transform playerAudioListenerTransform = audioListener.transform;

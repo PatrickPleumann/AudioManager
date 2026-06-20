@@ -5,10 +5,10 @@ using AudioFramework.Utilities;
 namespace AudioFramework.Tests.EditMode
 {
     /// <summary>
-    /// Tests for building the wall layer-mask lookup (layer index -> cutoff Hz) from the configured
-    /// CutoffFreqLayerBehaviour[]. Every expected value is hand-derived from the agreed contract, NOT read off
+    /// Tests for building the wall layer-mask lookup (layer index -> wall damping factor) from the configured
+    /// WallDampingLayer[]. Every expected value is hand-derived from the agreed contract, NOT read off
     /// the implementation:
-    ///   • each entry maps SingleLayer -> CutoffFrequencyValue,
+    ///   • each entry maps SingleLayer -> WallDampingFactor,
     ///   • a duplicate layer keeps the FIRST value (deterministic config; later duplicates ignored),
     ///   • null / empty input is a silent no-op (the dictionary stays empty, never throws).
     /// If the implementation disagrees with these, the implementation is wrong, not the test.
@@ -17,8 +17,8 @@ namespace AudioFramework.Tests.EditMode
     {
         private const float Delta = 1e-5f;
 
-        private static CutoffFreqLayerBehaviour Layer(int layer, float cutoff)
-            => new CutoffFreqLayerBehaviour { SingleLayer = layer, CutoffFrequencyValue = cutoff };
+        private static WallDampingLayer Layer(int layer, float value)
+            => new WallDampingLayer { SingleLayer = layer, WallDampingFactor = value };
 
         [Test]
         public void MapsEachLayerToItsCutoff()
@@ -62,7 +62,7 @@ namespace AudioFramework.Tests.EditMode
         public void EmptyInput_LeavesDictionaryEmpty()
         {
             var provider = new AudioManagerDictionaryProvider();
-            provider.FillLayerMaskDictionaryWithLayerRelatedValues(new CutoffFreqLayerBehaviour[0]);
+            provider.FillLayerMaskDictionaryWithLayerRelatedValues(new WallDampingLayer[0]);
 
             Assert.AreEqual(0, provider.WallLayerMaskDictionary.Count);
         }

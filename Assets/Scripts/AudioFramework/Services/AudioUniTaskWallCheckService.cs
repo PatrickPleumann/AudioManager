@@ -109,8 +109,8 @@ namespace AudioFramework.Services.WallCheck
             float cutoff = config.DefaultCutoffFreqValue;
             for (int i = 0; i < hitCount; i++)
             {
-                if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float reduction))
-                    cutoff = WallOcclusionMath.ApplyWall(cutoff, reduction);
+                if (dictionaryProvider.WallLayerMaskDictionary.TryGetValue(wallHitBuffer[i].transform.gameObject.layer, out float damping))
+                    cutoff = WallOcclusionMath.ApplyWall(cutoff, config.MinCutoffFreqValue, damping);
             }
 
             return WallOcclusionMath.ClampToFloor(cutoff, config.MinCutoffFreqValue);

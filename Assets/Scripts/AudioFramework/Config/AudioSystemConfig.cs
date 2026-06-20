@@ -40,10 +40,10 @@ namespace AudioFramework.Configuration
         [Range(0.01f, 1f)] public float TimeIntervalBetweenPositionChecks = 0.25f;
         [Space]
 
-        [Header(" --- Array of all layer related Cutoff Frequencies --- ")]
-        [Tooltip("Create a new element with (+) -> Expand the new Element -> Choose a single Layer -> " +
-                 " Add a Cutoff Frequency as value -> Done")]
-        public CutoffFreqLayerBehaviour[] CutOffFrequenciesPerLayer;
+        [Header(" --- Per-layer wall damping --- ")]
+        [Tooltip("Create a new element with (+) -> Expand it -> Choose a single Layer -> set its Wall Damping Factor " +
+                 "(0 = transparent, 1 = fully muffled to MinCutoffFreqValue in a single wall). Walls combine multiplicatively.")]
+        public WallDampingLayer[] WallDampingPerLayer;
         [Space]
 
         [Header(" --- References ---")]

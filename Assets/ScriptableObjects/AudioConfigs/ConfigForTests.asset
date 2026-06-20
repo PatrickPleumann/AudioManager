@@ -17,12 +17,12 @@ MonoBehaviour:
   MinCutoffFreqValue: 100
   OcclusionSmoothingSpeed: 50000
   TimeIntervalBetweenPositionChecks: 0.25
-  CutOffFrequenciesPerLayer:
+  WallDampingPerLayer:
   - SingleLayer: 9
-    CutoffFrequencyValue: 10000
+    WallDampingFactor: 0.45
   - SingleLayer: 10
-    CutoffFrequencyValue: 14000
+    WallDampingFactor: 0.65
   - SingleLayer: 11
-    CutoffFrequencyValue: 18000
+    WallDampingFactor: 0.82
   TransferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}
   AudioGameObjectPrefab: {fileID: 377295153041213637, guid: ad4150fbf24cd714685ef117c5421b69, type: 3}

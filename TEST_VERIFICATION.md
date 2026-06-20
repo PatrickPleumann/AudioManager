@@ -94,13 +94,18 @@ Getestet über `FakeFadeTarget` (Recording-Double) — saubere Seam, kein echter
   - Cutoff hardcodiert → der `17500f`-Test fängt es (Cutoff wird *regardless* durchgereicht). ✔
 - **Einordnung:** geringster Wert pro Test der Suite, aber legitim — es pinnt eine **Design-Entscheidung** (Filter nur für wand-geprüfte Sounds) gegen spätere „Optimierungen". Kein Handlungsbedarf.
 
-### 5 — `WallOcclusionMath` (`ApplyWall`, `ClampToFloor`) → **Stark**
-**Vertrag (heute linear):** `ApplyWall = cutoff − reduction`; `ClampToFloor` hält den Boden.
+### 5 — `WallOcclusionMath` (`ApplyWall`, `ClampToFloor`) → **Stark** *(Modellwechsel 2026-06-20)*
+**Vertrag (jetzt multiplikativ, Variante A):** `ApplyWall = current − (current − floor) · damping`. Eine Wand dämpft den Cutoff um den Bruchteil `damping` (0 = transparent, 1 = fällt in einer Wand auf den Floor) **Richtung Floor**. Über N Wände wird der offene Bereich über dem Floor mit `∏(1 − dᵢ)` skaliert → reihenfolge-unabhängig und **asymptotisch** zum Floor (unterschreitet ihn nie). `ClampToFloor` ist damit nur noch ein Sicherheitsnetz gegen Fehlkonfig (`d>1`) und Float-Drift. *(Frühere lineare Hz-Subtraktion ersetzt — siehe Begründung Occlusion-Abschnitt in CLAUDE.md.)*
 
-- **Spec-abgeleitet:** Ja; Header weist explizit auf den künftigen log-/multiplikativen Modellwechsel hin (der Seam-Gedanke).
-- **Mutation:** `+`-statt-`−`-Mutation fällt (8000 ≠ 36000). Inversion in `ClampToFloor` (`>` statt `<`) fällt (50 → erwartet 100). ✔
-  - **`<` vs `<=` an der Grenze `cutoff==min` ist immateriell** (beide liefern `min`) — also keine echte Lücke.
-- **Lücke (minor, aber real):** Der **realistische Komposit-Fall** fehlt — `ApplyWall` *unter* Null treiben (z. B. 22000 − 30000 = −8000) und dann von `ClampToFloor` retten lassen. Beide werden nur **isoliert** geprüft; der Pfad „viele Wände → negativ → Boden" nicht als Kette. Genau dort lebt das echte Verhalten.
+- **Tests (9):** 7× `ApplyWall_*` (Einzelwand-Fraktion, `d=0` transparent, `d=1` → Floor, multiplikative Akkumulation, abnehmender Absolut-Schritt, Reihenfolge-Unabhängigkeit, Komposit `ApplyWall→ClampToFloor` bei `d>1`) + 2× `ClampToFloor_*` (unverändert, modell-agnostisch).
+- **Spec-abgeleitet:** Ja; alle Erwartungswerte aus der Dämpfungs-/Asymptote-Gleichung hand-abgeleitet (`Open=22000`, `Floor=1000`), nicht aus dem Code.
+- **Mutation:** `−`→`+` in `ApplyWall`. **5 Tests rot** (Fraktion, Voll-Dämpfung, Akkumulation, Reihenfolge, Komposit), `ZeroDamping` bleibt grün (`+0 == −0`, pinnt bewusst den Wert, nicht den Operator), beide `ClampToFloor` grün. Mutation gefangen → Suite schützt den Vertrag. ✔
+- **Lücke aus der Vorversion geschlossen:** Der „viele Wände → Floor"-Komposit-Pfad ist jetzt als Kette getestet (`ApplyWall_ThenClampToFloor_OverDampedConfigRescuedToFloor`: `d=1.5` → −9500 → Clamp → 1000).
+
+**Zwei Stolperstellen in dieser Session — ehrlich festgehalten** (Anlass für die neuen Schutzregeln in CLAUDE.md):
+
+1. **Float-Toleranz war ein echter Test-Defekt.** `Delta = 1e-5` war zu eng für die verkettete float32-Rechnung des Reihenfolge-Tests (Faktoren `0.3f`/`0.8f` nicht exakt darstellbar → Ergebnis `3939.99976` statt `3940`, Abweichung ~`2.4e-4`). Diagnose lief korrekt die Instanzen durch: Code korrekt, Hand-Herleitung `3940` korrekt → *erst danach* legitim beim Test gelandet (Authoring-Defekt, Kategorie a). Korrigiert auf `1e-2` (perzeptiv exakt, weiterhin um Größenordnungen enger als jede Mutation).
+2. **Verfehlte Mutations-Vorhersage war KEIN Test-Defekt, sondern mein Modellfehler.** Vorhergesagt: 6 rot. Tatsächlich: 5. `PerWallAbsoluteStepDiminishes` blieb grün, weil er nur die *relative* Ordnung prüft (`secondStep < firstStep`) — unter dem Vorzeichen-Flip drehen beide Schritte ins Negative und behalten ihre Ordnung (`−15750 < −10500`). Der Mutation-Check war trotzdem bestanden (≥1 rot, Suite-Ebene). Der Reflex, den Test zu „härten", damit die Prognose stimmt, wurde **verworfen** — reines Gold-Plating, das andere Tests auf Suite-Ebene schon abdecken. Test **unangetastet**.
 
 ### 6 — `OcclusionSmoothing.Step(current, target, dt, speed)` → **Stark**
 **Vertrag:** MoveTowards mit `speed` Hz/s; `speed<=0` → sofort `target`; kein Overshoot.
@@ -125,7 +130,7 @@ Getestet über `FakeFadeTarget` (Recording-Double) — saubere Seam, kein echter
 - **Lücke:** praktisch keine nennenswerte.
 
 ### 8 — `AudioManagerDictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues` → **Stark**
-**Vertrag:** `SingleLayer → CutoffFrequencyValue`; Duplikat = **keep-first**; null/leer = stiller No-op.
+**Vertrag:** `SingleLayer → WallDampingFactor`; Duplikat = **keep-first**; null/leer = stiller No-op.
 
 - **Mutation:** **keep-first** gepinnt (`DuplicateLayer_KeepsFirstValue`): mit `dict[k]=v` statt `TryAdd` käme 9000 statt 5000. ✔ null/leer-Guards getestet (ohne Guard NRE → Test wirft). ✔
 - **Lücke (minor):** Die **Warnung** auf Duplikat wird **nicht** mit `LogAssert.Expect` bestätigt. Das *Verhalten* (keep-first) ist gesichert, die *Diagnose-Meldung* nicht — für ein Asset-Tool (Nutzer debuggt Fehlkonfiguration darüber) Teil des Vertrags.
