@@ -11,20 +11,22 @@
 
 # Teil A — Release-Härtung (Code-Review IST)
 
-## ✅ Erledigt (2026-06-04)
+## ✅ Erledigt
+
+> Die ersten fünf Punkte (K1, W2, Occlusion-Glättung, W1+P6, P8): 2026-06-04 (Code-Review-Härtung). **W3**: 2026-06-20.
+
 - **K1** — Singleton-`OnDestroy` nullt nicht mehr die lebende Instanz (`if (instance != this) return;`). *(Unit-Test folgt mit dem AudioManagerDynamic-Sammeltest + M3.)*
 - **W2** — LowPass-Default 5000→22000 (transparent); `filter.enabled = UseWallCheck` pro Dispatch (`LowPassDispatchPolicy`, 4 Tests). Occlusion-Mathe in pure `WallOcclusionMath` extrahiert (4 Tests), beide WallCheck-Services teilen den Seam. Layer-Reduktionen neu getunt (10000/14000/18000).
 - **Occlusion-Glättung (aus W2-Diskussion abgespalten)** — WallCheck setzt nur noch `TargetCutoff`, neuer `AudioOcclusionSmoothingService` gleitet pro Frame (`OcclusionSmoothing`, 6 Tests); `OcclusionSmoothingSpeed` als Config-Feld. Kein „Pop" mehr beim Aus-der-Wand-Treten.
 - **W1 + P6** — `AudioHandle` trägt jetzt `Generation`; Stop/Fade prüfen `IsHandleCurrent` (Bounds + Generation, `AudioHandleValidator`, 6 Tests) → stale Handle = stilles No-op. `AudioHandle`-Ctor `internal` + `AudioHandle.Invalid` → P6 (selbstgebauter `{99999}`-Crash) strukturell zu.
 - **P8** — CLAUDE.md auf IST-Zustand gebracht (API `PlaySpatial`/`PlayNonSpatial`/Fade-Familie, `AudioCategory`, kein `CallerTransform` mehr, neue Services) + Memory-Wissen eingearbeitet.
+- **W3** — Listener wird nicht mehr einmalig gecacht: beide WallCheck-Services halten einen `IAudioListenerProvider` statt roher `Transform`. `SceneAudioListenerProvider` cached + self-heilt bei jedem Zugriff (kein Polling), Resolve-Entscheidung pure in `ListenerCachePolicy` (3 EditMode-Tests, mutation-geprüft). Fängt Respawn **und** Kamerawechsel per Disable/Enable ab. Details in CLAUDE.md (Abschnitt „Wall Check"). *Noch offen:* PlayMode-Smoke-Test fürs echte Self-Heal → in Release-Hygiene gelistet.
 
 ---
 
 ## 🟠 Wichtig (vor Release)
 
-### W3 — AudioListener-Transform wird nur einmalig gecacht
-- [x] **erledigt 2026-06-20** — Statt roher `Transform` halten beide WallCheck-Services jetzt einen `IAudioListenerProvider`. Die Unity-Implementierung `SceneAudioListenerProvider` cached den `AudioListener`, **validiert ihn aber bei jedem Zugriff** (`cached != null && cached.isActiveAndEnabled`) und löst nur im Ungültig-Fall neu auf (`FindObjectsByType` → ersten aktiven Listener) — **kein Intervall-Polling**: der Happy Path ist ein Null-Check + ein Bool, der teure Scan feuert nur im Wechsel-Moment. Fängt sowohl Respawn (zerstört → `null`) als auch Kamerawechsel per Disable/Enable (`!isActiveAndEnabled`) ab. Reine Entscheidungslogik in `ListenerCachePolicy.NeedsResolve(hasCached, isAliveAndActive)` extrahiert (3 EditMode-Tests, mutation-geprüft: `||`→`&&` macht `CachedButStale` rot). `CalculateCutoffFrequency` nutzt `TryGetPosition(out Vector3)` → bei `false` weiterhin `DefaultCutoffFreqValue` (unverändertes „kein Listener"-Verhalten). **Offen (siehe M3-Bündel):** PlayMode-Smoke-Test für das echte Self-Heal-Verhalten des Providers (in EditMode bewusst NICHT getestet — `FindObjectsByType` würde den AudioListener der offenen Szene finden → umgebungsabhängig/brittle).
-- **Historischer Kontext (vor dem Fix):** `playerListener` wurde einmal in `Awake` aufgelöst und lebenslang gehalten; der `== false`-Guard fing nur Zerstörung ab, nicht den Wechsel auf einen anderen lebenden Listener → stiller Occlusion-Fehler bei Kamerawechsel/Respawn/Vehicle-Cam.
+— Aktuell **keine offenen Punkte.** (W3 erledigt 2026-06-20 → siehe ✅ Erledigt.) Nächste offene Härtung steht in 🟡 Mittel (M1, M3).
 
 ---
 
