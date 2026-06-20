@@ -20,25 +20,21 @@
 - **Occlusion-Glättung (aus W2-Diskussion abgespalten)** — WallCheck setzt nur noch `TargetCutoff`, neuer `AudioOcclusionSmoothingService` gleitet pro Frame (`OcclusionSmoothing`, 6 Tests); `OcclusionSmoothingSpeed` als Config-Feld. Kein „Pop" mehr beim Aus-der-Wand-Treten.
 - **W1 + P6** — `AudioHandle` trägt jetzt `Generation`; Stop/Fade prüfen `IsHandleCurrent` (Bounds + Generation, `AudioHandleValidator`, 6 Tests) → stale Handle = stilles No-op. `AudioHandle`-Ctor `internal` + `AudioHandle.Invalid` → P6 (selbstgebauter `{99999}`-Crash) strukturell zu.
 - **P8** — CLAUDE.md auf IST-Zustand gebracht (API `PlaySpatial`/`PlayNonSpatial`/Fade-Familie, `AudioCategory`, kein `CallerTransform` mehr, neue Services) + Memory-Wissen eingearbeitet.
+- **M1** — Fade- und Occlusion-Ticks laufen auf `Time.unscaledDeltaTime` statt `Time.deltaTime` (`AudioManagerDynamic.LateUpdate`, 2026-06-20). Modell: **Tool-Pause = `PauseAll`, nicht `timeScale`** — `AudioSource`-Wiedergabe ignoriert `timeScale`, also tun es die Echtzeit-Animationen (Fade/Occlusion-Glide) jetzt auch. `timeScale = 0` friert sie nicht mehr ein (das erledigt der `IsPaused`-Gate via `PauseAll`); in Slow-Mo/Fast-Forward laufen sie in realen Sekunden. Konsumierende Mathe ist selbstklemmend (`AudioFadeMath.Evaluate` clampt `[from,to]`, `OcclusionSmoothing.Step` MoveTowards) → Hitch-Spikes geben max. einen Snap-Frame, kein Overshoot/NaN. Kein EditMode-Seam (reiner Unity-Statik-Swap in dünner MonoBehaviour-Glue, Gruppe C) → **verifiziert via PlayMode-Smoke (Bündel unten)**, nicht per erfundenem Unit-Test. **Doku-TODO:** im User-Doc festhalten, dass Fades/Occlusion an `PauseAll` hängen, nicht an `timeScale`.
 - **W3** — Listener wird nicht mehr einmalig gecacht: beide WallCheck-Services halten einen `IAudioListenerProvider` statt roher `Transform`. `SceneAudioListenerProvider` cached + self-heilt bei jedem Zugriff (kein Polling), Resolve-Entscheidung pure in `ListenerCachePolicy` (3 EditMode-Tests, mutation-geprüft). Fängt Respawn **und** Kamerawechsel per Disable/Enable ab. Details in CLAUDE.md (Abschnitt „Wall Check"). *Noch offen:* PlayMode-Smoke-Test fürs echte Self-Heal → in Release-Hygiene gelistet.
 
 ---
 
 ## 🟠 Wichtig (vor Release)
 
-— Aktuell **keine offenen Punkte.** (W3 erledigt 2026-06-20 → siehe ✅ Erledigt.) Nächste offene Härtung steht in 🟡 Mittel (M1, M3).
+— Aktuell **keine offenen Punkte.** (W3 + M1 erledigt → siehe ✅ Erledigt.) Nächste offene Härtung steht in 🟡 Mittel (M3, M4, R3, R4).
+
+> Die R-Punkte stammen aus dem **zweiten Review-Durchgang (2026-06-21)** — freies Gesamt-Lesen + lokaler Max-Effort-Recall-Pass.
+> **Verworfen — R1 (vermeintlich „Loops loopen nicht"):** Falsch-Positiv. Beruhte auf der Fehlannahme `!IsOneShot ⟹ muss loopen`. `IsOneShot` ist die *Dispatch-Methode* (`PlayOneShot` vs. `source.Play()`), **orthogonal** zu `loop`. Ein non-OneShot spielt korrekt **einmal** als gemanagte, stopp-/fadebare Quelle — kein Bug. `loop` ist ohnehin ein bekannter **Wachstumskandidat** (CLAUDE.md), kein kaputtes Feature. Nicht erneut als Bug aufmachen.
 
 ---
 
 ## 🟡 Mittel
-
-### M1 — Fades nutzen scaled `Time.deltaTime` → Konflikt mit `timeScale = 0`-Pause
-- [ ] **erledigt**
-- **Ort:** `AudioManagerDynamic.LateUpdate` (~Z. 99, `fadeService.Tick(Time.deltaTime)`).
-- **Problem:** Bei der üblichen `Time.timeScale = 0`-Pause ist `deltaTime` 0 → **jeder Fade friert ein**, auch für Sounds mit `RespectsGlobalPause = false` (z. B. Menü-Musik beim Pausenmenü einfaden). Widerspruch zum sonst durchdachten Pause-System.
-- **Fix:** `Time.unscaledDeltaTime` im Tick. Global-pausierte Fades fängt der `IsPaused`-Check im `Tick` bereits ab. **Designentscheidung nötig:** Was soll bei `timeScale=0` + globaler Pause genau passieren?
-- **Test:** `AudioFadeService` ist gut getestet; die Service-Logik ändert sich nicht. Test eher auf Manager-/Integrationsebene (welche Zeitquelle wird durchgereicht).
-- **Aufwand:** S (Code) — Designentscheidung davor.
 
 ### M3 — Leeres PlayMode-Test-Assembly
 - [ ] **erledigt**
@@ -47,12 +43,30 @@
 - **Fix:** Entweder PlayMode-Tests hinzufügen (ideal zusammen mit K1) oder Assembly + Ordner entfernen.
 - **Aufwand:** S
 
+### M4 — OneShot-`BusyUntilTime` nutzt skaliertes `Time.time` → Slot hängt bei `timeScale = 0`
+- [ ] **erledigt**
+- **Ort:** `AudioOcclusionSmoothingService.cs` (~Z. 38, `Time.time >= BusyUntilTime`) und die Stelle, die `BusyUntilTime` setzt (Pool-/Playback-Pfad — beim Aufnehmen prüfen).
+- **Problem:** `BusyUntilTime` wird aus `Time.time` (skaliert) abgeleitet; bei `Time.timeScale = 0` steht `Time.time`. Ein OneShot-Slot, der während einer `timeScale=0`-Pause läuft, wird rechnerisch nicht freigegeben, obwohl der Clip auf realer DSP-Zeit endet → Slot kann kurz hängen. Vorbestehend, **unabhängig von M1** (dort separat beobachtet, bewusst nicht mitgezogen).
+- **Fix-Richtung (offen, vor Code entscheiden):** OneShot-Lebenszeit auf eine zeit-skalen-unabhängige Quelle stellen (`Time.unscaledTime` / `realtimeSinceStartup`) — konsistent mit der DSP-Wiedergabe und mit der M1-Entscheidung „Audio-Timing ≠ `timeScale`". **Designfrage:** soll ein OneShot bei `PauseAll` (echte Pause) anders behandelt werden als bei bloßem `timeScale=0`? Erst klären, dann test-first.
+- **Aufwand:** S (Code) — kleine Designklärung davor.
+
+### R3 — WallCheck-Schleife ist generation-blind → kann an einen neu vergebenen Slot „andocken" (Review 2026-06-21)
+- [ ] **erledigt**
+- **Ort:** `AudioPlaybackService.cs` (`Dispatch` ruft **kein** `StopActiveCheck` bei Neubelegung) + `ShouldContinueLoop` in **beiden** WallCheck-Services.
+- **Problem:** Die Schleife arbeitet nur mit `poolIndex`, prüft nie die Generation. Beim Slot-Reuse wird die alte Schleife **nur** gestoppt, wenn der neue Sound selbst `UseWallCheck` hat (dann `StartWallCheckLoop` → Cancel). Belegt ein Sound **ohne** WallCheck den Slot, läuft die alte Schleife verwaist weiter: occludierter OneShot endet, im Rest-Intervallfenster (≤ `TimeIntervalBetweenPositionChecks`, default 0.25 s) wird der Slot neu vergeben → Alt-Schleife sieht `isPlaying == true` des Fremd-Sounds und raycastet weiter für ihn, bei Loop-Nachfolger **endlos**. Inaudibel (`filter.enabled == false` → OcclusionSmoothing überspringt), aber verschwendete Raycasts pro Intervall — VR-/Performance-relevant.
+- **Fix-Richtung:** Pragmatisch — `Dispatch` ruft **immer** `wallCheckService.StopActiveCheck(poolIndex)` vor Neubelegung (idempotent). Strukturell sauberer — Schleife generation-aware machen (analog `AudioHandle`); das wäre die tiefere Lösung statt eines Sonderfalls. Vor Code entscheiden welche Tiefe. Test-first.
+- **Konfidenz:** Mittel-hoch (Logikschluss, kein Laufzeitbeweis). **Aufwand:** S–M.
+
+### R4 — WallCheck-Intervall nutzt skalierte Zeit → friert bei `timeScale = 0` ein (Review 2026-06-21)
+- [ ] **erledigt**
+- **Ort:** UniTask `AudioUniTaskWallCheckService.cs` (~Z. 70, `UniTask.Delay(..., DelayType.DeltaTime)`), Coroutine `AudioCoroutineWallCheckService.cs` (~Z. 41, `WaitForSeconds`). Beide sind `timeScale`-skaliert.
+- **Problem:** Bei `timeScale = 0` (ohne `PauseAll`) friert der WallCheck-Loop ein → `TargetCutoff` eines weiterspielenden `RespectsGlobalPause=false`-Sounds wird stale. Inkonsistent mit der M1-Linie „Audio-Timing ≠ `timeScale`". **Gehört zur timeScale-Familie M1 (erledigt) + M4 — am besten in einem Rutsch entscheiden.** Verteidbar als „WallCheck pausiert mit dem Spiel", aber dann sollte es bewusst so dokumentiert sein.
+- **Fix-Richtung:** `DelayType.UnscaledDeltaTime` / `Realtime` bzw. `WaitForSecondsRealtime` — oder bewusste Doku-Entscheidung. In **beiden** Services spiegeln (Coroutine-Sammel-Check).
+- **Aufwand:** S — Designklärung mit M4 bündeln.
+
 ---
 
 ## ⚪ Niedrig / Politur & Wartbarkeit
-
-### P1 — `AudioCategory.BehindWall` ist ein Zustand, keine Lautstärke-Kategorie
-- [ ] **erledigt** — `AudioCategory.cs` (~Z. 9). Beispiel-Satz mischt 4 echte Kategorien mit einem Occlusion-Zustand. Vor Release bereinigen. Aufwand: S
 
 ### P2 — `AudioFollowService` dupliziert die StopSlot-Logik inline
 - [ ] **erledigt** — `AudioFollowService.cs` (~Z. 46–60) wiederholt `AudioStopService.StopSlot` fast wörtlich. Konsolidieren (StopSlot + `ClearFade` + `SetFollowTarget(null)` + Warnung). Wartungsrisiko. Aufwand: S
@@ -68,6 +82,15 @@
 
 ### P7 — Fehlende Tooltips für `IsOneShot`, `CanHandleAudioSource`, `UseWallCheck`
 - [ ] **erledigt** — `AudioDataObject.cs`. Vor Release alle Inspector-Felder mit vollständigen Tooltips. Aufwand: S
+
+### R5 — `InitializePool` validiert die Prefab-Komponenten nicht (Review 2026-06-21)
+- [ ] **erledigt** — `AudioPoolAcquisitionService.cs` (~Z. 37). `GetComponent<AudioSource>()`/`<AudioLowPassFilter>()` ohne Null-Check → ein falsch gebautes Prefab gibt später einen kryptischen NRE in `GetFreeAudioSourcePoolIndex` (`Source.isPlaying`) statt einer klaren Init-Fehlermeldung. Asset-Store-UX (Idiotensicherheit). Aufwand: S
+
+### R6 — `AudioSystemConfig` ohne `OnValidate`-Guards (Review 2026-06-21)
+- [ ] **erledigt** — `AudioSystemConfig.cs`. Kein Guard, dass `DefaultCutoffFreqValue > MinCutoffFreqValue` (oder dass Prefab/TransferObject gesetzt sind). Bei Fehlkonfig (Min über Default) floort die Occlusion sofort → alles dumpf ab Frame 1, ohne Inspector-Warnung. Härtung. Aufwand: S
+
+### R8 — Veraltete XML-Doc in `CalculateCutoffFrequency` (Coroutine) (Review 2026-06-21)
+- [ ] **erledigt** — `AudioCoroutineWallCheckService.cs` (~Z. 50). `<param name="hitInfo">`/`<param name="originPos">` passen nicht zur Signatur — Copy-Paste-Rest, doc rot in einer ausgelieferten Datei. Trivial. Aufwand: S
 
 ---
 
@@ -85,10 +108,11 @@
 ### Release-Hygiene
 - [ ] **Tooltips** — alle Inspector-Felder vollständig (insb. `IsOneShot`, `CanHandleAudioSource`, `UseWallCheck`). (= P7 oben.)
 - [ ] **`IGetPoolIndex` entfernen** — toter Platzhalter (Lightweight-Pool über per-Sound-Flags gelöst, siehe „Reißbrett" unten). War in der „nicht ohne Rücksprache"-Liste — diese Notiz IST der Rücksprache-Trigger.
-- [ ] **Null-Einträge in `CurrentClips` validieren** — `Random.Range` kann `null` wählen → `source.clip = null` → stiller Sound. Inspector-Validierung oder Skip/Warn beim Pick.
+- [ ] **Null-Einträge in `CurrentClips` validieren** (= R2, Schwere geschärft 2026-06-21) — `Random.Range` kann einen `null`-Eintrag wählen. Die Validierung in `Dispatch` (~Z. 95) guardet nur `CurrentClips == null || Length == 0`, **nicht** einzelne null-Elemente. Bei OneShot ist `SetSlotBusy(poolIndex, currentClip.length)` (~Z. 135) dann eine **NullReferenceException** — schärfer als das ursprüngliche „stiller Sound". Fix: null-Eintrag beim Pick skippen/warnen, oder ADO-Inspector-Validierung.
+- [ ] **Doku: Fade/Occlusion-Timing an `PauseAll`, nicht `timeScale`** (aus M1) — im User-Doc (DE+EN 1:1) festhalten, dass Fades und Occlusion-Glides in realen Sekunden laufen und von `Time.timeScale` entkoppelt sind: `timeScale = 0` pausiert sie NICHT, das macht `PauseAll`. Stil: nur IST-Zustand, kein „früher/jetzt".
 - [ ] **PDF-Dokumentation** — `.md`-Dateien existieren (DE/EN), Konvertierung zu PDF offen.
 - [ ] **Ordnerstruktur für Asset Store** — noch nicht definiert.
-- [ ] **PlayMode-Smoke-Tests für die Fade-Glue** — fadet `source.volume` wirklich über Frames, gibt FadeOut den Slot frei, friert echtes `PauseAll` einen Fade ein. Locked die aktuell nur manuell verifizierte Verdrahtung. Gutes Bündel mit M3 + K1-PlayMode-Test.
+- [ ] **PlayMode-Smoke-Tests für die Fade-Glue** — fadet `source.volume` wirklich über Frames, gibt FadeOut den Slot frei, friert echtes `PauseAll` einen Fade ein. **Plus M1-Fall:** bei `Time.timeScale = 0` läuft ein laufender Fade (und der Occlusion-Glide) weiter — `source.volume` ändert sich über Frames trotz `timeScale = 0` (beweist `unscaledDeltaTime`). Locked die aktuell nur manuell verifizierte Verdrahtung. Gutes Bündel mit M3 + K1-PlayMode-Test.
 - [ ] **PlayMode-Smoke-Test für `SceneAudioListenerProvider`** (aus W3) — in kontrollierter Szene das Self-Heal beweisen: (a) `TryGetPosition` liest die *aktuelle* Listener-Position (nicht die Start-Position), (b) nach Disable des alten + Enable eines neuen Listeners liefert er den neuen, (c) nach Zerstörung des Listeners `false`. Bewusst PlayMode statt EditMode, weil `FindObjectsByType` sonst den AudioListener der offenen Editor-Szene fände. Bündelt mit M3 + K1.
 
 ## Weitere geplante Features (Priorität offen — können vor 1.0 rein)
@@ -127,5 +151,5 @@ Die Rationale (lightweight vs. occlusion; UI/2D) ist via per-Sound-Flags am Einz
     - [ ] `AudioPauseService.PauseAll`/`UnpauseAll` — Scope-Logik (nur wecken, was wir pausiert haben); braucht Fake/Seam übers Pause-Primitiv.
   - **Gruppe C — dünne Glue/Orchestrierung & MonoBehaviour → PlayMode oder geringer Testwert:** `AudioManagerDynamic`-API (einzige echte Logik = Crossfade-Komposition), `AudioStopService.StopSlot`, `AudioFollowService.UpdateFollowers`, `AudioOcclusionSmoothingService.Tick`, WallCheck-Token-Lebenszyklus. Bündelt mit M3 + K1-PlayMode-Tests.
 
-- [ ] **Coroutine-Variante gebündelt unter `!USE_UNITASK` gegenprüfen** — Änderungen an `AudioCoroutineWallCheckService` werden von Hand 1:1 zur UniTask-Version gespiegelt, bei aktivem UniTask aber NICHT mitkompiliert (`#if`). Statt jedes Mal umzuschalten, prüft Patrick solche Spiegelungen **gesammelt in einem Rutsch** (UniTask testweise aus → Compile + Coroutine-Smoke). **Offen seit 2026-06-08:** `GenerateLayerMaskFromDictionary` → `WallLayerMask.FromLayers`-Umstellung. **Dazu (2026-06-20):** W3-Umstellung — Ctor-Param `Transform _playerListener` → `IAudioListenerProvider _listenerProvider` und `CalculateCutoffFrequency` (`playerListener.position`/`== false` → `listenerProvider.TryGetPosition(out …)`) in *beiden* Services gespiegelt; bei aktivem UniTask kompiliert die Coroutine-Variante nicht mit → im Sammel-Check (UniTask aus) gegenprüfen. Künftige Doppel-Service-Änderungen hier anhängen, bis der Sammel-Check läuft.
+- [ ] **Coroutine-Variante gebündelt unter `!USE_UNITASK` gegenprüfen** — Änderungen an `AudioCoroutineWallCheckService` werden von Hand 1:1 zur UniTask-Version gespiegelt, bei aktivem UniTask aber NICHT mitkompiliert (`#if`). Statt jedes Mal umzuschalten, prüft Patrick solche Spiegelungen **gesammelt in einem Rutsch** (UniTask testweise aus → Compile + Coroutine-Smoke). **Offen seit 2026-06-08:** `GenerateLayerMaskFromDictionary` → `WallLayerMask.FromLayers`-Umstellung. **Dazu (2026-06-20):** W3-Umstellung — Ctor-Param `Transform _playerListener` → `IAudioListenerProvider _listenerProvider` und `CalculateCutoffFrequency` (`playerListener.position`/`== false` → `listenerProvider.TryGetPosition(out …)`) in *beiden* Services gespiegelt; bei aktivem UniTask kompiliert die Coroutine-Variante nicht mit → im Sammel-Check (UniTask aus) gegenprüfen. Künftige Doppel-Service-Änderungen hier anhängen, bis der Sammel-Check läuft. **Dazu (R7, Review 2026-06-21):** die Coroutine-Variante cached `AudioSource targetSource = poolArray[poolIndex].Source` einmal (~Z. 65) und prüft `targetSource == false`, während die UniTask-Variante `poolArray[poolIndex].Source` bei jedem Tick live liest — Mirroring-Drift (kein aktiver Bug, Pool-Source ist stabil). Im Sammel-Check angleichen.
 - [ ] **Pricing-Analyse** (wenn release-reif) — Asset-Store-Preise der Konkurrenz (MasterAudio & Co.) live benchmarken (WebSearch für aktuelle Zahlen), dann wertbasiert auf die Differenzierer ankern (saubere Architektur + Tests + lightweight Occlusion + Ease-of-use vs. FMOD). Finaler Preis ist Patricks Markt-Call; ich liefere Benchmark + Begründung, kein Verdikt.

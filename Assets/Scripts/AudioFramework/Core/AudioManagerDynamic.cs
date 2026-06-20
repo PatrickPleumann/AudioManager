@@ -97,8 +97,12 @@ namespace AudioFramework.Core
         private void LateUpdate()
         {
             followService?.UpdateFollowers();
-            occlusionSmoothingService?.Tick(Time.deltaTime);
-            fadeService?.Tick(Time.deltaTime);
+            // Fades and occlusion glides are real-time volume/cutoff animations on AudioSources, whose playback is
+            // NOT affected by Time.timeScale. Driving them with unscaledDeltaTime keeps them consistent with that
+            // playback and decouples them from timeScale: a Time.timeScale = 0 pause no longer freezes them (that is
+            // exclusively PauseAll's job, via the IsPaused gate), and they run in real seconds in slow-mo/fast-forward.
+            occlusionSmoothingService?.Tick(Time.unscaledDeltaTime);
+            fadeService?.Tick(Time.unscaledDeltaTime);
         }
 
         /// <summary>
