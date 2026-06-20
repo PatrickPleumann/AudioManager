@@ -71,15 +71,6 @@
 ### P7 — Fehlende Tooltips für `IsOneShot`, `CanHandleAudioSource`, `UseWallCheck`
 - [ ] **erledigt** — `AudioDataObject.cs`. Vor Release alle Inspector-Felder mit vollständigen Tooltips. Aufwand: S
 
-### P9 — Datei `CutoffFreqLayerBehaviour.cs` heißt noch nach dem alten Typ
-- [ ] **erledigt** — enthält seit der Occlusion-Faktor-Migration (2026-06-20) den Typ `WallDampingLayer`. Für plain serializable structs unkritisch, aber kosmetisch inkonsistent. Datei (+ `.meta`) auf `WallDampingLayer.cs` umbenennen. Aufwand: S
-
-### P10 — Pass-Through-Test-Werte lesen sich noch als „Hz-Reste"
-- [ ] **erledigt** — `AudioManagerDictionaryProviderLayerMaskTests` nutzt Eingabewerte `5000`/`12000`/`9000` (beliebige distinkte Floats, testet nur Mapping-Pass-Through). Seit dem Modellwechsel sind das Dämpfungsfaktoren `0..1` → optional auf faktor-lesbare Werte (z. B. `0.5`/`0.7`) umstellen. **Test-Änderung Kategorie (b)** — nur mit Patricks Go, Werte/Assertions bleiben sonst eingefroren. Aufwand: S
-
-### P11 — Echte `[0,1]`-Validierung des Dämpfungsfaktors (über den `[Range]`-Guard hinaus)
-- [ ] **erledigt** — der Inspector-`[Range(0,1)]` auf `WallDampingLayer.WallDampingFactor` verhindert Fehleingaben im Editor; ein per-Code gesetzter Wert `>1` würde weiter nur durch `ClampToFloor` aufgefangen. Falls robusteres Verhalten gewünscht (Warn/Clamp beim Dictionary-Aufbau): test-first als kleines Feature. Aufwand: S
-
 ---
 
 # Teil B — Geplante Features & Roadmap

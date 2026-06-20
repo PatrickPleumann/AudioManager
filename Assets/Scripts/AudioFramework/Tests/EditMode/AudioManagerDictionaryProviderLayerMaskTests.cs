@@ -26,13 +26,13 @@ namespace AudioFramework.Tests.EditMode
             var provider = new AudioManagerDictionaryProvider();
             provider.FillLayerMaskDictionaryWithLayerRelatedValues(new[]
             {
-                Layer(8, 5000f),
-                Layer(10, 12000f)
+                Layer(8, 0.5f),
+                Layer(10, 0.7f)
             });
 
             Assert.AreEqual(2, provider.WallLayerMaskDictionary.Count);
-            Assert.AreEqual(5000f, provider.WallLayerMaskDictionary[8], Delta);
-            Assert.AreEqual(12000f, provider.WallLayerMaskDictionary[10], Delta);
+            Assert.AreEqual(0.5f, provider.WallLayerMaskDictionary[8], Delta);
+            Assert.AreEqual(0.7f, provider.WallLayerMaskDictionary[10], Delta);
         }
 
         [Test]
@@ -41,12 +41,12 @@ namespace AudioFramework.Tests.EditMode
             var provider = new AudioManagerDictionaryProvider();
             provider.FillLayerMaskDictionaryWithLayerRelatedValues(new[]
             {
-                Layer(8, 5000f),
-                Layer(8, 9000f) // same layer, later value must be ignored
+                Layer(8, 0.5f),
+                Layer(8, 0.9f) // same layer, later value must be ignored
             });
 
             Assert.AreEqual(1, provider.WallLayerMaskDictionary.Count);
-            Assert.AreEqual(5000f, provider.WallLayerMaskDictionary[8], Delta);
+            Assert.AreEqual(0.5f, provider.WallLayerMaskDictionary[8], Delta);
         }
 
         [Test]
