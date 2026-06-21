@@ -56,15 +56,16 @@ namespace AudioFramework.Services.WallCheck
         public void StartWallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
         {
             StopActiveCheck(poolIndex);
-            Coroutine newCheck = routineRunner.StartCoroutine(WallCheckLoop(audioDataObject, poolIndex));
+            int startGeneration = poolArray[poolIndex].Generation;
+            Coroutine newCheck = routineRunner.StartCoroutine(WallCheckLoop(audioDataObject, poolIndex, startGeneration));
             activeCoroutineChecks.Add(poolIndex, newCheck);
         }
 
-        private IEnumerator WallCheckLoop(AudioDataObject audioDataObject, int poolIndex)
+        private IEnumerator WallCheckLoop(AudioDataObject audioDataObject, int poolIndex, int startGeneration)
         {
             AudioSource targetSource = poolArray[poolIndex].Source;
 
-            while (ShouldContinueLoop(audioDataObject, poolIndex))
+            while (ShouldContinueLoop(audioDataObject, poolIndex, startGeneration))
             {
                 if (audioDataObject == false || targetSource == false) yield break;
 
@@ -80,7 +81,7 @@ namespace AudioFramework.Services.WallCheck
         private bool IsCurrentlyActive(int poolIndex) =>
             poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
 
-        private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex)
+        private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex, int startGeneration)
         {
             if (poolArray[poolIndex].Source == null)
             {
@@ -89,13 +90,14 @@ namespace AudioFramework.Services.WallCheck
 #endif
                 return false;
             }
-
-       
-            if (poolArray[poolIndex].IsPaused) return true;
-
-            if (audioDataObject.IsOneShot)
-                return poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
-            return poolArray[poolIndex].Source.isPlaying;
+            return WallCheckContinuation.ShouldContinue(
+                startGeneration: startGeneration,
+                currentGeneration: poolArray[poolIndex].Generation,
+                isPaused: poolArray[poolIndex].IsPaused,
+                isOneShot: audioDataObject.IsOneShot,
+                isPlaying: poolArray[poolIndex].Source.isPlaying,
+                currentTime: Time.time,
+                busyUntilTime: poolArray[poolIndex].BusyUntilTime);
         }
 
         private void ApplyWallCheckFilter(int poolIndex)
