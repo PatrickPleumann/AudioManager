@@ -20,7 +20,7 @@ namespace AudioFramework.Services.WallCheck
         private readonly MonoBehaviour routineRunner;
 
         private readonly Dictionary<int, Coroutine> activeCoroutineChecks = new Dictionary<int, Coroutine>();
-        private readonly WaitForSeconds intervalWait;
+        private readonly WaitForSecondsRealtime intervalWait;
         private readonly WaitForSeconds pauseWait;
         private int automaticallyGeneratedWallLayerMask;
         private readonly RaycastHit[] wallHitBuffer = new RaycastHit[8];
@@ -38,7 +38,9 @@ namespace AudioFramework.Services.WallCheck
             dictionaryProvider = _dictionaryProvider;
             routineRunner = _routineRunner;
 
-            intervalWait = new WaitForSeconds(config.TimeIntervalBetweenPositionChecks);
+            // R4: real-clock interval so the wall-check keeps ticking at timeScale = 0 (consistent with M1/M4;
+            // pause via PauseAll, not timeScale). WaitForSecondsRealtime resets itself, so caching + reuse is safe.
+            intervalWait = new WaitForSecondsRealtime(config.TimeIntervalBetweenPositionChecks);
             pauseWait = new WaitForSeconds(0.1f); // only for pausing intervalbased Routines...
 
             GenerateLayerMaskFromDictionary();
@@ -79,7 +81,7 @@ namespace AudioFramework.Services.WallCheck
         }
 
         private bool IsCurrentlyActive(int poolIndex) =>
-            poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+            poolArray[poolIndex].Source.isPlaying || Time.unscaledTime < poolArray[poolIndex].BusyUntilTime;
 
         private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex, int startGeneration)
         {
@@ -96,7 +98,7 @@ namespace AudioFramework.Services.WallCheck
                 isPaused: poolArray[poolIndex].IsPaused,
                 isOneShot: audioDataObject.IsOneShot,
                 isPlaying: poolArray[poolIndex].Source.isPlaying,
-                currentTime: Time.time,
+                currentTime: Time.unscaledTime,
                 busyUntilTime: poolArray[poolIndex].BusyUntilTime);
         }
 

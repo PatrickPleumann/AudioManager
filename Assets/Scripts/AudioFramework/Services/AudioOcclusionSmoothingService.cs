@@ -35,7 +35,8 @@ namespace AudioFramework.Services.WallCheck
 
                 if (source == null || filter == null || !filter.enabled) continue;
 
-                if (!source.isPlaying && Time.time >= pool[i].BusyUntilTime) continue;
+                // BusyUntilTime lives on the real clock (Time.unscaledTime), set in SetSlotBusy — compare on the same clock.
+                if (!source.isPlaying && Time.unscaledTime >= pool[i].BusyUntilTime) continue;
 
                 filter.cutoffFrequency = OcclusionSmoothing.Step(filter.cutoffFrequency, pool[i].TargetCutoff, deltaTime, speed);
             }

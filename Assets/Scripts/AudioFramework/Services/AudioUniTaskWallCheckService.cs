@@ -68,13 +68,15 @@ namespace AudioFramework.Services.WallCheck
                 if (IsCurrentlyActive(poolIndex))
                     ApplyWallCheckFilter(poolIndex);
 
-                bool canceled = await UniTask.Delay(checkIntervalMs, delayType: DelayType.DeltaTime, cancellationToken: token).SuppressCancellationThrow();
+                // R4: real-clock interval (UnscaledDeltaTime) so the wall-check keeps ticking at timeScale = 0 —
+                // consistent with M1/M4. To actually pause occlusion the game calls PauseAll, not timeScale.
+                bool canceled = await UniTask.Delay(checkIntervalMs, delayType: DelayType.UnscaledDeltaTime, cancellationToken: token).SuppressCancellationThrow();
                 if (canceled) return;
             }
         }
 
         private bool IsCurrentlyActive(int poolIndex) =>
-            poolArray[poolIndex].Source.isPlaying || Time.time < poolArray[poolIndex].BusyUntilTime;
+            poolArray[poolIndex].Source.isPlaying || Time.unscaledTime < poolArray[poolIndex].BusyUntilTime;
 
         private bool ShouldContinueLoop(AudioDataObject audioDataObject, int poolIndex, int startGeneration)
         {
@@ -91,7 +93,7 @@ namespace AudioFramework.Services.WallCheck
                 isPaused: poolArray[poolIndex].IsPaused,
                 isOneShot: audioDataObject.IsOneShot,
                 isPlaying: poolArray[poolIndex].Source.isPlaying,
-                currentTime: Time.time,
+                currentTime: Time.unscaledTime,
                 busyUntilTime: poolArray[poolIndex].BusyUntilTime);
         }
 

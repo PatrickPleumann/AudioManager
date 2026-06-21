@@ -43,7 +43,10 @@ namespace AudioFramework.Pooling
 
         public int GetFreeAudioSourcePoolIndex()
         {
-            float currentTime = Time.time;
+            // OneShot busy-window runs on the real clock, NOT game time: an AudioSource plays in real seconds and
+            // ignores Time.timeScale, so its slot reservation must too (see M1 / the PauseAll-is-the-pause contract).
+            // unscaledTime keeps the slot freeing correctly even at timeScale = 0. Must stay consistent with SetSlotBusy.
+            float currentTime = Time.unscaledTime;
             for (int i = 0; i < poolArray.Length; i++)
             {
                 if (PoolSlotAvailability.IsFree(poolArray[i].Source.isPlaying, currentTime, poolArray[i].BusyUntilTime, poolArray[i].IsPaused))
@@ -55,7 +58,7 @@ namespace AudioFramework.Pooling
             return -1;
         }
 
-        public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.time + duration;
+        public void SetSlotBusy(int poolIndex, float duration) => poolArray[poolIndex].BusyUntilTime = Time.unscaledTime + duration;
         public void ResetSlotBusy(int poolIndex) => poolArray[poolIndex].BusyUntilTime = 0f;
 
 

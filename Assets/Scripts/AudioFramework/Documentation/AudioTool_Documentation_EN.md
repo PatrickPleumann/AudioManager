@@ -12,7 +12,9 @@
 
 - **No manual AudioSource management** — The tool manages a pre-allocated pool of `AudioSource` objects. No new pool objects are instantiated at runtime, avoiding garbage collection and performance spikes.
 
-- **Automatic wall occlusion (Wall Check)** — Sounds originating behind walls or obstacles are automatically muffled using an `AudioLowPassFilter`. Multiple walls between the sound and the player muffle it further — configurable per Unity layer.
+- **Automatic wall occlusion (Wall Check)** — Sounds originating behind walls or obstacles are automatically muffled using an `AudioLowPassFilter`. Multiple walls between the sound and the player muffle it further — configurable per Unity layer. The muffling glides smoothly (no "pop" when stepping out from behind a wall), and the smoothing speed is adjustable.
+
+- **Built-in fades & crossfades** — Sounds can be faded in and out over a configurable duration, or crossfaded into one another. Ideal for music changes, smooth ambient transitions or softly starting/stopping loops.
 
 - **Organised volume system** — Sounds are categorised (e.g. Ambient, SFX, Player). Each category has its own `AudioSourceVolume` asset whose value can be overwritten at runtime — ideal for volume sliders in a settings menu.
 
@@ -67,8 +69,9 @@ The `AudioSystemConfig` asset is the central configuration file of the tool. All
 | Field | Description | Recommendation |
 |---|---|---|
 | **Number Of Audio Sources** | Number of pre-allocated `AudioSource` objects in the pool. The more sounds you expect to play simultaneously, the higher this value should be. Too many objects increase memory usage. | 20–50 for most projects |
-| **Default Cutoff Freq Value** | The "open" (un-occluded) frequency value of the `AudioLowPassFilter`. A wall-checked sound returns to this value when no wall is between it and the listener, and the per-layer reductions are subtracted from it. At ~22000 Hz (the top of human hearing) an un-occluded sound is fully transparent; lower values audibly dampen the high end (sounds muffled, as if behind a wall). | 22000 |
+| **Default Cutoff Freq Value** | The "open" (un-occluded) frequency value of the `AudioLowPassFilter`. A wall-checked sound returns to this value when no wall is between it and the listener; from there each wall it passes through damps the value multiplicatively toward **Min Cutoff Freq Value**. At ~22000 Hz (the top of human hearing) an un-occluded sound is fully transparent; lower values audibly dampen the high end (sounds muffled, as if behind a wall). | 22000 |
 | **Min Cutoff Freq Value** | The lower limit of the cutoff frequency. The frequency will never drop below this value — regardless of how many walls are between the sound and the player. Set to 10 if sounds should become completely inaudible behind many walls. | 10 – 1000 |
+| **Occlusion Smoothing Speed** | How fast the cutoff frequency glides toward its target when a sound moves into or out of occlusion — in Hz per second. Smooths the transition so it does not "pop". Higher values track faster; `0` disables smoothing (the cutoff snaps instantly). | 50000 |
 
 ---
 
@@ -80,14 +83,14 @@ The `AudioSystemConfig` asset is the central configuration file of the tool. All
 
 ---
 
-### Cutoff Frequencies Per Layer
+### Per-Layer Wall Damping
 
-A list of Unity layers that count as walls, each with a reduction value. For every layer hit by the raycast the cutoff frequency is reduced by the defined value. Multiple hits are accumulated (up to 8 walls per raycast are taken into account).
+A list of Unity layers that count as walls, each with a damping factor between 0 and 1. For every wall hit by the raycast the cutoff frequency is damped multiplicatively toward **Min Cutoff Freq Value** — `0` leaves the wall transparent, `1` pulls the sound down to the minimum in a single wall. Multiple walls combine multiplicatively, so the value approaches the minimum without ever crossing it (up to 8 walls per raycast are taken into account).
 
 | Field | Description |
 |---|---|
 | **Single Layer** | The Unity layer that counts as a wall. |
-| **Cutoff Frequency Value** | The value by which the cutoff frequency is reduced per hit. |
+| **Wall Damping Factor** | How strongly a wall on this layer damps (0–1). `0` = transparent, `1` = drops to the minimum in a single wall. Typically 0.4–0.85. |
 
 ---
 
@@ -204,24 +207,26 @@ Examples for useful layer names: `WallThick`, `WallThin`, `WallGlass`.
 
 ---
 
-### Step 7 — Configure Cutoff Frequencies Per Layer
+### Step 7 — Configure Per-Layer Wall Damping
 
-Open the `AudioSystemConfig` asset in the Inspector. Under **Cutoff Frequencies Per Layer** you can define a reduction value for each wall layer.
+Open the `AudioSystemConfig` asset in the Inspector. Under **Per-layer wall damping** you can define a damping factor for each wall layer.
 
 Click **+** to add a new entry and assign the following values:
 
 | Field | Description |
 |---|---|
 | **Single Layer** | The Unity layer that counts as a wall. |
-| **Cutoff Frequency Value** | The value by which the cutoff frequency is reduced when this layer is hit by the raycast. |
+| **Wall Damping Factor** | How strongly a wall on this layer damps (0–1). On each hit the cutoff frequency is pulled multiplicatively toward **Min Cutoff Freq Value**. |
 
-**Example:**
+**Example** (open cutoff 22000, Min Cutoff 100):
 
-| Layer | Reduction | Result at Default 5000 |
+| Layer | Factor | Result |
 |---|---|---|
-| WallThin | 500 | 4500 |
-| WallThick | 2000 | 3000 |
-| WallThin + WallThick | 500 + 2000 | 2500 |
+| WallThin | 0.5 | 11050 |
+| WallThick | 0.8 | 4480 |
+| WallThin + WallThick | 0.5 then 0.8 | 2290 |
+
+> Because the damping is multiplicative toward the minimum, the order of walls does not matter and the value approaches the **Min Cutoff Freq Value** without ever crossing it.
 
 ---
 
@@ -303,6 +308,31 @@ Stops the sound of the provided `AudioHandle`. Only effective if **Can Handle Au
 
 ---
 
+### Fading a sound in / out
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.FadeInNonSpatial(myAudioDataObject, duration);
+AudioHandle handle = AudioManagerDynamic.FadeInSpatial(myAudioDataObject, sourceTransform, duration);
+AudioManagerDynamic.FadeOut(handle, duration);
+```
+
+`FadeInNonSpatial` / `FadeInSpatial` start the sound from silence and ramp it up to its category volume over `duration` seconds — non-spatial (2D) and positional (3D) respectively. `FadeOut` ramps a playing sound down to silence over `duration` seconds, then **stops** it and releases the pool slot (works for 2D and 3D alike — hence no spatial variant is needed).
+
+> **Important:** A fade is always a *managed* sound and therefore **always** returns a valid `AudioHandle` — regardless of the ADO's **Can Handle Audio Source** field (unlike `PlaySpatial` / `PlayNonSpatial`). This lets you stop, fade out or crossfade the faded sound later.
+
+---
+
+### Crossfade
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.CrossfadeNonSpatial(fromHandle, toAudioDataObject, duration);
+AudioHandle handle = AudioManagerDynamic.CrossfadeSpatial(fromHandle, toAudioDataObject, sourceTransform, duration);
+```
+
+Crossfades from the old sound (`fromHandle`) into a new one (`toAudioDataObject`) over `duration` seconds: the old sound fades out and stops while the new one fades in simultaneously. Crossfade is pure **composition** of `FadeOut(from)` + `FadeIn(to)` — if `fromHandle` is invalid, only the fade-in runs. Returns the `AudioHandle` of the new sound.
+
+---
+
 ### Pausing / resuming all sounds
 
 ```csharp
@@ -311,6 +341,8 @@ AudioManagerDynamic.UnpauseAll();
 ```
 
 Pauses or resumes all currently playing sounds — e.g. when opening a pause menu. Sounds whose ADO has **Respects Global Pause** disabled keep playing (e.g. UI/music). `PauseAll()` acts as a sustained state: sounds started *while* paused also start paused (if **Respects Global Pause** is enabled) and are resumed together by `UnpauseAll()`.
+
+> **Important — pausing goes through `PauseAll()`, not `Time.timeScale`.** All of the tool's audio timing runs in real seconds and is decoupled from `Time.timeScale`: fades, the smooth occlusion transitions, the lifetime of one-shot slots **and** the wall check all tick independently of the time scale. So `Time.timeScale = 0` (e.g. a classic pause menu that halts game time) **does not pause the sounds** — that is what `PauseAll()` / `UnpauseAll()` are for. This keeps slow-motion and bullet-time effects (small `timeScale`) sounding normal, while a real pause is triggered deliberately via `PauseAll()`.
 
 ---
 

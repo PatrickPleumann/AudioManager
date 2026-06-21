@@ -12,7 +12,9 @@
 
 - **Kein manuelles AudioSource-Management** — Das Tool verwaltet einen vorallokierten Pool aus `AudioSource`-Objekten. Zur Laufzeit werden keine neuen Pool-Objekte instanziiert, was Garbage Collection und Performance-Spitzen vermeidet.
 
-- **Automatische Wand-Okklusion (Wall Check)** — Sounds die hinter Wänden oder Hindernissen entstehen, werden automatisch mit einem `AudioLowPassFilter` gedämpft. Mehrere Wände auf dem Weg zum Spieler dämpfen den Sound stärker als eine einzelne — konfigurierbar pro Unity-Layer.
+- **Automatische Wand-Okklusion (Wall Check)** — Sounds die hinter Wänden oder Hindernissen entstehen, werden automatisch mit einem `AudioLowPassFilter` gedämpft. Mehrere Wände auf dem Weg zum Spieler dämpfen den Sound stärker als eine einzelne — konfigurierbar pro Unity-Layer. Die Dämpfung gleitet weich (kein „Pop" beim Aus-der-Wand-Treten), die Glättungsgeschwindigkeit ist einstellbar.
+
+- **Fades & Crossfades eingebaut** — Sounds lassen sich über eine konfigurierbare Dauer ein- und ausblenden oder ineinander überblenden (Crossfade). Ideal für Musikwechsel, sanfte Ambient-Übergänge oder das weiche Starten/Stoppen von Loops.
 
 - **Organisiertes Volumen-System** — Sounds werden kategorisiert (z.B. Ambient, SFX, Player). Jede Kategorie hat ein eigenes `AudioSourceVolume`-Asset dessen Wert zur Laufzeit überschrieben werden kann — ideal für Lautstärke-Slider in einem Einstellungsmenü.
 
@@ -67,8 +69,9 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 | Feld | Beschreibung | Empfehlung |
 |---|---|---|
 | **Number Of Audio Sources** | Anzahl der vorallokierten `AudioSource`-Objekte im Pool. Je mehr Sounds gleichzeitig abgespielt werden sollen, desto höher sollte dieser Wert sein. Zu viele Objekte erhöhen den Speicherverbrauch. | 20–50 für die meisten Projekte |
-| **Default Cutoff Freq Value** | Der „offene" (nicht verdeckte) Frequenzwert des `AudioLowPassFilter`. Auf diesen Wert kehrt ein wand-geprüfter Sound zurück, wenn keine Wand zwischen ihm und dem Listener liegt, und davon werden die Layer-Reduktionen abgezogen. Bei ~22000 Hz (Obergrenze des menschlichen Gehörs) klingt ein nicht verdeckter Sound vollständig transparent; niedrigere Werte dämpfen hörbar die Höhen (klingt dumpf, wie hinter einer Wand). | 22000 |
+| **Default Cutoff Freq Value** | Der „offene" (nicht verdeckte) Frequenzwert des `AudioLowPassFilter`. Auf diesen Wert kehrt ein wand-geprüfter Sound zurück, wenn keine Wand zwischen ihm und dem Listener liegt; von dort dämpft jede getroffene Wand den Wert multiplikativ Richtung **Min Cutoff Freq Value**. Bei ~22000 Hz (Obergrenze des menschlichen Gehörs) klingt ein nicht verdeckter Sound vollständig transparent; niedrigere Werte dämpfen hörbar die Höhen (klingt dumpf, wie hinter einer Wand). | 22000 |
 | **Min Cutoff Freq Value** | Die untere Grenze der Cutoff Frequency. Die Frequenz wird nie unter diesen Wert gesenkt — egal wie viele Wände sich zwischen Sound und Spieler befinden. Auf 10 setzen wenn Sounds bei vielen Wänden komplett unhörbar werden sollen. | 10 – 1000 |
+| **Occlusion Smoothing Speed** | Wie schnell die Cutoff Frequency zu ihrem Zielwert gleitet, wenn ein Sound in eine Wand hinein- oder aus ihr heraustritt — in Hz pro Sekunde. Glättet den Übergang, sodass kein „Pop" entsteht. Höhere Werte folgen schneller; `0` deaktiviert die Glättung (der Cutoff springt sofort). | 50000 |
 
 ---
 
@@ -80,14 +83,14 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 
 ---
 
-### Cutoff Frequencies Per Layer
+### Per-Layer Wall Damping
 
-Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Reduktionswert. Für jeden Layer-Treffer des Raycasts wird die Cutoff Frequency um den definierten Wert reduziert. Mehrere Treffer werden addiert (maximal 8 Wände pro Raycast werden berücksichtigt).
+Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Dämpfungsfaktor zwischen 0 und 1. Für jede vom Raycast getroffene Wand wird die Cutoff Frequency multiplikativ Richtung **Min Cutoff Freq Value** gedämpft — `0` lässt die Wand transparent, `1` zieht den Sound in einer einzigen Wand bis auf den Minimalwert herunter. Mehrere Wände kombinieren multiplikativ, der Wert nähert sich dem Minimum also an, ohne es zu unterschreiten (maximal 8 Wände pro Raycast werden berücksichtigt).
 
 | Feld | Beschreibung |
 |---|---|
 | **Single Layer** | Der Unity-Layer der als Wand gilt. |
-| **Cutoff Frequency Value** | Der Wert um den die Cutoff Frequency pro Treffer reduziert wird. |
+| **Wall Damping Factor** | Wie stark eine Wand auf diesem Layer dämpft (0–1). `0` = transparent, `1` = fällt in einer Wand auf den Minimalwert. Typisch 0.4–0.85. |
 
 ---
 
@@ -204,24 +207,26 @@ Beispiele für sinnvolle Layer-Namen: `WallThick`, `WallThin`, `WallGlass`.
 
 ---
 
-### Schritt 7 — Cutoff Frequencies Per Layer konfigurieren
+### Schritt 7 — Per-Layer Wall Damping konfigurieren
 
-Öffne das `AudioSystemConfig`-Asset im Inspector. Unter **Cutoff Frequencies Per Layer** kannst du für jeden Wand-Layer einen Reduktionswert definieren.
+Öffne das `AudioSystemConfig`-Asset im Inspector. Unter **Per-layer wall damping** kannst du für jeden Wand-Layer einen Dämpfungsfaktor definieren.
 
 Klicke auf **+** um einen neuen Eintrag hinzuzufügen und weise ihm folgende Werte zu:
 
 | Feld | Beschreibung |
 |---|---|
 | **Single Layer** | Der Unity-Layer der als Wand gilt. |
-| **Cutoff Frequency Value** | Der Wert um den die Cutoff Frequency reduziert wird wenn dieser Layer vom Raycast getroffen wird. |
+| **Wall Damping Factor** | Wie stark eine Wand auf diesem Layer dämpft (0–1). Bei jedem Treffer wird die Cutoff Frequency multiplikativ Richtung **Min Cutoff Freq Value** gezogen. |
 
-**Beispiel:**
+**Beispiel** (offener Cutoff 22000, Min Cutoff 100):
 
-| Layer | Reduktion | Ergebnis bei Default 5000 |
+| Layer | Faktor | Ergebnis |
 |---|---|---|
-| WallThin | 500 | 4500 |
-| WallThick | 2000 | 3000 |
-| WallThin + WallThick | 500 + 2000 | 2500 |
+| WallThin | 0.5 | 11050 |
+| WallThick | 0.8 | 4480 |
+| WallThin + WallThick | 0.5 dann 0.8 | 2290 |
+
+> Weil die Dämpfung multiplikativ Richtung Minimum wirkt, ist die Reihenfolge der Wände egal und der Wert nähert sich dem **Min Cutoff Freq Value** an, ohne ihn je zu unterschreiten.
 
 ---
 
@@ -303,6 +308,31 @@ Stoppt den Sound des übergebenen `AudioHandle`. Nur wirksam wenn **Can Handle A
 
 ---
 
+### Sound ein- / ausfaden
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.FadeInNonSpatial(myAudioDataObject, duration);
+AudioHandle handle = AudioManagerDynamic.FadeInSpatial(myAudioDataObject, sourceTransform, duration);
+AudioManagerDynamic.FadeOut(handle, duration);
+```
+
+`FadeInNonSpatial` / `FadeInSpatial` starten den Sound bei Stille und blenden ihn über `duration` Sekunden bis zur Kategorie-Lautstärke auf — nicht-räumlich (2D) bzw. positionsbezogen (3D). `FadeOut` blendet einen laufenden Sound über `duration` Sekunden bis zur Stille aus, **stoppt** ihn anschließend und gibt den Pool-Slot frei (für 2D und 3D gleichermaßen — daher keine spatiale Variante nötig).
+
+> **Wichtig:** Ein Fade ist immer ein *gemanagter* Sound und liefert daher **immer** einen gültigen `AudioHandle` — unabhängig vom ADO-Feld **Can Handle Audio Source** (anders als `PlaySpatial` / `PlayNonSpatial`). So lässt sich der gefadete Sound später stoppen, ausfaden oder crossfaden.
+
+---
+
+### Crossfade
+
+```csharp
+AudioHandle handle = AudioManagerDynamic.CrossfadeNonSpatial(fromHandle, toAudioDataObject, duration);
+AudioHandle handle = AudioManagerDynamic.CrossfadeSpatial(fromHandle, toAudioDataObject, sourceTransform, duration);
+```
+
+Blendet über `duration` Sekunden vom alten Sound (`fromHandle`) in einen neuen (`toAudioDataObject`) über: Der alte Sound fadet aus und stoppt, der neue fadet gleichzeitig ein. Crossfade ist reine **Komposition** aus `FadeOut(from)` + `FadeIn(to)` — ist `fromHandle` ungültig, läuft nur der Ein-Fade. Gibt den `AudioHandle` des neuen Sounds zurück.
+
+---
+
 ### Alle Sounds pausieren / fortsetzen
 
 ```csharp
@@ -311,6 +341,8 @@ AudioManagerDynamic.UnpauseAll();
 ```
 
 Pausiert oder setzt alle aktuell spielenden Sounds fort — z.B. beim Öffnen eines Pause-Menüs. Sounds, deren ADO **Respects Global Pause** deaktiviert hat, laufen dabei weiter (z.B. UI/Musik). `PauseAll()` wirkt wie ein anhaltender Zustand: Auch Sounds, die *während* der Pause gestartet werden, starten pausiert (sofern **Respects Global Pause** aktiv ist) und werden von `UnpauseAll()` mit fortgesetzt.
+
+> **Wichtig — Pausieren läuft über `PauseAll()`, nicht über `Time.timeScale`.** Das gesamte Audio-Timing des Tools läuft in realen Sekunden und ist von `Time.timeScale` entkoppelt: Fades, die weichen Okklusions-Übergänge, die Lebensdauer von One-Shot-Slots **und** der Wall Check ticken unabhängig von der Zeitskala. `Time.timeScale = 0` (etwa ein klassisches Pausemenü, das die Spielzeit anhält) **pausiert die Sounds also nicht** — dafür sind `PauseAll()` / `UnpauseAll()` da. So bleiben Slow-Motion- und Bullet-Time-Effekte (kleines `timeScale`) hörbar normal, während eine echte Pause bewusst über `PauseAll()` ausgelöst wird.
 
 ---
 
