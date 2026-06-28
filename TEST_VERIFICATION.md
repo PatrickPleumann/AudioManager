@@ -3,6 +3,9 @@
 > **Zweck:** Ganzheitliche Bewertung der bestehenden Unit-Tests, Methode für Methode, um daraus
 > bessere Tests fürs **Nachtesten des Bestandscodes** (M2 / Gruppe B) abzuleiten.
 > **Datum:** 2026-06-15 · **Stand:** 11 getestete Logik-Einheiten, 69 EditMode-Tests (13 Dateien).
+> **Nachtrag 2026-06-28:** +`VolumeResolver` (#12, 8 Tests) — der erste neu (TDD) geschriebene Unit des
+> Mixer/Ducking-Features. Anders als #1–#11 (Bestandscode-Audit / Gruppe B) ist das die Reflexion eines
+> *frisch* geschriebenen Units; auf Patricks Wunsch hier verankert, weil die Session zwei lehrreiche Patzer hatte.
 > Diese Datei ist eine **Mess-/Analyse-Datei**, kein Wissens- oder Aufgaben-Speicher
 > (Wissen → CLAUDE.md · Aufgaben → BACKLOG.md). Sie darf veralten; bei Bedarf neu erstellen.
 
@@ -43,6 +46,7 @@ Keine Note „mangelhaft" vergeben — es gibt in dieser Suite keinen schlechten
 | 9 | `…Provider.FillDictionaryWithKeysAndValues` | 6 | **Exzellent** | null-Eintrag-vor-gültigem = ideale Diskriminierung |
 | 10 | `WallLayerMask.FromLayers` | 4 | **Stark** | `|` vs `+` nicht unterscheidbar (praktisch moot bei eindeutigen Keys) |
 | 11 | `PoolSlotAvailability.IsFree` | 5 | **Exzellent** | Jede AND-Klausel einzeln gepinnt + `==`-Grenze inklusiv |
+| 12 | `VolumeResolver.Resolve` | 8 | **Stark** | Alle 3 Faktoren einzeln + Operator gepinnt; oberer Clamp prinzip-bedingt nur an *einem* Punkt (kontinuierliche Grenze) |
 
 ---
 
@@ -157,6 +161,60 @@ Getestet über `FakeFadeTarget` (Recording-Double) — saubere Seam, kein echter
 - **Jede AND-Klausel einzeln gepinnt:** Playing→belegt; busy-window offen→belegt; paused→belegt (trotz sonst-frei). Jeder Test isoliert genau eine Klausel. ✔
 - **`>=`-Grenze inklusiv gepinnt:** `CurrentTimeEqualsBusyUntil → free` — mit `>` käme false. ✔
 - Vorbild für die kommenden Prädikat-Extraktionen.
+
+### 12 — `VolumeResolver.Resolve(basis, fade, duck)` → **Stark** *(neu, TDD, 2026-06-28)*
+**Vertrag (Stufe-1-Gain, BACKLOG „Volume-Gleichung & Resolver"):** `clamp01(basis · fade · duck)`. Drei
+unabhängige Gain-Faktoren (Kategorie-Basis / Per-Slot-Fade / Per-Kategorie-Duck), multiplikativ verkettet,
+hart auf `[0,1]` geklemmt. Einziger Besitzer von `source.volume` (Stufe 1); alles Downstream (Stufe 2) hängt
+nicht an dieser Mathe.
+
+- **Spec-abgeleitet:** Ja. Werte (`0.6`, `0.5`, `0.8·0.5·0.5 = 0.2`, `2`, `-0.5`) sind frei gewählte
+  Repräsentanten aus der Vertrags-Domäne, hand-gerechnet — **nicht** aus dem Code. **Eine** Ausnahme wurde
+  *verworfen* (siehe Stolperstein 2): ein vorgeschlagener `1.5`-Test war code-getrieben und ist **nicht** in der Suite.
+- **Mutation/Guards:**
+  - **Jeder der drei Faktoren einzeln gepinnt** (das stärkste Merkmal): Faktor weglassen kippt genau einen Test —
+    Basis ignorieren → `CategoryVolumeOnly` (0.6 vs 1) ✔ · Fade ignorieren → `FadeFactorOnly` (0.5 vs 1) ✔ ·
+    Duck ignorieren → `DuckFactorOnly` (0.5 vs 1) ✔. Saubere Lokalisierung, welcher Faktor bricht.
+  - **Operator `×`→`+`:** gefangen von `CategoryVolumeOnly` (+ → 2.6 → Clamp 1 ≠ 0.6) **und** `AllThree`
+    (+ → 1.8 → Clamp 1 ≠ 0.2). ✔
+  - **Oberer Clamp — Existenz gepinnt, Schwelle prinzip-bedingt nicht:** `ProductAboveOne` (2→1) killt den
+    „Clamp entfernt"-Mutanten (`return product` → 2 ≠ 1). ✔ Aber: an einer **kontinuierlichen** Grenze
+    (`clamp(x)=x` bei `x=1`) ist `>` vs `>=` ein **echter Äquivalenz-Mutant** (beide liefern bei Produkt 1
+    denselben Wert), und ein Schwellen-Shift `≤` Test-Input überlebt. Das ist **keine** behebbare Lücke,
+    sondern die Natur einseitiger Clamp-Tests (siehe Lehre + Stolperstein 1).
+  - **Unterer Clamp:** `NegativeFactor` (-0.5 → 0) killt „Clamp entfernt" (return -0.5 ≠ 0). ✔ Input -0.5
+    liegt **nicht** auf einer „natürlichen" Mutant-Grenze → fängt auch Schwellen-Shifts Richtung -1 (anders
+    als der obere Clamp). `DuckToZero` (0→0) ist primär ein **semantischer** Test (voller Duck = Stille),
+    kein Clamp-Test: `<` vs `<=` bei 0 ist äquivalent (0 so oder so).
+- **Lücken (minor, größtenteils inhärent):** (a) obere Clamp-Schwelle nur an einem Punkt — nicht eng
+  pinnbar ohne code-getriebenen Input (bewusst nicht getan); (b) Kommutativität ungetestet (Produkt kommutiert
+  ohnehin, kein Bedarf); (c) `AllNeutral` (1,1,1) ist der schwächste Test — kann `×`/`+` nicht unterscheiden
+  (beide → 1) und dokumentiert nur den Neutralfall (vgl. die Dünnheit von #4).
+- **Float:** `Delta = 1e-5`. Nur `AllThree` hat float32-Subtilität (`0.8f` nicht exakt darstellbar →
+  ≈ `0.20000000298`); akkumulierter Fehler ~`1e-8` bei kurzer 2-Mult-Kette → `1e-5` ist großzügig, aber
+  weit unter jeder Mutation. **Ehrlich:** `1e-5` wurde aus den Bestandstests übernommen, nicht eigens
+  hergeleitet; bei der kurzen Kette vertretbar (nicht der „Reflex-`1e-5` auf lange Kette"-Fall aus #5).
+
+**Zwei Stolperstellen dieser Session — ehrlich festgehalten:**
+
+1. **Erster Mutant war grenz-äquivalent → überlebte (verfehlte Prognose, KEIN Test-Defekt).** Gewählt:
+   `>= 1f` → `>= 2f`. Vorhergesagt: `ProductAboveOne` wird rot. Tatsächlich: **alle grün**, weil genau dieser
+   Test Produkt **exakt 2.0** füttert — `2 >= 2` klemmt weiterhin auf 1. Diagnose-Leiter (CLAUDE.md) sauber
+   durchlaufen: Implementierung (echte Form `>= 1f`) korrekt → Hand-Herleitung korrekt → Fehler bei **Stufe 3
+   (mein Mutant/meine Prognose)**, nicht beim Test. Ersetzt durch einen **echten** Mutanten
+   (`return 1f` → `return product`), den der bestehende, spec-abgeleitete Test killt. Lehre: einen Mutanten nie
+   *auf den Test-Input* legen — das ist ein blinder Fleck, kein Schutzbeweis.
+2. **Die `1.5`-Falle (von Patrick gefangen).** Mein „Fix" für Stolperstein 1 war, einen Test mit Input `1.5`
+   zu ergänzen. Die *Assertion* (1.5 → 1) ist spec-konform — aber den **Wert 1.5 hatte ich rückwärts aus dem
+   Mutanten** konstruiert („irgendwas zwischen 1 und Schwelle 2"). Das ist genau die Code-getriebene Tautologie:
+   nicht nur die Assertion, auch der **Input** muss aus der Spec kommen. Test **verworfen**, nicht aufgenommen.
+   Lehre: „neue Tests sind ok" gilt nur, wenn *Input und Erwartung* aus dem Vertrag stammen — ein Input, der
+   gewählt wird, um einen bestimmten Mutanten zu töten, ist Code-Ableitung in Tarnung.
+
+> **Lehre für M2:** **Neighboring-Pair-Pinning (#7, #11) wirkt nur an Diskontinuitäten** (in/out-of-bounds →
+> true/false). An einer **kontinuierlichen** Grenze (Clamp bei 1.0, wo `clamp(x)=x`) stimmen beide Seiten
+> überein → die Schwelle ist grundsätzlich nicht eng pinnbar; korrekt ist „Existenz + ein Repräsentant",
+> nicht „Schwelle". Das vorher zu erkennen erspart den Reflex, mit code-getriebenen Inputs nachzubessern.
 
 ---
 
