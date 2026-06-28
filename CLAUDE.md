@@ -44,6 +44,23 @@ DIE Regel für jede neue Methode/jedes Feature. Formalisiert von Patrick, binden
 5. **Nach bestätigtem Rot: korrekten Zustand wiederherstellen.** Danach die Tests in Ruhe lassen.
 6. **Wird eine Methode so umgebaut, dass ihre eingefrorenen Tests obsolet werden**, wandert die Nacharbeit als TODO in den BACKLOG — und wird NIE ohne Patricks ausdrückliche Anweisung ausgeführt. Keine stillen Test-Rewrites.
 
+### Gate-Disziplin: ein Schritt, ein Stopp, eine Bestätigung (verbindlich, 2026-06-28)
+
+> Anlass: In der `DuckEnvelope`-Session wurden Stub, grüne Implementierung **und** der vorweggenommene Mutation-Check in *einem* Zug geliefert. Damit hatte Patrick nie ein echtes, **selbst beobachtetes** Rot/Grün in der Hand — die Gates des Loops waren entwertet. Wurzel ist dieselbe wie 2026-06-20: „Fortschritt machen" wurde über „jeden Schritt einzeln beweisen" gestellt.
+
+**Der Loop ist KEINE Schritt-Liste zum Abarbeiten, sondern eine Reihe von Bestätigungs-Gates.** Jeder Schritt endet mit einem STOPP; der nächste beginnt **erst, wenn Patrick das von ihm beobachtete Testergebnis bestätigt hat** — nicht, wenn *ich* den Zustand für richtig halte.
+
+- **Gate 1 — Rot:** Tests + `NotImplementedException`-Stub schreiben. **STOPP.** Keine Implementierung schreiben — auch nicht „schon mal vorbereiten" — bevor Patrick das laufende Rot bestätigt hat.
+- **Gate 2 — Grün:** Implementierung schreiben. **STOPP.** Kein Mutation-Check, bevor Patrick das Grün bestätigt hat.
+- **Gate 3 — Mutation:** Genau eine Mutation einbauen und die Vorhersage (welcher *benannte* Test rot wird) im selben Schritt nennen — aber erst *jetzt*, nie früher. **STOPP.** Patrick bestätigt das Rot gegen die Vorhersage.
+- **Gate 4 — Wiederherstellung:** Korrekten Zustand wiederherstellen. **STOPP.** Patrick bestätigt das erneute Grün. Danach sind die Tests eingefroren.
+
+**Eiserne Regeln, die die Gates absichern:**
+- **Nie mehr als ein Gate pro Antwort.** Stub und Implementierung niemals im selben Zug.
+- **Nie einen späteren Schritt vorab ankündigen oder vorbereiten** (z. B. die Mutation nennen, während wir noch im Grün-Gate stehen). Das nimmt Patrick die eigene Beobachtung vorweg.
+- **„Der Vertrag ist klar" rechtfertigt schnelleres *Vorbereiten*, nie das Überspringen eines Gates.** Klarheit ist kein Freifahrtschein.
+- **Im Zweifel: STOPP und fragen.** Der teurere Fehler ist das Vorpreschen, nicht die Rückfrage.
+
 **Stützende Prinzipien:**
 - **Erwartungswerte kommen aus der SPEZIFIKATION, nicht aus dem Code.** Vor dem Blick auf die Implementierung aus dem Vertrag hand-ableiten. Wenn „korrekt" ohne Code-Lesen nicht sagbar ist → STOP, erst das Soll mit Patrick klären.
 - **Erstes Rot darf ein „laufendes Rot" sein:** neuen Typ/Member als `NotImplementedException`-Stub anlegen, damit das Test-Assembly kompiliert und die Tests *laufen* und scheitern (klarer als ein bloßer Compile-Fehler).
