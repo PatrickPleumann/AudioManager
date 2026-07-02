@@ -6,6 +6,8 @@
 
 > **What this repo demonstrates:** SOLID service design in C# · test-driven development with a frozen-test contract · zero-GC runtime patterns · and directing an AI coding agent against a written spec and a frozen test suite.
 
+> **📁 Where the code is:** the framework lives in [`Assets/Scripts/AudioFramework/`](Assets/Scripts/AudioFramework/) — plain-C# services, the pure-logic classes, and their EditMode tests in [`Tests/EditMode/`](Assets/Scripts/AudioFramework/Tests/EditMode/).
+
 ---
 
 ## Why this repo exists
@@ -58,19 +60,25 @@ The math and policy decisions live in small **Unity-free** classes, unit-tested 
 | Class | Responsibility |
 |---|---|
 | `AudioFadeMath` | fade curve / volume-over-time |
+| `FadeOperation` | immutable per-slot fade progress (elapsed time → volume via `AudioFadeMath`) |
 | `WallOcclusionMath` | per-wall multiplicative damping step (factor → cutoff) + floor clamp (the swappable occlusion model seam) |
 | `OcclusionSmoothing` | per-frame glide toward target cutoff |
+| `WallLayerMask` | physics layer indices → one layer-mask bitmask (shared by both wall-check backends) |
+| `WallCheckContinuation` | whether a wall-check loop should keep raycasting for its dispatch (generation-currency guard) |
 | `LowPassDispatchPolicy` | filter on/off state per dispatch |
+| `PoolSlotAvailability` | whether a pool slot is free for re-assignment (silent + busy-window elapsed + not paused) |
 | `AudioHandleValidator` | handle currency: bounds + generation |
 | `ListenerCachePolicy` | when to re-resolve the active AudioListener (self-healing, no polling) |
 
-This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of ~75 tests across the pure-logic layer**.
+This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of over 100 tests across the pure-logic layer**.
 
-### Zero allocations at runtime
+### Zero per-frame allocations
 
 - **Fixed, pre-instantiated `AudioObject[]` pool** — no `Instantiate`/GC during play.
 - **`Physics.RaycastNonAlloc`** into a reused buffer for the wall check — no per-frame array churn.
 - **`AudioHandle` is a `readonly struct`** `{ PoolIndex, Generation }` — a value-type ticket, not a heap reference.
+
+Nothing allocates on the per-frame path. The one honest exception worth naming: starting a *wall-checked* sound allocates a single `CancellationTokenSource` for its raycast loop — a per-`Play()` cost, not a per-frame one, and a tracked item on the road to fully zero-GC.
 
 ### Stale-handle safety via generations
 

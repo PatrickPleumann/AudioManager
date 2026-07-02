@@ -26,7 +26,7 @@ namespace AudioFramework.Services.Mixing
             if (rate <= 0f) return target;
 
             float maxStep = rate * deltaTime;
-            if (maxStep <= 0f) return current; // no time elapsed this frame -> no movement
+            if (maxStep <= 0f) return current;
 
             float diff = target - current;
             float absDiff = diff < 0f ? -diff : diff;

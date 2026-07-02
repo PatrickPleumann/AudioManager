@@ -6,6 +6,8 @@
 
 > **Was dieses Repo demonstriert:** SOLID-Service-Design in C# · testgetriebene Entwicklung mit einem Frozen-Test-Vertrag · Zero-GC-Laufzeitmuster · und das Steuern eines KI-Coding-Agents gegen eine schriftliche Spezifikation und eine eingefrorene Test-Suite.
 
+> **📁 Wo der Code liegt:** Das Framework liegt unter [`Assets/Scripts/AudioFramework/`](Assets/Scripts/AudioFramework/) — reine C#-Services, die Pure-Logic-Klassen und ihre EditMode-Tests in [`Tests/EditMode/`](Assets/Scripts/AudioFramework/Tests/EditMode/).
+
 ---
 
 ## Warum dieses Repo existiert
@@ -58,19 +60,25 @@ Die Mathematik- und Policy-Entscheidungen leben in kleinen **Unity-freien** Klas
 | Klasse | Verantwortung |
 |---|---|
 | `AudioFadeMath` | Fade-Kurve / Lautstärke über Zeit |
+| `FadeOperation` | unveränderlicher Fade-Fortschritt pro Slot (verstrichene Zeit → Lautstärke via `AudioFadeMath`) |
 | `WallOcclusionMath` | multiplikativer Dämpfungsschritt pro Wand (Faktor → Cutoff) + Floor-Clamp (der austauschbare Occlusion-Modell-Seam) |
 | `OcclusionSmoothing` | Per-Frame-Glide Richtung Ziel-Cutoff |
+| `WallLayerMask` | Physik-Layer-Indizes → eine Layer-Mask-Bitmaske (von beiden WallCheck-Backends geteilt) |
+| `WallCheckContinuation` | ob eine WallCheck-Schleife für ihren Dispatch weiter raycasten soll (Generation-Aktualitäts-Guard) |
 | `LowPassDispatchPolicy` | Filter-An/Aus-Zustand pro Dispatch |
+| `PoolSlotAvailability` | ob ein Pool-Slot neu vergebbar ist (still + Busy-Fenster abgelaufen + nicht pausiert) |
 | `AudioHandleValidator` | Handle-Aktualität: Bounds + Generation |
 | `ListenerCachePolicy` | wann der aktive AudioListener neu aufzulösen ist (self-healing, kein Polling) |
 
-Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwischen einem testbaren Seam (ein Interface / eine reine Klasse, im schnellen EditMode prüfbar) und Logik stand, die nur über langsames, vages PlayMode erreichbar ist, gewinnt der Seam. Das Ergebnis ist eine **EditMode-Suite von ~75 Tests über die Pure-Logic-Schicht**.
+Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwischen einem testbaren Seam (ein Interface / eine reine Klasse, im schnellen EditMode prüfbar) und Logik stand, die nur über langsames, vages PlayMode erreichbar ist, gewinnt der Seam. Das Ergebnis ist eine **EditMode-Suite von über 100 Tests über die Pure-Logic-Schicht**.
 
-### Null Allokationen zur Laufzeit
+### Null Allokationen pro Frame
 
 - **Festes, vorab instanziiertes `AudioObject[]`-Pool** — kein `Instantiate`/GC während des Spiels.
 - **`Physics.RaycastNonAlloc`** in einen wiederverwendeten Buffer für den WallCheck — kein Array-Churn pro Frame.
 - **`AudioHandle` ist ein `readonly struct`** `{ PoolIndex, Generation }` — ein Value-Type-Ticket, keine Heap-Referenz.
+
+Auf dem Per-Frame-Pfad alloziert nichts. Die eine ehrliche Ausnahme, die es zu benennen gilt: Der Start eines *wand-geprüften* Sounds alloziert eine einzelne `CancellationTokenSource` für seine Raycast-Schleife — ein Kostenpunkt pro `Play()`, nicht pro Frame, und ein getracktes Item auf dem Weg zu vollständigem Zero-GC.
 
 ### Schutz vor veralteten Handles via Generations
 
