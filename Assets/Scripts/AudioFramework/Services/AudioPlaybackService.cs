@@ -1,6 +1,7 @@
 using UnityEngine;
 using AudioFramework.Services.WallCheck;
 using AudioFramework.Services.Fading;
+using AudioFramework.Services.Mixing;
 using AudioFramework.Data;
 using AudioFramework.Core;
 using AudioFramework.Pooling;
@@ -46,46 +47,43 @@ namespace AudioFramework.Services.Playback
                 Debug.LogError($"[AudioTool] PlaySpatial() was called for '{adoName}' without a source Transform. Use PlayNonSpatial() for 2D sounds.");
                 return AudioHandle.Invalid;
             }
-            int poolIndex = Dispatch(audioDataObject, source, isSpatial: true, startSilent: false, out _);
+            int poolIndex = Dispatch(audioDataObject, source, isSpatial: true, startSilent: false);
             return Gate(poolIndex, audioDataObject);
         }
 
         public AudioHandle DispatchAudioNonSpatial(AudioDataObject audioDataObject)
         {
-            int poolIndex = Dispatch(audioDataObject, null, isSpatial: false, startSilent: false, out _);
+            int poolIndex = Dispatch(audioDataObject, null, isSpatial: false, startSilent: false);
             return Gate(poolIndex, audioDataObject);
         }
 
         /// <summary>
-        /// Dispatch a NON-spatial sound that starts SILENT (volume 0) for a fade-in, reporting the category volume the
-        /// fade should ramp up to via <paramref name="targetVolume"/>. Returns the raw pool index (-1 if no free slot
-        /// or misconfigured) — a fade always tracks its own slot, so this is intentionally NOT gated by
-        /// CanHandleAudioSource. The manager registers the fade on the returned index.
+        /// Dispatch a NON-spatial sound that starts SILENT (fade factor 0) for a fade-in. Returns the raw pool index
+        /// (-1 if no free slot or misconfigured) — a fade always tracks its own slot, so this is intentionally NOT
+        /// gated by CanHandleAudioSource. The manager ramps the slot's fade factor up on the returned index; the
+        /// audible target volume falls out of the live category volume in AudioDuckService, no snapshot needed here.
         /// </summary>
-        public int DispatchSilentNonSpatial(AudioDataObject audioDataObject, out float targetVolume)
-            => Dispatch(audioDataObject, null, isSpatial: false, startSilent: true, out targetVolume);
+        public int DispatchSilentNonSpatial(AudioDataObject audioDataObject)
+            => Dispatch(audioDataObject, null, isSpatial: false, startSilent: true);
 
         /// <summary>
         /// Spatial counterpart of <see cref="DispatchSilentNonSpatial"/>: dispatch a positional 3D sound that starts
-        /// SILENT for a fade-in at <paramref name="source"/>, reporting the category volume to ramp up to. Returns the
-        /// raw pool index (-1 if no slot, misconfigured, or null source) — not gated by CanHandleAudioSource.
+        /// SILENT for a fade-in at <paramref name="source"/>. Returns the raw pool index (-1 if no slot, misconfigured,
+        /// or null source) — not gated by CanHandleAudioSource.
         /// </summary>
-        public int DispatchSilentSpatial(AudioDataObject audioDataObject, Transform source, out float targetVolume)
+        public int DispatchSilentSpatial(AudioDataObject audioDataObject, Transform source)
         {
-            targetVolume = 0f;
             if (source == null)
             {
                 string adoName = audioDataObject != null ? audioDataObject.name : "null";
                 Debug.LogError($"[AudioTool] FadeInSpatial() was called for '{adoName}' without a source Transform. Use FadeInNonSpatial() for 2D sounds.");
                 return -1;
             }
-            return Dispatch(audioDataObject, source, isSpatial: true, startSilent: true, out targetVolume);
+            return Dispatch(audioDataObject, source, isSpatial: true, startSilent: true);
         }
 
-        private int Dispatch(AudioDataObject audioDataObject, Transform sourceTransform, bool isSpatial, bool startSilent, out float resolvedVolume)
+        private int Dispatch(AudioDataObject audioDataObject, Transform sourceTransform, bool isSpatial, bool startSilent)
         {
-            resolvedVolume = 0f;
-
             if (audioDataObject == null)
             {
                 Debug.LogError("[AudioTool] Play() was called with a null AudioDataObject. Skipping playback.");
@@ -110,12 +108,18 @@ namespace AudioFramework.Services.Playback
             AudioClip currentClip = audioDataObject.CurrentClips[Random.Range(0, audioDataObject.CurrentClips.Length)];
             source.clip = currentClip;
 
-            resolvedVolume = ResolveVolume(audioDataObject);
-            source.volume = startSilent ? 0f : resolvedVolume;
+            // Fade factor is the fade service's channel (0..1). A silent-start (fade-in) begins at 0 and is ramped
+            // up by the fade; everything else plays at full factor. AudioDuckService owns source.volume from here
+            // on (base · fade · duck, live); this frame-0 write just keeps the very first frame correct (duck = 1).
+            float baseVolume = ResolveVolume(audioDataObject);
+            float fadeFactor = startSilent ? 0f : 1f;
+            poolAcquisitionService.SetFadeFactor(poolIndex, fadeFactor);
+            source.volume = VolumeResolver.Resolve(baseVolume, fadeFactor, 1f);
 
             source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
 
             poolAcquisitionService.SetPausePolicy(poolIndex, audioDataObject.RespectsGlobalPause);
+            poolAcquisitionService.SetCategory(poolIndex, audioDataObject.CurrentType);
 
             if (isSpatial)
             {

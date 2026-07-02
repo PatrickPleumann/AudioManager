@@ -84,6 +84,10 @@ namespace AudioFramework.Pooling
 
         public void SetTargetCutoff(int poolIndex, float cutoff) => poolArray[poolIndex].TargetCutoff = cutoff;
 
+        public void SetCategory(int poolIndex, AudioCategory category) => poolArray[poolIndex].Category = category;
+
+        public void SetFadeFactor(int poolIndex, float factor) => poolArray[poolIndex].FadeFactor = factor;
+
         public int CurrentGeneration(int poolIndex) => poolArray[poolIndex].Generation;
 
         public bool IsHandleCurrent(AudioHandle handle)

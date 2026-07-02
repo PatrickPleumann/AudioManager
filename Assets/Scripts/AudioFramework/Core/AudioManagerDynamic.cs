@@ -5,6 +5,7 @@ using AudioFramework.Services.WallCheck;
 using AudioFramework.Services.Playback;
 using AudioFramework.Services.Following;
 using AudioFramework.Services.Fading;
+using AudioFramework.Services.Mixing;
 using AudioFramework.Data;
 using AudioFramework.Pause;
 using AudioFramework.Pooling;
@@ -30,6 +31,7 @@ namespace AudioFramework.Core
         private AudioFollowService followService;
         private AudioOcclusionSmoothingService occlusionSmoothingService;
         private AudioFadeService fadeService;
+        private AudioDuckService duckService;
 
         private void Awake()
         {
@@ -77,8 +79,10 @@ namespace AudioFramework.Core
             AudioObject[] pool = poolAcquisitionService.PoolArray;
             var fadeTargets = new IFadeTarget[pool.Length];
             for (int i = 0; i < fadeTargets.Length; i++)
-                fadeTargets[i] = new PooledFadeTarget(pool[i].Source, stopService, pool, i);
+                fadeTargets[i] = new PooledFadeTarget(stopService, pool, i);
             fadeService = new AudioFadeService(fadeTargets);
+
+            duckService = new AudioDuckService(pool, dictionaryProvider.VolumeDictionary);
 
             playbackService = new AudioPlaybackService(
                 poolAcquisitionService,
@@ -99,7 +103,17 @@ namespace AudioFramework.Core
             followService?.UpdateFollowers();
             occlusionSmoothingService?.Tick(Time.unscaledDeltaTime);
             fadeService?.Tick(Time.unscaledDeltaTime);
+            // Must run AFTER the fade tick: the fade writes the per-slot fade factor, the duck service is the single
+            // owner that reads it (with live base volume + duck) and resolves source.volume.
+            duckService?.Tick(Time.unscaledDeltaTime);
         }
+
+        /// <summary>Registers a passive duck config provider (called by AudioDuckComponent.OnEnable). Instance
+        /// method — the component reaches it via GetComponent on the shared GameObject, never via the static API.</summary>
+        public void RegisterDuckProvider(IDuckRuleProvider provider) => duckService?.SetProvider(provider);
+
+        /// <summary>Unregisters the duck config provider (called by AudioDuckComponent.OnDisable).</summary>
+        public void UnregisterDuckProvider(IDuckRuleProvider provider) => duckService?.ClearProvider(provider);
 
         /// <summary>
         /// Plays a sound as positional 3D audio at <paramref name="_source"/>. The sound is attenuated by distance and,
@@ -163,10 +177,10 @@ namespace AudioFramework.Core
                 return AudioHandle.Invalid;
             }
 
-            int poolIndex = instance.playbackService.DispatchSilentNonSpatial(_data, out float targetVolume);
+            int poolIndex = instance.playbackService.DispatchSilentNonSpatial(_data);
             if (poolIndex < 0) return AudioHandle.Invalid;
 
-            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: _duration, stopOnEnd: false);
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: 1f, duration: _duration, stopOnEnd: false);
             return instance.playbackService.MakeHandle(poolIndex);
         }
 
@@ -207,10 +221,10 @@ namespace AudioFramework.Core
                 return AudioHandle.Invalid;
             }
 
-            int poolIndex = instance.playbackService.DispatchSilentSpatial(_data, _source, out float targetVolume);
+            int poolIndex = instance.playbackService.DispatchSilentSpatial(_data, _source);
             if (poolIndex < 0) return AudioHandle.Invalid;
 
-            instance.fadeService.StartFade(poolIndex, from: 0f, to: targetVolume, duration: _duration, stopOnEnd: false);
+            instance.fadeService.StartFade(poolIndex, from: 0f, to: 1f, duration: _duration, stopOnEnd: false);
             return instance.playbackService.MakeHandle(poolIndex);
         }
 
