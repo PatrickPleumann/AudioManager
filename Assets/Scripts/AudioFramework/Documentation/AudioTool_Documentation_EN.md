@@ -243,6 +243,10 @@ The **Min Cutoff Freq Value** field in the `AudioSystemConfig` asset defines the
 
 ---
 
+> **Known limitation:** Overlapping wall colliders at room corners can briefly damp a sound twice. Details and recommendation in the **[Known Limitations](#known-limitations)** section at the end of this document.
+
+---
+
 ## AudioDataObject (ADO)
 
 The `AudioDataObject` (ADO for short) is the central configuration object for every sound. Create a new ADO via:
@@ -417,3 +421,24 @@ public class VehicleEngine : MonoBehaviour
 ```
 
 > **Note:** If the vehicle GameObject is destroyed while the engine loop is still playing, the sound stops automatically (the behaviour of **Follow Emitter**).
+
+---
+
+## Known Limitations
+
+AudioTool is deliberately lean: it delivers the core features of the big audio tools without their learning curve and setup overhead. Part of that leanness is a set of deliberate boundaries — things the tool intentionally does *not* do so it stays simple, fast, and maintainable. This list keeps them transparent and grows together with the tool.
+
+### Occlusion is "lightweight", not a full spatializer
+The Wall Check damps occluded sounds via an `AudioLowPassFilter` — the highs disappear and the sound turns muffled, "as if behind a wall". It deliberately does **not** model true sound-wave propagation, reflections or reverb, or HRTF-based directional hearing like Steam Audio or the Oculus Spatializer. This is a design decision, not a shortcoming: clear, cheap, immediately understandable wall damping instead of a heavy, expensive spatializer.
+
+### Overlapping wall colliders at corners
+A single raycast counts every wall collider it hits as one wall and damps once per hit. If two colliders overlap at a room corner (a common pattern when modular wall prefabs are placed with deliberate overlap so no visible seam appears), the same ray can pass through both and briefly damp the sound **twice** — even though it is physically only just behind the corner. The effect is transient (it disappears as soon as the ray crosses only one wall again), is softened by the smooth occlusion glide, and is bounded from below by **Min Cutoff Freq Value**. **Recommendation:** Avoid overlapping wall colliders where possible; use one collider per continuous wall run, or a single corner collider instead of two overlapping ones.
+
+### At most 8 walls per sound
+The Wall Check accounts for up to 8 walls hit simultaneously per sound. If more than 8 colliders lie between the sound and the listener, the ones beyond that are not counted. In practice the occlusion is already close to **Min Cutoff Freq Value** with that many walls, so the limit is barely noticeable.
+
+### A single AudioListener
+The tool assumes exactly one active `AudioListener` in the scene (the default in Unity) and bases distance attenuation and occlusion on it. Local split-screen with multiple simultaneously active listeners is not natively supported — the first active listener is always used. (For networked multiplayer, exactly one listener per client is the normal case and fully covered.)
+
+### A single shared pool without prioritization
+All sounds share the same preallocated pool (`Number Of Audio Sources`). There are no reserved quotas or priorities per category: if all slots are busy at play time, the new sound is **not played** (no running sound is evicted). Very frequent short sounds (footsteps, casings) can thus prevent an important sound from starting if the pool is too small. **Recommendation:** Size the pool generously enough for the expected simultaneous peak load.

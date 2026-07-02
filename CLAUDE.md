@@ -194,6 +194,7 @@ Das `AudioDataObject` ist bewusst ein serialisierter **Spiegel der AudioSource-E
 ### Doku-Regel
 - Die User-Dokumentation beschreibt **nur den aktuellen Zustand** — keine „nicht mehr / früher / jetzt geändert"-Formulierungen. Das Tool ist unveröffentlicht; es gibt keine Vorversion zum Vergleich. (`AudioTool_Documentation_DE.md` / `_EN.md` — EN spiegelt DE 1:1.)
 - **GitHub-README ist zweisprachig:** `README.md` (EN, GitHub-Default) und `README.de.md` (DE) sind ein **1:1-Spiegel** — bei Änderungen IMMER beide identisch pflegen (wie die Doku-Dateien). Stil ist portfolio-/feature-orientiert und bewusst stabil; Änderungen sind chirurgisch (nur was sich fachlich geändert hat), kein Rewrite.
+- **Bekannte Einschränkungen** (bewusste Grenzen des schlanken Ansatzes) gehören in die dedizierte Sektion „Bekannte Einschränkungen" / „Known Limitations" am **Ende der User-Doku** (`AudioTool_Documentation_DE.md`/`_EN.md`, DE/EN 1:1) — **nicht** ins README (das bleibt Verkaufsoberfläche). Diese Liste ist die **Single Source** für Caveats und wächst sukzessive. Neue Einschränkung → dort ergänzen; am Fundort (z. B. Wall-Check-Kapitel) höchstens ein **Einzeiler-Verweis** auf die Sektion, kein Duplikat (Drift-Schutz).
 
 ---
 

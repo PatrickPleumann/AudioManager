@@ -243,6 +243,10 @@ Das Feld **Min Cutoff Freq Value** im `AudioSystemConfig`-Asset definiert die un
 
 ---
 
+> **Bekannte Einschränkung:** Überlappende Wand-Collider an Raumecken können einen Sound kurzzeitig doppelt dämpfen. Details und Empfehlung im Abschnitt **[Bekannte Einschränkungen](#bekannte-einschränkungen)** am Ende dieses Dokuments.
+
+---
+
 ## AudioDataObject (ADO)
 
 Das `AudioDataObject` (kurz: ADO) ist das zentrale Konfigurationsobjekt für jeden Sound. Erstelle ein neues ADO über:
@@ -417,3 +421,24 @@ public class VehicleEngine : MonoBehaviour
 ```
 
 > **Hinweis:** Wird das Fahrzeug-GameObject zerstört während der Motor-Loop noch läuft, stoppt der Sound automatisch (Verhalten von **Follow Emitter**).
+
+---
+
+## Bekannte Einschränkungen
+
+AudioTool ist bewusst schlank: Es liefert die zentralen Features der großen Audio-Tools ohne deren Einarbeitungs- und Setup-Aufwand. Zu dieser Schlankheit gehören bewusste Grenzen — Dinge, die das Tool absichtlich *nicht* tut, damit es einfach, schnell und wartbar bleibt. Diese Liste hält sie transparent fest und wird mit dem Tool weiter ergänzt.
+
+### Okklusion ist „lightweight", kein voller Spatializer
+Der Wall Check dämpft verdeckte Sounds über einen `AudioLowPassFilter` — die Höhen verschwinden, der Sound klingt dumpf, „wie hinter einer Wand". Er modelliert bewusst **keine** echte Schallwellen-Ausbreitung, keine Reflexionen oder Nachhall und kein HRTF-basiertes Richtungshören wie Steam Audio oder der Oculus Spatializer. Das ist eine Design-Entscheidung, kein Defizit: klare, günstige, sofort verständliche Wand-Dämpfung statt eines schweren, teuren Spatializers.
+
+### Überlappende Wand-Collider an Ecken
+Ein einzelner Raycast zählt jeden getroffenen Wand-Collider als eine Wand und dämpft pro Treffer. Überlappen sich zwei Collider an einer Raumecke (ein verbreitetes Muster, wenn modulare Wand-Prefabs bewusst mit Überlappung platziert werden, damit keine sichtbare Naht entsteht), kann derselbe Strahl beide durchqueren und den Sound kurz **zweifach** dämpfen — obwohl er physikalisch nur knapp hinter der Kante liegt. Der Effekt ist transient (er verschwindet, sobald der Strahl wieder nur eine Wand kreuzt), wird durch die weiche Okklusions-Glättung abgemildert und ist durch **Min Cutoff Freq Value** nach unten begrenzt. **Empfehlung:** Wand-Collider möglichst nicht überlappen; pro durchgehendem Wandstück einen Collider bzw. an Ecken einen einzelnen Eck-Collider nutzen.
+
+### Maximal 8 Wände pro Sound
+Der Wall Check berücksichtigt pro Sound bis zu 8 gleichzeitig getroffene Wände. Liegen mehr als 8 Collider zwischen Sound und Listener, werden die darüber hinausgehenden nicht mitgezählt. In der Praxis ist die Okklusion bei so vielen Wänden längst nahe am **Min Cutoff Freq Value**, sodass die Grenze kaum wahrnehmbar ist.
+
+### Ein AudioListener
+Das Tool geht von genau einem aktiven `AudioListener` in der Szene aus (der Standardfall in Unity) und bezieht Distanzdämpfung und Okklusion darauf. Lokaler Split-Screen mit mehreren gleichzeitig aktiven Listenern wird nicht nativ unterstützt — es wird immer der erste aktive Listener verwendet. (Für networked Multiplayer ist genau ein Listener pro Client der Normalfall und voll abgedeckt.)
+
+### Ein gemeinsamer Pool ohne Priorisierung
+Alle Sounds teilen sich denselben vorallokierten Pool (`Number Of Audio Sources`). Es gibt keine reservierten Kontingente oder Prioritäten pro Kategorie: Sind zum Abspiel-Zeitpunkt alle Slots belegt, wird der neue Sound **nicht abgespielt** (kein laufender Sound wird verdrängt). Sehr häufige Kurz-Sounds (Footsteps, Hülsen) können so bei zu kleinem Pool einen wichtigen Sound am Start hindern. **Empfehlung:** Den Pool großzügig genug für die erwartete gleichzeitige Spitzenlast dimensionieren.
