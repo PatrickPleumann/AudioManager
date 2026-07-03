@@ -434,6 +434,9 @@ Der Wall Check dämpft verdeckte Sounds über einen `AudioLowPassFilter` — die
 ### Überlappende Wand-Collider an Ecken
 Ein einzelner Raycast zählt jeden getroffenen Wand-Collider als eine Wand und dämpft pro Treffer. Überlappen sich zwei Collider an einer Raumecke (ein verbreitetes Muster, wenn modulare Wand-Prefabs bewusst mit Überlappung platziert werden, damit keine sichtbare Naht entsteht), kann derselbe Strahl beide durchqueren und den Sound kurz **zweifach** dämpfen — obwohl er physikalisch nur knapp hinter der Kante liegt. Der Effekt ist transient (er verschwindet, sobald der Strahl wieder nur eine Wand kreuzt), wird durch die weiche Okklusions-Glättung abgemildert und ist durch **Min Cutoff Freq Value** nach unten begrenzt. **Empfehlung:** Wand-Collider möglichst nicht überlappen; pro durchgehendem Wandstück einen Collider bzw. an Ecken einen einzelnen Eck-Collider nutzen.
 
+### Schmale Öffnungen und kleine Löcher in Wänden
+Der Wall Check nutzt einen unendlich dünnen Raycast. Trifft er zufällig eine Öffnung in einer Wand — einen Schlitz oder ein kleines Loch —, meldet er keine Wand, und der Sound bleibt ungedämpft. Beispiel: Läuft die Sichtlinie zu einem Sound kurz genau durch eine Schießscharte oder ein schmales Fenster, springt der Klang für diesen Moment auf ungedämpft. **Empfehlung:** Soll die Öffnung trotzdem dämpfen, einen dünnen Collider auf einem Wand-Layer darüberlegen.
+
 ### Maximal 8 Wände pro Sound
 Der Wall Check berücksichtigt pro Sound bis zu 8 gleichzeitig getroffene Wände. Liegen mehr als 8 Collider zwischen Sound und Listener, werden die darüber hinausgehenden nicht mitgezählt. In der Praxis ist die Okklusion bei so vielen Wänden längst nahe am **Min Cutoff Freq Value**, sodass die Grenze kaum wahrnehmbar ist.
 
@@ -442,3 +445,6 @@ Das Tool geht von genau einem aktiven `AudioListener` in der Szene aus (der Stan
 
 ### Ein gemeinsamer Pool ohne Priorisierung
 Alle Sounds teilen sich denselben vorallokierten Pool (`Number Of Audio Sources`). Es gibt keine reservierten Kontingente oder Prioritäten pro Kategorie: Sind zum Abspiel-Zeitpunkt alle Slots belegt, wird der neue Sound **nicht abgespielt** (kein laufender Sound wird verdrängt). Sehr häufige Kurz-Sounds (Footsteps, Hülsen) können so bei zu kleinem Pool einen wichtigen Sound am Start hindern. **Empfehlung:** Den Pool großzügig genug für die erwartete gleichzeitige Spitzenlast dimensionieren.
+
+### Ein Low-Pass-Filter pro wand-geprüftem Sound
+Jeder wand-geprüfte Sound erhält einen eigenen `AudioLowPassFilter` im Audio-DSP-Graphen — es gibt bewusst keinen einzelnen, gemeinsam genutzten Okklusions-Bus. Das hält die Dämpfung pro Sound exakt und unabhängig, bedeutet aber, dass die DSP-Last mit der Anzahl **gleichzeitig wand-geprüfter** Sounds wächst. Auf leistungsschwächerer Hardware (Konsole, Mobile) ist das ein relevanterer Kostenpunkt als die Raycasts selbst; nicht wand-geprüfte Sounds (2D-Musik, UI, `Use Wall Check` = aus) umgehen den Filter vollständig und kosten nichts. **Empfehlung:** `Use Wall Check` nur für Sounds setzen, bei denen Okklusion wirklich zählt; auf schwacher Hardware den Pool (`Number Of Audio Sources`) maßvoll dimensionieren und `Time Interval Between Position Checks` großzügiger wählen.

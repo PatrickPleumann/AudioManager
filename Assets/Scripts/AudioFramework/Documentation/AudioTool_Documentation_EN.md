@@ -434,6 +434,9 @@ The Wall Check damps occluded sounds via an `AudioLowPassFilter` — the highs d
 ### Overlapping wall colliders at corners
 A single raycast counts every wall collider it hits as one wall and damps once per hit. If two colliders overlap at a room corner (a common pattern when modular wall prefabs are placed with deliberate overlap so no visible seam appears), the same ray can pass through both and briefly damp the sound **twice** — even though it is physically only just behind the corner. The effect is transient (it disappears as soon as the ray crosses only one wall again), is softened by the smooth occlusion glide, and is bounded from below by **Min Cutoff Freq Value**. **Recommendation:** Avoid overlapping wall colliders where possible; use one collider per continuous wall run, or a single corner collider instead of two overlapping ones.
 
+### Narrow openings and small holes in walls
+The Wall Check uses an infinitely thin raycast. If it happens to pass through an opening in a wall — a slit or a small hole — it reports no wall, and the sound stays undamped. Example: if the line of sight to a sound briefly runs exactly through an arrow slit or a narrow window, the sound jumps to undamped for that moment. **Recommendation:** If the opening should still damp the sound, place a thin collider on a wall layer across it.
+
 ### At most 8 walls per sound
 The Wall Check accounts for up to 8 walls hit simultaneously per sound. If more than 8 colliders lie between the sound and the listener, the ones beyond that are not counted. In practice the occlusion is already close to **Min Cutoff Freq Value** with that many walls, so the limit is barely noticeable.
 
@@ -442,3 +445,6 @@ The tool assumes exactly one active `AudioListener` in the scene (the default in
 
 ### A single shared pool without prioritization
 All sounds share the same preallocated pool (`Number Of Audio Sources`). There are no reserved quotas or priorities per category: if all slots are busy at play time, the new sound is **not played** (no running sound is evicted). Very frequent short sounds (footsteps, casings) can thus prevent an important sound from starting if the pool is too small. **Recommendation:** Size the pool generously enough for the expected simultaneous peak load.
+
+### One low-pass filter per wall-checked sound
+Every wall-checked sound gets its own `AudioLowPassFilter` in the audio DSP graph — there is deliberately no single, shared occlusion bus. This keeps the damping per sound exact and independent, but it means the DSP load grows with the number of **simultaneously wall-checked** sounds. On lower-powered hardware (console, mobile) this is a more relevant cost than the raycasts themselves; sounds that are not wall-checked (2D music, UI, `Use Wall Check` = off) bypass the filter entirely and cost nothing. **Recommendation:** Only set `Use Wall Check` for sounds where occlusion truly matters; on weak hardware, size the pool (`Number Of Audio Sources`) modestly and choose a more generous `Time Interval Between Position Checks`.
