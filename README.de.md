@@ -8,6 +8,8 @@
 
 > **📁 Wo der Code liegt:** Das Framework liegt unter [`Assets/Scripts/AudioFramework/`](Assets/Scripts/AudioFramework/) — reine C#-Services, die Pure-Logic-Klassen und ihre EditMode-Tests in [`Tests/EditMode/`](Assets/Scripts/AudioFramework/Tests/EditMode/).
 
+> **📖 Vollständige Dokumentation:** Der komplette Nutzungs-Guide ist auf [Deutsch](Assets/Scripts/AudioFramework/Documentation/AudioTool_Documentation_DE.md) und [English](Assets/Scripts/AudioFramework/Documentation/AudioTool_Documentation_EN.md) verfügbar.
+
 ---
 
 ## Warum dieses Repo existiert
