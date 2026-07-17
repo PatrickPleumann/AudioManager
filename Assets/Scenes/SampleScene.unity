@@ -744,7 +744,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e32796aed5b36bf4fba2e8ed70bf1d97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: AudioFramework::AudioFramework.Components.AudioDuckComponent
-  duckRules: []
+  duckRules:
+  - Trigger: 1
+    Targets: []
   attackRate: 5
   releaseRate: 2
   reservedMixerRoutes: []
@@ -5137,7 +5139,7 @@ MonoBehaviour:
   AmbientVolume: 0.1
   SFXVolume: 0.5
   PlayerVolume: 1
-  Ambient: {fileID: 11400000, guid: c0d7901a607583444b70ed2c813ce76d, type: 2}
+  AmbientDataObject: {fileID: 0}
   Player: {fileID: 11400000, guid: a38d068b129cc834db374b0be3c7faa2, type: 2}
   SFX: {fileID: 11400000, guid: de795deceb805004aa1c8881083a67b0, type: 2}
   BehindWall: {fileID: 11400000, guid: 8a25686a28b24844db0cdeb44b6f8018, type: 2}

@@ -24,5 +24,7 @@ MonoBehaviour:
     WallDampingFactor: 0.65
   - SingleLayer: 11
     WallDampingFactor: 0.82
+  - SingleLayer: 4
+    WallDampingFactor: 0.876
   TransferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}
   AudioGameObjectPrefab: {fileID: 377295153041213637, guid: ad4150fbf24cd714685ef117c5421b69, type: 3}

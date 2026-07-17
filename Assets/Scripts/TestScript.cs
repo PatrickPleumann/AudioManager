@@ -35,7 +35,7 @@ public class TestScript : MonoBehaviour
 
     [Space]
     [Header("Audio Data Objects")]
-    public AudioDataObject Ambient;
+    public AudioDataObject AmbientDataObject;
     public AudioDataObject Player;
     public AudioDataObject SFX;
     public AudioDataObject BehindWall;
@@ -84,7 +84,7 @@ public class TestScript : MonoBehaviour
     }
 
     private void PlayAmbientTest()
-        => AudioManagerDynamic.PlaySpatial(Ambient, transforms[Random.Range(0, transforms.Length)]);
+        => AudioManagerDynamic.PlaySpatial(AmbientDataObject, transforms[Random.Range(0, transforms.Length)]);
 
     private void PlayPlayerTest()
         => AudioManagerDynamic.PlaySpatial(Player, transforms[Random.Range(0, transforms.Length)]);
