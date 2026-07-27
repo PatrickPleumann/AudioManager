@@ -27,18 +27,21 @@ A single `MonoBehaviour` singleton exposes a static API and drives per-frame tic
 ```
 AudioManagerDynamic            MonoBehaviour singleton · public API · LateUpdate driver
 ├── AudioPoolAcquisitionService   fixed AudioObject[] pool · slot handout + generation
-├── AudioPlaybackService          dispatch (play / fade-in-silent) · volume resolve · handle gating
+├── AudioPlaybackService          dispatch (play / fade-in-silent) · handle gating
 │   └── AudioStopService          the single "stop a slot" path (source stop + reset + wall-check stop)
 ├── AudioUniTaskWallCheckService  raycast loop via UniTask (recommended)   ┐ both only write
 ├── AudioCoroutineWallCheckService raycast loop via Coroutine (fallback)   ┘ TargetCutoff
 ├── AudioOcclusionSmoothingService glides filter cutoff toward TargetCutoff (per frame)
 ├── AudioFollowService            copies emitter position per frame — no re-parenting
-├── AudioFadeService              drives all fades per frame via IFadeTarget[]
+├── AudioFadeService              drives all fades per frame — writes the per-slot fade factor
+├── AudioDuckService              the single owner of source.volume · resolves base · fade · duck
 ├── AudioPauseService             scope-aware global pause / unpause
 └── AudioManagerDictionaryProvider  volume + layer-mask dictionaries
 ```
 
 The two wall-check services sit behind one interface (`IAudioWallCheckService`) — a **Strategy** seam, so the async backend is swappable and the manager never touches a `CancellationToken`.
+
+Volume follows a **single-writer rule**: everything that wants to influence loudness contributes a *factor* (the fade writes a per-slot factor, ducking a per-category one), and exactly one service resolves them onto `source.volume`. No two systems ever fight over the same property — the per-frame tick order is part of the contract, not an accident.
 
 ---
 
@@ -63,6 +66,10 @@ The math and policy decisions live in small **Unity-free** classes, unit-tested 
 |---|---|
 | `AudioFadeMath` | fade curve / volume-over-time |
 | `FadeOperation` | immutable per-slot fade progress (elapsed time → volume via `AudioFadeMath`) |
+| `VolumeResolver` | the one gain equation: base × fade × duck, clamped to `[0,1]` |
+| `DuckEnvelope` | per-frame glide of a category's duck factor (attack down / release back) |
+| `DuckTargetPolicy` | duck factor for one target category — strongest wins, never self-ducks, no cascade |
+| `DuckRuleFlattening` | nested inspector rules → flat (trigger, target) pairs, filling a reused list |
 | `WallOcclusionMath` | per-wall multiplicative damping step (factor → cutoff) + floor clamp (the swappable occlusion model seam) |
 | `OcclusionSmoothing` | per-frame glide toward target cutoff |
 | `WallLayerMask` | physics layer indices → one layer-mask bitmask (shared by both wall-check backends) |
@@ -80,7 +87,12 @@ This is a deliberate trade-off in favour of **honest tests**: where the choice w
 - **`Physics.RaycastNonAlloc`** into a reused buffer for the wall check — no per-frame array churn.
 - **`AudioHandle` is a `readonly struct`** `{ PoolIndex, Generation }` — a value-type ticket, not a heap reference.
 
-Nothing allocates on the per-frame path. The one honest exception worth naming: starting a *wall-checked* sound allocates a single `CancellationTokenSource` for its raycast loop — a per-`Play()` cost, not a per-frame one, and a tracked item on the road to fully zero-GC.
+The per-frame path is allocation-free by design — and where it currently isn't, I'd rather name it than let a benchmark find it:
+
+- Starting a *wall-checked* sound allocates one `CancellationTokenSource` for its raycast loop — a per-`Play()` cost, not a per-frame one.
+- Resolving duck factors boxes an enumerator per active-category check, because the policy takes its input as an interface. This only happens when ducking is actually configured, and it is a handful of small allocations per frame — but it does mean "zero per-frame GC" holds for the core path, not yet for that one.
+
+Both are tracked, not swept under the rug: naming a small honest exception is worth more than an absolute claim that a profiler can falsify.
 
 ### Stale-handle safety via generations
 
@@ -95,6 +107,7 @@ Each slot carries a `Generation` counter, bumped on every (re)acquisition. The `
 - **Fade family** — `FadeIn` / `FadeOut` / `Crossfade`, spatial and non-spatial. `Crossfade` is pure composition of `FadeOut + FadeIn`, not a special-cased path.
 - **Follow without re-parenting** — spatial sounds track an emitter by copying its position per frame, never via `SetParent` (which would hand a pooled slot to the caller and let it die with the emitter).
 - **Scope-aware global pause** — `PauseAll` / `UnpauseAll`, with per-sound opt-out of global pause.
+- **Audio runs on the real clock** — fades, occlusion glides and OneShot slot lifetimes all use Unity's *unscaled* time, so slow-motion (`Time.timeScale`) never stalls a fade or strands a pooled slot. Pausing is an explicit `PauseAll()`, never a side effect of `timeScale = 0`.
 - **Hybrid async backend** — uses allocation-free UniTask when present, and falls back to native Unity coroutines when it is absent. Selected at compile time via an Assembly Definition `versionDefines` gate (`USE_UNITASK`), so the build is safe either way.
 
 ---
@@ -130,7 +143,7 @@ Sounds are configured on an `AudioDataObject` (a `ScriptableObject` "control sur
 
 I built this in partnership with an AI coding agent (Claude). I think how that was done matters more than the fact of it, so I'll be specific:
 
-- **The agent works against a written contract, not vibes.** A `CLAUDE.md` in the repo encodes the architecture, the design invariants, and the rules of collaboration. The AI is steered by it — it doesn't get to redefine the design mid-task.
+- **The agent works against a written contract, not vibes.** A versioned set of documents in the repo encodes it: `CLAUDE.md` (entry point, invariants and rules of collaboration), `ARCHITECTURE.md` (every design decision and its rationale) and `TESTING.md` (the test discipline). The AI is steered by them — it doesn't get to redefine the design mid-task.
 - **The frozen-test loop constrains the AI, not the other way round.** Tests are written red-first and then frozen. The AI's job is to make a *fixed* specification pass — it cannot quietly weaken a test to get green, because the rule forbids it and the mutation check would expose a test that protects nothing.
 - **Architecture decisions are mine.** The pure-logic seams, the Strategy split for the async backend, the no-re-parenting follow model, the generation guard against stale handles — those are deliberate calls, made for testability and correctness, then implemented with AI assistance.
 

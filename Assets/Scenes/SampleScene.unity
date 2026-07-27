@@ -744,9 +744,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e32796aed5b36bf4fba2e8ed70bf1d97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: AudioFramework::AudioFramework.Components.AudioDuckComponent
-  duckRules:
-  - Trigger: 1
-    Targets: []
+  duckRules: []
   attackRate: 5
   releaseRate: 2
   reservedMixerRoutes: []

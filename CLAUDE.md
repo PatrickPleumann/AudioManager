@@ -1,127 +1,119 @@
 # AudioTool — CLAUDE.md
 
-Dieses Dokument gibt Claude in einem neuen Chat den vollständigen Kontext über das Projekt: **was es ist, wie wir zusammenarbeiten, die Architektur und die getroffenen Designentscheidungen.**
+Erster Anlaufpunkt für jede neue Session: **was das Projekt ist, wie wir zusammenarbeiten, welche Regeln
+immer gelten — und wo alles andere steht.**
 
-> **📌 Dokumentations-Regel (verbindlich):**
-> - **Diese Datei (CLAUDE.md) ist die EINZIGE Wissensablage.** Jede durable Erkenntnis — Designentscheidung, Prinzip, IST-Fakt, Arbeitsweise — wird **hier** festgehalten, NICHT in einem PC-gebundenen Claude-Memory. Das Memory wird bewusst nicht mehr beschrieben (vermeidet Drift; Wissen bleibt im Repo, versioniert und für Patrick lesbar).
-> - **Neue Aufgaben, TODOs und geplante Features gehören in [`BACKLOG.md`](BACKLOG.md)** (Repo-Root) — nie hierher und nie ins Memory. Beim Abarbeiten dort die Checkboxen pflegen.
-> - Kurz: **Wissen → CLAUDE.md · Aufgaben → BACKLOG.md · Memory → bleibt leer.**
+> **📌 Wissensablage-Regel (verbindlich):**
+> Wissen lebt **im Repo**, versioniert und für Patrick lesbar — **nicht** in einem PC-gebundenen
+> Claude-Memory. Das Memory bleibt bewusst leer (vermeidet Drift).
+> Jede Information hat **genau eine** Heimat; es gibt keine zweite Kopie in einer anderen Datei. Wer etwas
+> ergänzt, ergänzt es dort, wo es laut Wegweiser unten hingehört, und verlinkt von anderen Stellen nur hin.
+
+---
+
+## 🧭 Wegweiser — welche Datei für welchen Kontext
+
+**Diese Datei enthält nur, was bei *jeder* Aufgabe gilt.** Die Tiefe zu einem Thema steht in der jeweiligen
+Fachdatei. Faustregel: *muss ich es immer wissen → hier. Muss ich es wissen, wenn ich genau dieses Subsystem
+anfasse → dort.*
+
+| Wenn es um … geht | dann lies | Inhalt |
+|---|---|---|
+| **TDD-Loop, Gates, Mutation Check, Test-Regeln** | [`TESTING.md`](TESTING.md) **Teil I** | Die verbindliche Test-Disziplin. **Vor jeder neuen Methode zu lesen.** |
+| **Test-Qualität, was die Tests wirklich schützen** | [`TESTING.md`](TESTING.md) **Teil II** | Audit pro Methode + die Lehren daraus (Mess-Snapshot, darf veralten) |
+| **Architektur, Services, Datenfluss** | [`ARCHITECTURE.md`](ARCHITECTURE.md) §1–3 | Service-Graph, Tick-Reihenfolge, pure Logik-Schicht, Typen-Tabelle |
+| **Warum etwas so gebaut ist** (Pool, Occlusion, Ducking, Fade, Pause, Follow, Singleton, Call-statt-Event) | [`ARCHITECTURE.md`](ARCHITECTURE.md) §4–16 | Alle Designentscheidungen mit Begründung |
+| **Lautstärke / `source.volume` / Ducking** | [`ARCHITECTURE.md`](ARCHITECTURE.md) §6–7 | Zwei-Gain-Stufen-Modell, Ein-Besitzer-Regel |
+| **Offene Aufgaben, Features, Roadmap (V1 / V1.1)** | [`BACKLOG.md`](BACKLOG.md) | Single Source aller offenen Arbeiten |
+| **Ein Code-Review aufsetzen / Befunde ablegen** | [`REVIEW_PROTOCOL.md`](REVIEW_PROTOCOL.md) | Verfahren (portabel) + Befund-Log (projektspezifisch) |
+| **Demo-Szene / Verkaufsvideo planen** | [`SHOWCASE_REQUIREMENTS.md`](SHOWCASE_REQUIREMENTS.md) | Showcase-Module, Hero-Schnitt |
+| **Was der Käufer sieht** | `Assets/…/Documentation/AudioTool_Documentation_DE.md` / `_EN.md` | User-Handbuch inkl. „Bekannte Einschränkungen" |
+| **Verkaufsoberfläche / Portfolio** | `README.md` (EN) · `README.de.md` (DE) | 1:1-Spiegel, bewusst stabil |
 
 ---
 
 ## Was ist dieses Projekt?
 
-**AudioTool** ist ein Unity Audio-Management-Framework, das als Unity Asset Store Plugin veröffentlicht werden soll. Zielgruppe sind Indie-Entwickler und kleine Teams, die kein Audio-Budget haben und sich nicht in FMOD/Wwise einarbeiten wollen.
+**AudioTool** ist ein Unity Audio-Management-Framework, das als Unity Asset Store Plugin veröffentlicht werden
+soll. Zielgruppe sind Indie-Entwickler und kleine Teams, die kein Audio-Budget haben und sich nicht in
+FMOD/Wwise einarbeiten wollen. Das Tool nimmt dem Entwickler die vollständige Verwaltung von
+`AudioSource`-Objekten ab: ein einziger Aufruf reicht — den Rest erledigt das System.
 
-Das Tool nimmt dem Entwickler die vollständige Verwaltung von `AudioSource`-Objekten ab. Ein einziger Aufruf reicht — den Rest erledigt das System.
-
-**Wichtig:** Der Entwickler Patrick arbeitet mit Unity 6 und JetBrains Rider. Die Sprache im Chat ist Deutsch.
+**Umgebung:** Unity 6, JetBrains Rider. Chat-Sprache Deutsch, Code und Kommentare Englisch.
 
 ### Produkt-Strategie & Verkaufsargument (der „Moat")
 
-Das Fundament steht sauber (Pooling, Occlusion, Pause/Follow, Fade-Familie — alle test-gestützt). Der Plan: **bewusst die Feature-Breite ausbauen**, um mit der Konkurrenz (MasterAudio, FMOD-nah) gleichzuziehen — aber jedes Feature mit **überlegener Struktur und Testdisziplin**, die die Konkurrenz nicht liefert. Das Verkaufsargument ist nicht Breite allein, sondern: „dieselben Features wie die großen Tools, aber sauber und testbar". Breite darf **niemals** auf Kosten dieser Qualitätskante gehen.
+Das Fundament steht sauber (Pooling, Occlusion, Pause/Follow, Fade, Ducking — alle test-gestützt). Der Plan:
+**bewusst die Feature-Breite ausbauen**, um mit der Konkurrenz (MasterAudio, Sonity, FMOD-nah) gleichzuziehen
+— aber jedes Feature mit **überlegener Struktur und Testdisziplin**, die die Konkurrenz nicht liefert. Das
+Verkaufsargument ist nicht Breite allein, sondern: „dieselben Features wie die großen Tools, aber sauber und
+testbar". **Breite darf niemals auf Kosten dieser Qualitätskante gehen.**
 
-Ein weiteres bewusstes Verkaufsargument: Der Wall-Check ist **lightweight occlusion** (simpler Low-Pass), KEIN voller Spatializer wie Steam Audio/Oculus. Das ist ein Feature, kein Nachteil — klar so kommunizieren.
+Zweites bewusstes Verkaufsargument: Der Wall-Check ist **lightweight occlusion** (simpler Low-Pass), KEIN
+voller Spatializer wie Steam Audio/Oculus. Das ist ein Feature, kein Nachteil — klar so kommunizieren.
 
 ---
 
 ## Zusammenarbeit mit Patrick
 
-> Die universellen Zusammenarbeits-Regeln (Solo-Dev, kein Ja-Sager, kein eigenständiges Committen, erst erklären dann Go, Sauberkeit vor Workaround, warmer Abschluss, Sprache, Testbarkeit) stehen in der user-level `~/.claude/CLAUDE.md` und laden automatisch in jede Session. Hier nur **AudioTool-Spezifisches**:
+> Die universellen Regeln (Solo-Dev, kein Ja-Sager, kein eigenständiges Committen, erst erklären dann Go,
+> Sauberkeit vor Workaround, warmer Abschluss, Sprache, Testbarkeit) stehen in der user-level
+> `~/.claude/CLAUDE.md` und laden automatisch in jede Session. Hier nur **AudioTool-Spezifisches**:
 
-- **Pro-Plan-Hinweis:** Patrick stößt an Session-Token-Limits (Opus ist der schwere Treiber). Opus für die harten Teile sparen; Mechanisches kann günstiger laufen.
+- **Pro-Plan-Hinweis:** Patrick stößt an Session-Token-Limits (Opus ist der schwere Treiber). Opus für die
+  harten Teile sparen; Mechanisches kann günstiger laufen. *(Das ist auch der Grund für den Wegweiser oben:
+  diese Datei lädt in **jede** Session — was hier steht, wird jedes Mal bezahlt. Tiefe gehört deshalb in die
+  Fachdateien, die nur bei Bedarf geöffnet werden.)*
 
 ---
 
 ## Arbeitsweise: Test-Driven (nicht verhandelbar)
 
-DIE Regel für jede neue Methode/jedes Feature. Formalisiert von Patrick, bindend. Der Loop, in Reihenfolge:
+**Die vollständige Disziplin steht in [`TESTING.md`](TESTING.md) Teil I — vor jeder neuen Methode dort
+nachlesen.** Der verbindliche Kern in Kurzform, damit er nie „übersehen" werden kann:
 
-1. **Zuerst den fehlschlagenden Test schreiben.** Er muss rot sein, bevor Implementierung existiert.
-2. **Diese Tests sind danach EINGEFROREN — werden nie wieder angefasst.** Bestehende Tests werden nicht editiert/abgeschwächt, um Code grün zu bekommen. *Neue* Tests für *neues* Verhalten sind ok.
-3. **Die Methode schreiben**, die die eingefrorenen Tests grün macht.
-4. **Wenn alles grün ist: bewusst einen Fehler einbauen** (Mutation Check), der mindestens einen Test rot macht — vorher vorhersagen welchen. Beweist, dass die Tests wirklich etwas schützen.
-5. **Nach bestätigtem Rot: korrekten Zustand wiederherstellen.** Danach die Tests in Ruhe lassen.
-6. **Wird eine Methode so umgebaut, dass ihre eingefrorenen Tests obsolet werden**, wandert die Nacharbeit als TODO in den BACKLOG — und wird NIE ohne Patricks ausdrückliche Anweisung ausgeführt. Keine stillen Test-Rewrites.
+1. **Red first.** Erst der fehlschlagende Test, dann die Implementierung.
+2. **Tests sind danach EINGEFROREN.** Nie editiert/abgeschwächt, um Code grün zu bekommen. Neue Tests für
+   neues Verhalten sind ok. Wird ein Test durch Umbau obsolet → BACKLOG, **nie** stiller Rewrite.
+3. **Mutation Check.** Nach Grün bewusst einen Fehler einbauen und *vorher* vorhersagen, welcher benannte
+   Test rot wird. Danach korrekten Zustand wiederherstellen.
+4. **Ein Gate pro Antwort — dann STOPP.** Rot → Grün → Mutation → Wiederherstellung sind vier
+   **Bestätigungs-Gates**, keine Schrittliste. Der nächste Schritt beginnt erst, wenn **Patrick das von ihm
+   selbst beobachtete Ergebnis bestätigt hat**. Stub und Implementierung nie im selben Zug; einen späteren
+   Schritt nie vorab ankündigen oder vorbereiten.
+5. **Erwartungswerte aus der SPEZIFIKATION, nie aus dem Code.** Lässt sich „korrekt" ohne Code-Lesen nicht
+   sagen → STOPP und das Soll mit Patrick klären.
+6. **Roter Test ≠ Test anfassen.** Diagnose-Reihenfolge: Implementierung → mein Modell → meine Vorhersage →
+   *zuletzt* der Test. Test-Änderung nur mit vorab benannter Kategorie und Patricks Go; Default ist Veto.
 
-### Gate-Disziplin: ein Schritt, ein Stopp, eine Bestätigung (verbindlich, 2026-06-28)
-
-> Anlass: In der `DuckEnvelope`-Session wurden Stub, grüne Implementierung **und** der vorweggenommene Mutation-Check in *einem* Zug geliefert. Damit hatte Patrick nie ein echtes, **selbst beobachtetes** Rot/Grün in der Hand — die Gates des Loops waren entwertet. Wurzel ist dieselbe wie 2026-06-20: „Fortschritt machen" wurde über „jeden Schritt einzeln beweisen" gestellt.
-
-**Der Loop ist KEINE Schritt-Liste zum Abarbeiten, sondern eine Reihe von Bestätigungs-Gates.** Jeder Schritt endet mit einem STOPP; der nächste beginnt **erst, wenn Patrick das von ihm beobachtete Testergebnis bestätigt hat** — nicht, wenn *ich* den Zustand für richtig halte.
-
-- **Gate 1 — Rot:** Tests + `NotImplementedException`-Stub schreiben. **STOPP.** Keine Implementierung schreiben — auch nicht „schon mal vorbereiten" — bevor Patrick das laufende Rot bestätigt hat.
-- **Gate 2 — Grün:** Implementierung schreiben. **STOPP.** Kein Mutation-Check, bevor Patrick das Grün bestätigt hat.
-- **Gate 3 — Mutation:** Genau eine Mutation einbauen und die Vorhersage (welcher *benannte* Test rot wird) im selben Schritt nennen — aber erst *jetzt*, nie früher. **STOPP.** Patrick bestätigt das Rot gegen die Vorhersage.
-- **Gate 4 — Wiederherstellung:** Korrekten Zustand wiederherstellen. **STOPP.** Patrick bestätigt das erneute Grün. Danach sind die Tests eingefroren.
-
-**Eiserne Regeln, die die Gates absichern:**
-- **Nie mehr als ein Gate pro Antwort.** Stub und Implementierung niemals im selben Zug.
-- **Nie einen späteren Schritt vorab ankündigen oder vorbereiten** (z. B. die Mutation nennen, während wir noch im Grün-Gate stehen). Das nimmt Patrick die eigene Beobachtung vorweg.
-- **„Der Vertrag ist klar" rechtfertigt schnelleres *Vorbereiten*, nie das Überspringen eines Gates.** Klarheit ist kein Freifahrtschein.
-- **Im Zweifel: STOPP und fragen.** Der teurere Fehler ist das Vorpreschen, nicht die Rückfrage.
-
-**Stützende Prinzipien:**
-- **Erwartungswerte kommen aus der SPEZIFIKATION, nicht aus dem Code.** Vor dem Blick auf die Implementierung aus dem Vertrag hand-ableiten. Wenn „korrekt" ohne Code-Lesen nicht sagbar ist → STOP, erst das Soll mit Patrick klären.
-- **Erstes Rot darf ein „laufendes Rot" sein:** neuen Typ/Member als `NotImplementedException`-Stub anlegen, damit das Test-Assembly kompiliert und die Tests *laufen* und scheitern (klarer als ein bloßer Compile-Fehler).
-- **Aktuell testen wir NUR neuen Code.** Bestandscode nachzutesten ist eine separate, aufgeschobene Aufgabe (siehe BACKLOG) — nie still mit reingezogen.
-- **Ehrliche Tests gewinnen Design-Trade-offs** („Ehrliche Tests sind besser"). Wenn die Wahl zwischen einer leicht-ehrlich-testbaren Architektur (Seam/Interface → EditMode-testbar mit Fake) und einer ohne Abstraktion (nur per langsamem/vagem PlayMode prüfbar) steht: die testbare wählen. Ein kleiner Seam ist es wert. Konkret umgesetzt: die pure-Logik-Klassen `AudioFadeMath`, `WallOcclusionMath`, `OcclusionSmoothing`, `LowPassDispatchPolicy`, `AudioHandleValidator`, `WallLayerMask` — Unity-frei, EditMode-getestet.
-
-Patricks Kernangst sind tautologische / Change-Detector-Tests. Red-first + Einfrieren + Mutation Check sind die konkreten Schutzwälle.
-
-### Zusätzliche Schutzregeln (aus konkreten Fehlentscheidungen, 2026-06-20)
-
-Härten den Loop gegen die Patzer der Occlusion-Modell-Session. Gemeinsame Wurzel: „grün/erwartungskonform machen" wurde über „Diskrepanz verstehen" gestellt. Genau dieser Default wird hier umgedreht.
-
-- **Bei rotem Test oder verfehlter Mutation-Vorhersage: niemals reflexartig den Test anfassen — erst ganzheitlich analysieren, wo der Fehler sitzt.** Der Test ist die **letzte** Instanz im Verdacht, erreichbar nur per Ausschluss. Diagnose-Reihenfolge; eine Stufe wird erst betreten, wenn die vorige als „nicht falsch" bestätigt ist:
-  1. **Die Implementierung** — der Code unter Test.
-  2. **Mein Modell / meine Hand-Herleitung** des Erwartungswerts aus der Spec.
-  3. **Die Vorhersage selbst** — bei verfehlter Mutation-Prognose ist meist nur mein Modell *des Tests* daneben; der Mutation-Check ist ohnehin bestanden, sobald *mindestens ein* Test rot ist (Suite-Ebene, nicht pro Test).
-  4. **Der Test** — zuletzt. Er *kann* falsch sein (falscher Erwartungswert, falsche/zu schwache Assertion, falsch dimensionierte Toleranz), und diese Möglichkeit verschließe ich mir nie. Aber sie wird erst gezogen, wenn der Kontext zwingend ergibt, dass *nur noch* der Test die Quelle sein kann und nichts anderes. Dann — und nur dann — Test **nach explizitem Go** anfassen, mit benannter Begründung *warum*. Nie zählt: ändern, *damit meine Prognose stimmt*, oder Schutz ergänzen, den ein grüner Test auf Suite-Ebene schon liefert (Gold-Plating).
-
-- **Test-Änderung nur mit vorab benannter Kategorie; Default ist Veto.** Tests werden grundsätzlich nicht angefasst. Jeder Änderungsvorschlag muss *vor* der Änderung einer Kategorie zugeordnet werden: (a) echter Authoring-Defekt (z. B. falsche Toleranz), (b) bewusste Spec-Änderung mit Patricks Go, (c) obsolet durch Umbau → BACKLOG (Loop-Regel #6). Passt nichts davon → keine Änderung. Im Zweifel: Test stehen lassen und fragen.
-
-- **Float-Erwartungswerte: Toleranz aus der Rechnung ableiten, nicht aus Reflex.** Entsteht ein Erwartungswert durch verkettete float32-Arithmetik mit nicht exakt darstellbaren Faktoren (z. B. `0.3f`, `0.8f`), die Toleranz an der akkumulierten Rundung ausrichten — für Cutoff-Hz: fachlich vernachlässigbar (~`1e-2`), aber weiterhin um Größenordnungen enger als jede sinnvolle Mutation. Kein Reflex-`1e-5` auf Float-Ketten.
+**Patricks Kernangst sind tautologische / Change-Detector-Tests.** Red-first + Einfrieren + Mutation Check
+sind die Schutzwälle dagegen — deshalb sind sie nicht verhandelbar.
 
 ---
 
-## Architektur
+## Architektur — Überblick
+
+**Details, Tick-Reihenfolge und alle Designentscheidungen → [`ARCHITECTURE.md`](ARCHITECTURE.md).**
 
 ```
-AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateUpdate-Ticks)
-├── AudioPoolAcquisitionService    → Pool aus AudioObject[] (AudioSource + LowPassFilter); Slot-Vergabe + Generation
-├── AudioPlaybackService           → Dispatching (Play/FadeIn-Silent), Stop-Einstieg, Volume-Resolve, Handle-Gating
-│   └── AudioStopService           → einziger „Slot stoppen"-Pfad (Source.Stop + Reset + WallCheck stop), fade-frei
-├── AudioUniTaskWallCheckService   → Raycast-Loop per UniTask (empfohlen)   ┐ setzen nur noch TargetCutoff
-├── AudioCoroutineWallCheckService → Raycast-Loop per Coroutine (Fallback)  ┘ (geteilte WallOcclusionMath + WallLayerMask)
-│   └── SceneAudioListenerProvider  → liefert die *aktuelle* AudioListener-Position (lazy + self-heal bei Zugriff, kein Polling)
-├── AudioOcclusionSmoothingService → gleitet Filter.cutoffFrequency pro Frame Richtung TargetCutoff (LateUpdate)
-├── AudioFollowService             → kopiert Emitter-Position pro Frame (LateUpdate), ohne Parenting
-├── AudioFadeService               → treibt alle Fades pro Frame (LateUpdate) über IFadeTarget[]
-├── AudioPauseService              → Pause/Unpause der Pool-Slots (global, scope-bewusst)
-└── AudioManagerDictionaryProvider → Volume- & LayerMask-Dictionaries
+AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die LateUpdate-Ticks)
+├── AudioPoolAcquisitionService     → Pool aus AudioObject[]; Slot-Vergabe + Generation
+├── AudioPlaybackService            → Dispatching, Stop-Einstieg, Handle-Gating
+│   └── AudioStopService            → einziger „Slot stoppen"-Pfad
+├── AudioUniTaskWallCheckService    → Raycast-Loop (empfohlen)   ┐ setzen nur TargetCutoff
+├── AudioCoroutineWallCheckService  → Raycast-Loop (Fallback)    ┘
+│   └── SceneAudioListenerProvider  → aktuelle AudioListener-Position (self-heal)
+├── AudioOcclusionSmoothingService  → gleitet den Cutoff pro Frame
+├── AudioFollowService              → kopiert Emitter-Position pro Frame, ohne Parenting
+├── AudioFadeService                → treibt Fades; schreibt den Per-Slot-FadeFactor
+├── AudioDuckService                → EINZIGER Besitzer von source.volume (basis · fade · duck)
+│   └── AudioDuckComponent          → optionaler, passiver Regel-Provider (kein eigener Tick)
+├── AudioPauseService               → Pause/Unpause der Pool-Slots (scope-bewusst)
+└── AudioManagerDictionaryProvider  → Volume- & LayerMask-Dictionaries
 ```
 
-**Pure, Unity-freie Logik-Klassen (EditMode-getestet):** `AudioFadeMath`, `WallOcclusionMath` (Pro-Wand-Cutoff-Schritt + Floor-Clamp), `OcclusionSmoothing` (Per-Frame-Glide), `LowPassDispatchPolicy` (Filter-Zustand pro Dispatch), `AudioHandleValidator` (Handle-Currency: Bounds + Generation), `WallLayerMask` (Layer-Indizes → Bitmask, von beiden WallCheck-Services geteilt), `ListenerCachePolicy` (Resolve-Entscheidung: neu auflösen ⟺ kein Cache ODER gecachter Listener nicht mehr lebend & aktiv).
-
-### Wichtige Klassen & Dateien
-
-| Datei | Zweck |
-|---|---|
-| `AudioManagerDynamic.cs` | Singleton, öffentliche API, LateUpdate-Treiber |
-| `AudioDataObject.cs` | ScriptableObject — Konfiguration pro Sound (ADO, „Control Surface") |
-| `AudioSystemConfig.cs` | ScriptableObject — zentrale System-Konfiguration |
-| `AudioSourceVolumes.cs` | ScriptableObject — Lautstärke pro Kategorie |
-| `AudioVolumesTransferObject.cs` | Bündelt alle AudioSourceVolume-Assets (nur eine Instanz) |
-| `AudioCategory.cs` | Enum — Lautstärke-Kategorien (Beispielwerte, muss angepasst werden) |
-| `AudioHandle.cs` | Readonly struct `{ PoolIndex, Generation }` — Referenz auf eine Slot-Belegung; Ctor `internal` |
-| `AudioObject.cs` | Struct — ein Pool-Slot (GameObject, Source, Filter, BusyUntilTime, Generation, TargetCutoff, Follow-/Pause-State) |
-| `SoundRequest.cs` | Readonly struct `{ Ado, Source }` — Event-Payload für `PlaySpatial(SoundRequest)` |
-| `IAudioWallCheckService.cs` | Interface — Strategy Pattern für WallCheck (UniTask/Coroutine) |
-| `IAudioListenerProvider.cs` | Interface — liefert die aktuelle AudioListener-Position (`TryGetPosition`); Seam gegen stale Transform |
-| `SceneAudioListenerProvider.cs` | Unity-Impl — lazy Auflösung + Self-Heal des aktiven Listeners (kein Polling) |
-| `ListenerCachePolicy.cs` | Pure — „Listener neu auflösen?"-Entscheidung (EditMode-getestet) |
-| `IGetPoolIndex.cs` | Interface — toter Platzhalter, steht im BACKLOG zur Entfernung |
+Die gesamte Entscheidungslogik liegt in **puren, Unity-freien Klassen** (EditMode-getestet) — Liste und
+Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **118 EditMode-Tests** über 15 Logik-Einheiten.
 
 ---
 
@@ -129,7 +121,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt LateU
 
 ```csharp
 // Abspielen
-AudioHandle h = AudioManagerDynamic.PlaySpatial(myADO, sourceTransform);   // 3D, positionsbezogen, optional wall-checked
+AudioHandle h = AudioManagerDynamic.PlaySpatial(myADO, sourceTransform);   // 3D, optional wall-checked
 AudioHandle h = AudioManagerDynamic.PlaySpatial(soundRequest);             // dito, gebündeltes { Ado, Source }
 AudioHandle h = AudioManagerDynamic.PlayNonSpatial(myADO);                 // 2D (spatialBlend = 0, kein WallCheck)
 
@@ -152,76 +144,43 @@ AudioManagerDynamic.UnpauseAll();
 
 ---
 
-## Wichtige Designentscheidungen
+## Invarianten, die bei JEDER Änderung gelten
 
-### ADO ist die „Control Surface" (zentrales Invariant)
-Das `AudioDataObject` ist bewusst ein serialisierter **Spiegel der AudioSource-Einstellungen**, der zur Play-Zeit auf den gepoolten `AudioSource` geschrieben wird. **Jede gespiegelte Eigenschaft MUSS bei JEDEM Dispatch geschrieben werden — unbedingt, nie in einem `if`.** Sonst trägt ein wiederverwendeter Slot den **vorherigen** Sound-Wert → stille, schwer findbare Bugs (genau so passiert mit `spatialBlend`). Beim Hinzufügen eines neuen gespiegelten Feldes immer die unbedingte `source.<prop> = ado.<prop>`-Zeile in `AudioPlaybackService.Dispatch` mitsetzen. Wachstumskandidaten: `pitch`, `loop`, `priority`, `minDistance`/`maxDistance`, `rolloffMode`, `spread`.
+Die drei Regeln, deren Verletzung schon einmal einen echten Bug erzeugt hat oder erzeugen würde. Begründung
+und Details jeweils in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-### Pool
-- Festes `AudioObject[]`-Array, vorab instanziiert — kein GC zur Laufzeit.
-- `BusyUntilTime` als Zeitstempel-Trick für OneShot-Slots.
-- Pool-Suche O(n) ab Index 0 — bewusst einfach.
-- **Generation pro Slot:** Jede (Neu-)Vergabe in `GetFreeAudioSourcePoolIndex` erhöht `AudioObject.Generation`. Der zurückgegebene `AudioHandle` trägt diese Generation. Stop/Fade prüfen via `AudioHandleValidator`/`IsHandleCurrent`, ob Generation **und** Bounds passen — sonst stilles No-op. So kann ein alter Handle nach Slot-Reuse nicht den neuen, fremden Sound stoppen/faden. Der `AudioHandle`-Ctor ist `internal` (Handles sind reine Ausgabewerte; verhindert selbstgebaute Crash-Handles).
+1. **ADO ist die Control Surface** (§4) — jede vom `AudioDataObject` gespiegelte Eigenschaft MUSS bei
+   **jedem** Dispatch geschrieben werden, **unbedingt, nie in einem `if`**. Sonst trägt ein wiederverwendeter
+   Slot den Wert des Vorgängers. *(So entstand der `spatialBlend`-Bug — die einzige real passierte
+   Bug-Klasse.)* Neues gespiegeltes Feld → unbedingte Zeile in `AudioPlaybackService.Dispatch` mitsetzen.
+2. **`source.volume` hat genau einen Besitzer** (§6) — `AudioDuckService`. Wer eine neue
+   Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor** (wie Fade und Duck) und schreibt
+   **nie** selbst auf `source.volume`.
+3. **Pausieren heißt `PauseAll()`, nicht `timeScale = 0`** (§11) — das gesamte Tool läuft auf der
+   ungeskalierten Uhr (`Time.unscaledTime` / `Time.unscaledDeltaTime`). Neue zeitabhängige Logik hängt an
+   derselben Uhr, sonst hängen Slots bei Slow-Mo.
 
-### Wall Check (lightweight occlusion)
-- `Physics.RaycastNonAlloc` mit `RaycastHit[8]`-Buffer (max. 8 Wände).
-- Layer-basierte **Dämpfung** — jeder getroffene Layer dämpft den laufenden Cutoff um einen konfigurierbaren **Faktor `0..1`** (`WallDampingLayer.WallDampingFactor`, `[Range(0,1)]`-geguardet) Richtung Floor (`WallOcclusionMath.ApplyWall`, **multiplikativ**: `current − (current − floor)·d`). Über N Wände skaliert der offene Bereich über dem Floor mit `∏(1 − dᵢ)` → reihenfolge-unabhängig und **asymptotisch** zum Floor; `ClampToFloor` ist nur noch Sicherheitsnetz gegen Fehlkonfig (`d>1`). `0` = Wand transparent, `1` = fällt in einer Wand auf `MinCutoffFreqValue`.
-- **Offener Cutoff = `DefaultCutoffFreqValue` ≈ 22000 Hz** (Obergrenze des Gehörs → transparent). Niedrigere Werte klingen dumpf.
-- **Filter nur für wand-geprüfte Sounds aktiv:** `filter.enabled = ado.UseWallCheck` bei jedem Dispatch (`LowPassDispatchPolicy`). Alle anderen Sounds (2D-Musik, UI, nicht-occludierte SFX) umgehen den Filter komplett → transparenter Klang + weniger DSP.
-- **Weiche Übergänge:** Der WallCheck-Loop setzt nur noch `AudioObject.TargetCutoff`; `AudioOcclusionSmoothingService` gleitet `filter.cutoffFrequency` pro Frame dorthin (`OcclusionSmoothing.Step`, MoveTowards mit `OcclusionSmoothingSpeed` Hz/s; `0` = sofort). Kein „Pop" mehr beim Aus-der-Wand-Treten.
-- WallCheck nur wenn aktiv → kein Raycast bei pausierten Sounds. `ShouldContinueLoop()` unterscheidet OneShot (BusyUntilTime) und Loop (isPlaying) und hält den Loop bei `IsPaused` am Leben (sonst kehrt Occlusion nach Unpause nicht zurück).
-- **Listener-Bezug self-healing statt gecacht:** Der WallCheck hält nicht mehr die rohe Listener-`Transform`, sondern einen `IAudioListenerProvider`. `SceneAudioListenerProvider` cached den `AudioListener`, validiert ihn aber bei **jedem** Zugriff (`!= null && isActiveAndEnabled`) und löst nur im Ungültig-Fall neu auf (`FindObjectsByType` → erster aktiver Listener). Kein Intervall-Polling — der teure Scan feuert nur im Wechsel-Moment, der Happy Path ist ein Null-Check + ein Bool. Fängt **Respawn** (zerstört → `null`) **und Kamerawechsel per Disable/Enable** (`!isActiveAndEnabled`) ab. `TryGetPosition(out)` → bei `false` weiterhin `DefaultCutoffFreqValue` (unverändertes „kein Listener"-Verhalten). Die Resolve-*Entscheidung* lebt in der pure `ListenerCachePolicy` (Modell-Seam, wie `WallOcclusionMath`).
-- **`WallOcclusionMath` ist der Modell-Seam:** Das multiplikative Dämpfungs-Modell lebt allein im `ApplyWall`-Rumpf (Einzelstelle) — ein künftiger Wechsel (z. B. echtes logarithmisches Mapping) bliebe eine lokale Änderung an dieser einen Stelle.
+---
 
-### Pause-Modell (ohne Multi-Pool gelöst)
-- Pro-ADO `RespectsGlobalPause` (Default true; regelt NUR die globale `PauseAll`/`UnpauseAll`, nicht `Stop(handle)`).
-- Laufzeit-Flag `AudioObject.IsPaused` trackt, was *wir* pausiert haben: (a) `GetFreeAudioSourcePoolIndex` behandelt pausierte Slots als belegt (ein pausierter AudioSource meldet `isPlaying == false` → würde sonst überschrieben), (b) `UnpauseAll` weckt nur, was es pausiert hat, (c) `StopAudio` + Follow-Cleanup räumen `IsPaused`. Pro Dispatch via `SetPausePolicy` gespiegelt (Control-Surface).
+## Doku-Regeln
 
-### Fade-Familie
-- Framework-agnostischer `AudioFadeService`, pro Frame aus `LateUpdate` getrieben (wie Follow). Index-basiert über `IFadeTarget[]` (gleiche Größe/Index wie der Pool → der Pool-Index ist der geteilte Schlüssel).
-- Reale Targets = `PooledFadeTarget` (Volume → `source.volume`, Stop → `AudioStopService.StopSlot`). Pause-bewusst: ein pausierter Fade friert ein.
-- Fade ist ein **Laufzeit-Override** des kategoriebasierten Volumes; settled am Ende auf die Kategorie-Lautstärke (FadeIn) bzw. erreicht 0 und gibt frei (FadeOut). Reset-Punkte (jeder Dispatch, Stop, Follow-Target-Tod) räumen den Fade, damit er keinen wiederverwendeten Slot überschreibt.
-
-### Follow ohne Parenting
-- Spatiale Sounds folgen einem Emitter, indem die Position pro `LateUpdate` kopiert wird — **nie** per `SetParent` (Parenting würde den Pool-Slot dem Aufrufer „schenken": Zerstört der seinen Emitter, würde der gepoolte Slot mitsterben). Stirbt das Follow-Target mitten im Sound, wird gestoppt + Slot freigegeben (ein Follow-Sound ist meist ein Loop → würde sonst ewig am Todesort weiterlaufen).
-
-### Token-Management
-- `CancellationTokenSource[]` liegt **ausschließlich** im jeweiligen WallCheck-Service. `AudioManagerDynamic` kennt keine Tokens — vollständige Interface-Abstraktion.
-
-### Singleton-Schutz
-- Mehrere Instanzen werden in `Awake` erkannt und zerstört (mit Warning). `OnDestroy` räumt nur, wenn es die echte Instanz ist (`if (instance != this) return;`) — sonst würde ein am Frame-Ende zerstörtes Duplikat (z. B. additives Szenenladen) die statische Referenz auf die lebende Instanz nullen. Vorbedingungen (Config, AudioListener) werden VOR `instance = this` geprüft → Invariante: `instance != null` ⟺ voll initialisiert.
-
-### Direkter Call statt Event-getriebener API — und warum das mit der Persistenz zusammenhängt
-Die öffentliche API ist bewusst **synchroner Call mit Rückgabewert**, kein Event-/Pub-Sub-Modell. Das Tool definiert **kein einziges eigenes Event** (kein `EventBus`, `UnityEvent`, `Action`). Das einzige event-freundliche Element ist die `SoundRequest`-Struct — eine reine **Payload**, die durch das Event des *Aufrufers* reist und dann an den synchronen `PlaySpatial(SoundRequest)` übergeben wird. Event-Nutzung ist damit ein **Adapter am Rand**, nicht das Fundament.
-
-**Kern-Grund — der Handle braucht einen Rückgabewert:** `PlaySpatial` liefert einen `AudioHandle`, an dem der ganze Lifecycle hängt (`Stop`, `FadeOut`, `Crossfade`). Events sind fire-and-forget → geben nichts zurück. Eine event-getriebene API hätte die Handle-Kontrolle **strukturell verbaut**. Weitere Gründe: Traceability (Stacktrace + „Find Usages" statt unsichtbarer „wer feuert / wer lauscht"-Kopplung), Testbarkeit (aufrufen → Handle asserten, deterministisch in EditMode; kein Subscription-Lifecycle/Timing), Zielgruppe („ein Aufruf, fertig" statt Event-Zeremonie) und vorhersehbares Timing (Call spielt *jetzt*, kein deferred Ein-Frame-Delay).
-
-**Die Asymmetrie, die alles trägt (Szene → Manager, nie Manager → Szene):** Ein *Call* ist eine momentane Interaktion und hinterlässt nichts; eine *Subscription* ist eine dauerhafte Bindung, die aktiv abgebaut werden muss. Szenen-Objekte **rufen** den Manager an (transient); der Manager **subscribed nirgends** in die Szene zurück. Damit existiert **keine Bindung, die beim Scene-Unload zur Leiche wird** — die Event-Ownership-Probleme entstehen nie, statt clever gelöst zu werden.
-
-**Persistenz + Kein-Event bedingen sich gegenseitig:** Der `DontDestroyOnLoad`-Singleton (überlebt jeden Szenenwechsel) **plus** Events wäre die *giftigste* Kombi überhaupt — ein unsterblicher Subscriber, der über jeden Scene-Load tote Szenen-Subscriber ansammelt (Doppel-Feuer nach additivem Laden, `MissingReferenceException`, Leaks über die persistente Delegate-Kette). Persistenter Singleton **plus** Call/Polling ist dagegen die *sicherste* Kombi: langlebiger Owner, keine Bindungen in die kurzlebige Szene. Die Persistenz-Entscheidung *verlangt* praktisch die Kein-Event-Entscheidung — sie sind zwei Enden derselben Logik, kein Zufall nebeneinander.
-
-**Intern tick- statt event-getrieben:** Occlusion, Follow, Fade, Smoothing pollen alle pro `LateUpdate` (siehe jeweilige Sektionen). Im Frame-Loop ist ein deterministischer Tick billiger und ordnungssicher als event-getriebene Invalidierung (kein Event-Storm, GC-frei, garantierter Zeitpunkt nach aller Bewegung).
-
-**Die zwei unvermeidbaren Szenen-Referenzen — Event-Ownership ohne Events gelöst:** Es gibt genau zwei Stellen, wo die langlebige Seite doch eine kurzlebige Szenen-Referenz braucht, und beide nutzen dasselbe Muster (*keine dauerhafte Bindung; flüchtige Referenz pro Tick neu auflösen*): (1) der **AudioListener** über `IAudioListenerProvider`/`SceneAudioListenerProvider` (Self-Heal, Null-Check pro Zugriff statt Subscription — siehe Wall-Check-Sektion), (2) das **Follow-Target** über einen Per-Frame-Null-Check (kein `OnDestroy`-Subscribe — siehe Follow-Sektion).
-
-**Native C#-Services tragen über Szenen, weil ihr Zustand pool-index-gekeyt ist:** Die Services (`Pool`, `Playback`, `WallCheck`, `Fade`, …) sind plain C#, keine MonoBehaviours/Szenen-Objekte, und leben exakt so lange wie der Manager. Generation-Counter, `CancellationTokenSource[]`, Fade-State — alles über den **Pool-Index** adressiert, nicht über Szenen-Objekte. Ein Scene-Load berührt nichts davon; es gibt nichts zu invalidieren und nichts abzubauen.
-
-**Bewusster Trade-off (Kehrseite derselben Entscheidung):** Der Manager **weiß nicht, dass eine Szene entladen wurde** — es gibt kein Scene-Lifecycle-Event, das er abfängt. Für Musik/Ambient ist das ein Feature (Sound überlebt Szenenwechsel gewollt). Für szenen-gebundene SFX-Loops ist es eine **Bringschuld des Aufrufers**: Handle halten und selbst `Stop`/`FadeOut` rufen; ein Scene-Unload stoppt keine Sounds automatisch. Dieser Caveat ist als user-facing Einzeiler in der „Bekannte Einschränkungen"-Sektion der User-Doku festgehalten (siehe Doku-Regel unten) — dort ist seine Single Source.
-
-### Doku-Regel
-- Die User-Dokumentation beschreibt **nur den aktuellen Zustand** — keine „nicht mehr / früher / jetzt geändert"-Formulierungen. Das Tool ist unveröffentlicht; es gibt keine Vorversion zum Vergleich. (`AudioTool_Documentation_DE.md` / `_EN.md` — EN spiegelt DE 1:1.)
-- **GitHub-README ist zweisprachig:** `README.md` (EN, GitHub-Default) und `README.de.md` (DE) sind ein **1:1-Spiegel** — bei Änderungen IMMER beide identisch pflegen (wie die Doku-Dateien). Stil ist portfolio-/feature-orientiert und bewusst stabil; Änderungen sind chirurgisch (nur was sich fachlich geändert hat), kein Rewrite.
-- **Bekannte Einschränkungen** (bewusste Grenzen des schlanken Ansatzes) gehören in die dedizierte Sektion „Bekannte Einschränkungen" / „Known Limitations" am **Ende der User-Doku** (`AudioTool_Documentation_DE.md`/`_EN.md`, DE/EN 1:1) — **nicht** ins README (das bleibt Verkaufsoberfläche). Diese Liste ist die **Single Source** für Caveats und wächst sukzessive. Neue Einschränkung → dort ergänzen; am Fundort (z. B. Wall-Check-Kapitel) höchstens ein **Einzeiler-Verweis** auf die Sektion, kein Duplikat (Drift-Schutz).
+- **User-Doku beschreibt nur den aktuellen Zustand** — keine „nicht mehr / früher / jetzt geändert"-Formulierungen.
+  Das Tool ist unveröffentlicht; es gibt keine Vorversion zum Vergleich.
+  (`AudioTool_Documentation_DE.md` / `_EN.md` — EN spiegelt DE **1:1**.)
+- **README ist zweisprachig und 1:1 gespiegelt:** `README.md` (EN, GitHub-Default) und `README.de.md` (DE) —
+  bei Änderungen IMMER beide identisch pflegen. Stil ist portfolio-/feature-orientiert und bewusst stabil;
+  Änderungen sind **chirurgisch** (nur was sich fachlich geändert hat), kein Rewrite.
+- **Bekannte Einschränkungen** gehören in die dedizierte Sektion am **Ende der User-Doku** (DE/EN 1:1) —
+  **nicht** ins README (das bleibt Verkaufsoberfläche). Diese Liste ist die **Single Source** für Caveats.
+  Am Fundort (z. B. Wall-Check-Kapitel) höchstens ein **Einzeiler-Verweis** dorthin, kein Duplikat.
+- **Neue Aufgaben/TODOs gehören in [`BACKLOG.md`](BACKLOG.md)** — nie in diese Datei, nie ins Memory.
 
 ---
 
 ## Was NICHT angefasst werden soll ohne Rücksprache
 
-- `TestScript.cs` — nur zum Testen, kein Produktionscode.
-- `AudioCoroutineWallCheckService` — Fallback. Nur **parallel** zur UniTask-Version anpassen (beide synchron halten).
-
----
-
-## UniTask-Versionspolitik (entschieden)
-
-Floor `2.3.0` in `AudioFramework.asmdef` (`versionDefines.expression = "2.3.0"` — Unity verlangt die bloße Version, kein `[2.3.0,)`). Der Gate ist ein **Sicherheitsschalter, kein Min-to-work**: unterhalb fällt `USE_UNITASK` weg und der Code nutzt den voll funktionsfähigen `AudioCoroutineWallCheckService`. Risiko ist asymmetrisch → konservativ/höher ist sicher. Aktiver Modus erkennbar am Console-Log „[AudioTool] UniTask mode was initialized".
+- **`TestScript.cs`** (`Assets/Scripts/`) — nur zum Testen, kein Produktionscode.
+- **`AudioCoroutineWallCheckService`** — Fallback. Nur **parallel** zur UniTask-Version anpassen (beide
+  synchron halten). Bei aktivem UniTask kompiliert er nicht mit → Spiegelungen werden gesammelt gegengeprüft
+  (siehe BACKLOG „Coroutine-Variante gebündelt gegenprüfen").
+- **Eingefrorene Tests** — siehe TDD-Regel 2 oben.

@@ -5,14 +5,13 @@ namespace AudioFramework.Tests.EditMode
 {
     /// <summary>
     /// Tests for handle currency: is an AudioHandle still pointing at the exact sound it was issued for?
-    /// Two guards, both hand-derived from the agreed design (NOT read off the implementation):
-    ///   • generation equality → a handle goes stale the moment its slot is reused (W1).
-    ///   • bounds → an index outside the pool is never current (P6: a hand-built {99999} must not crash anything).
+    /// Two guards, both hand-derived from the agreed design:
+    ///   • generation equality -> a handle goes stale the moment its slot is reused.
+    ///   • bounds -> an index outside the pool is never current.
     /// If the implementation disagrees with these, the implementation is wrong.
     /// </summary>
     public class AudioHandleValidatorTests
     {
-        // --- Generation: the W1 core ---
 
         [Test]
         public void IsCurrent_MatchingGenerationInRange_ReturnsTrue()
@@ -27,7 +26,6 @@ namespace AudioFramework.Tests.EditMode
             Assert.IsFalse(AudioHandleValidator.IsCurrent(handleIndex: 3, handleGeneration: 7, slotGeneration: 8, poolLength: 10));
         }
 
-        // --- Bounds: the P6 crash guard ---
 
         [Test]
         public void IsCurrent_NegativeIndex_ReturnsFalse()

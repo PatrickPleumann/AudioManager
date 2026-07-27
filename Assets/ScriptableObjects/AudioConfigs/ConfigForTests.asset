@@ -19,7 +19,7 @@ MonoBehaviour:
   TimeIntervalBetweenPositionChecks: 0.25
   WallDampingPerLayer:
   - SingleLayer: 9
-    WallDampingFactor: 0.45
+    WallDampingFactor: 0.439
   - SingleLayer: 10
     WallDampingFactor: 0.65
   - SingleLayer: 11

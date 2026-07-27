@@ -5,7 +5,6 @@ namespace AudioFramework.Core
         public readonly int PoolIndex;
         public readonly int Generation;
 
-
         internal AudioHandle(int index, int generation)
         {
             PoolIndex = index;

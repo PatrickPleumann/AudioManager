@@ -10,10 +10,12 @@
 > - **Teil II ist projekt-spezifisch.** Wer diese Datei in ein neues Projekt kopiert, **behält Teil I**
 >   und **leert Teil II** (Achsen-Zuschnitt neu, Befund-Log frisch).
 >
-> **Verhältnis zum Rest:** Wissen → [`CLAUDE.md`](CLAUDE.md) · Aufgaben → [`BACKLOG.md`](BACKLOG.md) ·
-> Review-Verfahren & -Befunde → **diese Datei**. Wird ein Befund zu echter Nacharbeit, wandert die
-> **Aufgabe** in `BACKLOG.md` (nie hier ausführen); wird er zu durabler Erkenntnis, wandert das **Wissen**
-> in `CLAUDE.md`. Diese Datei hält das *Review selbst* fest, nicht dessen Folgearbeit.
+> **Verhältnis zum Rest:** Einstieg & Regeln → [`CLAUDE.md`](CLAUDE.md) · Architektur & Warum →
+> [`ARCHITECTURE.md`](ARCHITECTURE.md) · Test-Disziplin → [`TESTING.md`](TESTING.md) · Aufgaben →
+> [`BACKLOG.md`](BACKLOG.md) · Review-Verfahren & -Befunde → **diese Datei**. Wird ein Befund zu echter
+> Nacharbeit, wandert die **Aufgabe** in `BACKLOG.md` (nie hier ausführen); wird er zu durabler
+> Architektur-Erkenntnis, wandert das **Wissen** in `ARCHITECTURE.md`. Diese Datei hält das *Review selbst*
+> fest, nicht dessen Folgearbeit.
 
 ---
 
@@ -133,22 +135,26 @@ ID-Schema: `R<lauf>-<nr>`, z. B. `R1-03` = dritter Befund des ersten Durchlaufs.
 
 ## II.a — Achsen-Zuschnitt für *dieses* Projekt (AudioTool)
 
-> Konkrete Instanziierung der Achsen aus Teil I auf die Architektur in `CLAUDE.md`.
+> Konkrete Instanziierung der Achsen aus Teil I auf die Architektur in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-**Achse 0 — Architektur:** Service-Graph aus `CLAUDE.md` gegen den Code; Fokus auf die Sauberkeit der
-pure/Unity-freien Grenze (`AudioFadeMath`, `WallOcclusionMath`, `OcclusionSmoothing`,
-`LowPassDispatchPolicy`, `AudioHandleValidator`, `WallLayerMask`, `ListenerCachePolicy`) und auf
-Special-Cases, die generalisiert gehören.
+**Achse 0 — Architektur:** Service-Graph aus `ARCHITECTURE.md` §1 gegen den Code; Fokus auf die Sauberkeit
+der pure/Unity-freien Grenze (die vollständige Klassenliste steht in `ARCHITECTURE.md` §2 — bewusst hier
+**nicht** kopiert, sie war schon einmal in drei Dateien unterschiedlich veraltet) und auf Special-Cases, die
+generalisiert gehören. Die verbindliche Tick-Reihenfolge (`ARCHITECTURE.md` §1) ist selbst ein Prüfpunkt.
 
 **Achse 1 — Pro-System (Schnitt):**
 1. **Pool + Generation/Handle** — `AudioPoolAcquisitionService`, `AudioObject`, `AudioHandle`,
-   `AudioHandleValidator`.
+   `AudioHandleValidator`, `PoolSlotAvailability`.
 2. **Playback + Stop + Dispatch** — `AudioPlaybackService`, `AudioStopService`, `LowPassDispatchPolicy`.
 3. **WallCheck + Listener + Occlusion** — `AudioUniTaskWallCheckService`,
    `AudioCoroutineWallCheckService` (synchron halten!), `SceneAudioListenerProvider`,
-   `ListenerCachePolicy`, `WallOcclusionMath`, `WallLayerMask`, `AudioOcclusionSmoothingService`.
+   `ListenerCachePolicy`, `WallOcclusionMath`, `WallLayerMask`, `WallCheckContinuation`,
+   `AudioOcclusionSmoothingService`.
 4. **Fade-Familie** — `AudioFadeService`, `FadeOperation`, `AudioFadeMath`, `PooledFadeTarget`.
-5. **Pause + Follow** — `AudioPauseService`, `AudioFollowService`.
+5. **Mixing/Ducking** — `AudioDuckService`, `AudioDuckComponent`, `VolumeResolver`, `DuckEnvelope`,
+   `DuckTargetPolicy`, `DuckRuleFlattening`. **Kern-Invariante:** `AudioDuckService` ist der *einzige*
+   Schreiber von `source.volume` (`ARCHITECTURE.md` §6) — jeden anderen Schreibzugriff als Befund werten.
+6. **Pause + Follow** — `AudioPauseService`, `AudioFollowService`.
 
 **Achse 2 — Lenses (für AudioTool am wertvollsten):**
 - **Lifetime & Concurrency:** `CancellationTokenSource[]` in den WallCheck-Services; Singleton-Teardown
@@ -159,16 +165,20 @@ Special-Cases, die generalisiert gehören.
   `RespectsGlobalPause`, …) → beweisen, dass sie in `AudioPlaybackService.Dispatch` **unbedingt** (nie im
   `if`) geschrieben wird. (Zielt direkt auf die einzige real passierte Bug-Klasse — `spatialBlend`.)
 - **Test-Honesty:** alle EditMode-Tests unter `Assets/Scripts/AudioFramework/Tests/EditMode/` auf
-  Tautologie / Change-Detector / zu schwache Assertion oder Toleranz prüfen.
+  Tautologie / Change-Detector / zu schwache Assertion oder Toleranz prüfen. **Vorarbeit nutzen:**
+  [`TESTING.md`](TESTING.md) Teil II hat 12 der 15 Einheiten bereits nach genau diesem Raster bewertet —
+  dort ansetzen und die **noch nicht auditierten** zuerst nehmen, statt Bekanntes zu wiederholen.
 
 **Bewusste Priorisierung:** Die Architektur ist stark dokumentiert → Achse 0 bringt vermutlich wenig
 Neues. Der höchste Ertrag liegt in **Achse 2 (Test-Honesty + Control-Surface)** — dort sitzen die
 erklärte Kernangst und die einzige je passierte Bug-Klasse. Wenn nur eine Scheibe läuft: diese.
 
 **Projekt-Sonderregeln fürs Review:**
-- `TestScript.cs` ist kein Produktionscode → nicht als Befund-Quelle behandeln.
+- Die Guardrails aus [`CLAUDE.md`](CLAUDE.md) („Was NICHT angefasst werden soll") gelten auch hier —
+  insbesondere: `TestScript.cs` ist kein Produktionscode und **keine** Befund-Quelle.
 - `AudioCoroutineWallCheckService` ist Fallback und muss mit der UniTask-Version synchron sein →
-  Divergenz zwischen beiden ist selbst ein gültiger Befund.
+  **Divergenz zwischen beiden ist selbst ein gültiger Befund.** Beim Review beide Dateien nebeneinander
+  lesen, auch wenn nur eine kompiliert.
 
 ## II.b — Befund-Log
 

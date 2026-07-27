@@ -27,18 +27,21 @@ Ein einziger `MonoBehaviour`-Singleton stellt eine statische API bereit und trei
 ```
 AudioManagerDynamic            MonoBehaviour-Singleton · öffentliche API · LateUpdate-Treiber
 ├── AudioPoolAcquisitionService   festes AudioObject[]-Pool · Slot-Vergabe + Generation
-├── AudioPlaybackService          Dispatch (Play / Fade-In-silent) · Volume-Resolve · Handle-Gating
+├── AudioPlaybackService          Dispatch (Play / Fade-In-silent) · Handle-Gating
 │   └── AudioStopService          der einzige „Slot stoppen"-Pfad (Source-Stop + Reset + WallCheck-Stop)
 ├── AudioUniTaskWallCheckService  Raycast-Loop via UniTask (empfohlen)    ┐ beide schreiben nur
 ├── AudioCoroutineWallCheckService Raycast-Loop via Coroutine (Fallback)  ┘ TargetCutoff
 ├── AudioOcclusionSmoothingService gleitet den Filter-Cutoff Richtung TargetCutoff (pro Frame)
 ├── AudioFollowService            kopiert die Emitter-Position pro Frame — kein Re-Parenting
-├── AudioFadeService              treibt alle Fades pro Frame via IFadeTarget[]
+├── AudioFadeService              treibt alle Fades pro Frame — schreibt den Fade-Faktor pro Slot
+├── AudioDuckService              der einzige Besitzer von source.volume · löst Basis · Fade · Duck auf
 ├── AudioPauseService             scope-bewusste globale Pause / Unpause
 └── AudioManagerDictionaryProvider  Volume- + Layer-Mask-Dictionaries
 ```
 
 Die beiden WallCheck-Services liegen hinter einem Interface (`IAudioWallCheckService`) — ein **Strategy**-Seam, sodass das Async-Backend austauschbar ist und der Manager nie einen `CancellationToken` anfasst.
+
+Für die Lautstärke gilt eine **Ein-Schreiber-Regel**: Alles, was die Lautstärke beeinflussen will, steuert einen *Faktor* bei (der Fade einen pro Slot, das Ducking einen pro Kategorie), und genau ein Service löst sie auf `source.volume` auf. Nie streiten sich zwei Systeme um dieselbe Property — die Tick-Reihenfolge pro Frame ist Teil des Vertrags, kein Zufall.
 
 ---
 
@@ -63,6 +66,10 @@ Die Mathematik- und Policy-Entscheidungen leben in kleinen **Unity-freien** Klas
 |---|---|
 | `AudioFadeMath` | Fade-Kurve / Lautstärke über Zeit |
 | `FadeOperation` | unveränderlicher Fade-Fortschritt pro Slot (verstrichene Zeit → Lautstärke via `AudioFadeMath`) |
+| `VolumeResolver` | die eine Gain-Gleichung: Basis × Fade × Duck, geklemmt auf `[0,1]` |
+| `DuckEnvelope` | Per-Frame-Glide des Duck-Faktors einer Kategorie (Attack runter / Release zurück) |
+| `DuckTargetPolicy` | Duck-Faktor für eine Ziel-Kategorie — der stärkste gewinnt, nie Selbst-Duck, keine Kaskade |
+| `DuckRuleFlattening` | verschachtelte Inspector-Regeln → flache (Trigger, Ziel)-Paare, füllt eine wiederverwendete Liste |
 | `WallOcclusionMath` | multiplikativer Dämpfungsschritt pro Wand (Faktor → Cutoff) + Floor-Clamp (der austauschbare Occlusion-Modell-Seam) |
 | `OcclusionSmoothing` | Per-Frame-Glide Richtung Ziel-Cutoff |
 | `WallLayerMask` | Physik-Layer-Indizes → eine Layer-Mask-Bitmaske (von beiden WallCheck-Backends geteilt) |
@@ -80,7 +87,12 @@ Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwisc
 - **`Physics.RaycastNonAlloc`** in einen wiederverwendeten Buffer für den WallCheck — kein Array-Churn pro Frame.
 - **`AudioHandle` ist ein `readonly struct`** `{ PoolIndex, Generation }` — ein Value-Type-Ticket, keine Heap-Referenz.
 
-Auf dem Per-Frame-Pfad alloziert nichts. Die eine ehrliche Ausnahme, die es zu benennen gilt: Der Start eines *wand-geprüften* Sounds alloziert eine einzelne `CancellationTokenSource` für seine Raycast-Schleife — ein Kostenpunkt pro `Play()`, nicht pro Frame, und ein getracktes Item auf dem Weg zu vollständigem Zero-GC.
+Der Per-Frame-Pfad ist per Design allokationsfrei — und wo er es aktuell nicht ist, benenne ich es lieber selbst, als es einem Profiler zu überlassen:
+
+- Der Start eines *wand-geprüften* Sounds alloziert eine `CancellationTokenSource` für seine Raycast-Schleife — ein Kostenpunkt pro `Play()`, nicht pro Frame.
+- Das Auflösen der Duck-Faktoren boxt pro Aktiv-Prüfung einen Enumerator, weil die Policy ihre Eingabe als Interface entgegennimmt. Das passiert nur, wenn Ducking tatsächlich konfiguriert ist, und es sind eine Handvoll kleiner Allokationen pro Frame — aber es heißt eben, dass „null GC pro Frame" für den Kernpfad gilt und für diesen einen noch nicht.
+
+Beides ist getrackt, nicht unter den Teppich gekehrt: Eine kleine ehrliche Ausnahme zu benennen ist mehr wert als eine absolute Behauptung, die ein Profiler widerlegen kann.
 
 ### Schutz vor veralteten Handles via Generations
 
@@ -95,6 +107,7 @@ Jeder Slot trägt einen `Generation`-Zähler, der bei jeder (Neu-)Vergabe erhöh
 - **Fade-Familie** — `FadeIn` / `FadeOut` / `Crossfade`, spatial und nicht-spatial. `Crossfade` ist reine Komposition aus `FadeOut + FadeIn`, kein Sonderpfad.
 - **Follow ohne Re-Parenting** — spatiale Sounds folgen einem Emitter, indem sie seine Position pro Frame kopieren, nie via `SetParent` (das würde einen gepoolten Slot dem Aufrufer überlassen und ihn mit dem Emitter sterben lassen).
 - **Scope-bewusste globale Pause** — `PauseAll` / `UnpauseAll`, mit Per-Sound-Opt-out aus der globalen Pause.
+- **Audio läuft auf der echten Uhr** — Fades, Occlusion-Glides und die Lebensdauer von OneShot-Slots nutzen alle Unitys *ungeskalierte* Zeit, sodass Zeitlupe (`Time.timeScale`) nie einen Fade anhält oder einen gepoolten Slot blockiert. Pausiert wird explizit über `PauseAll()`, nie als Nebeneffekt von `timeScale = 0`.
 - **Hybrides Async-Backend** — nutzt allokationsfreies UniTask, wenn vorhanden, und fällt auf native Unity-Coroutines zurück, wenn es fehlt. Zur Compile-Zeit über ein Assembly-Definition-`versionDefines`-Gate (`USE_UNITASK`) gewählt, sodass der Build in beiden Fällen sicher ist.
 
 ---
@@ -130,7 +143,7 @@ Sounds werden auf einem `AudioDataObject` konfiguriert (eine `ScriptableObject`-
 
 Ich habe dies in Partnerschaft mit einem KI-Coding-Agent (Claude) gebaut. Ich denke, *wie* das gemacht wurde, zählt mehr als die bloße Tatsache, also werde ich konkret:
 
-- **Der Agent arbeitet gegen einen schriftlichen Vertrag, nicht nach Bauchgefühl.** Eine `CLAUDE.md` im Repo kodiert die Architektur, die Design-Invarianten und die Regeln der Zusammenarbeit. Die KI wird davon gesteuert — sie darf das Design nicht mitten in der Aufgabe neu definieren.
+- **Der Agent arbeitet gegen einen schriftlichen Vertrag, nicht nach Bauchgefühl.** Ein versionierter Satz von Dokumenten im Repo kodiert ihn: `CLAUDE.md` (Einstieg, Invarianten und Regeln der Zusammenarbeit), `ARCHITECTURE.md` (jede Designentscheidung und ihre Begründung) und `TESTING.md` (die Testdisziplin). Die KI wird davon gesteuert — sie darf das Design nicht mitten in der Aufgabe neu definieren.
 - **Der Frozen-Test-Loop schränkt die KI ein, nicht umgekehrt.** Tests werden red-first geschrieben und dann eingefroren. Die Aufgabe der KI ist, eine *feste* Spezifikation zum Bestehen zu bringen — sie kann nicht still einen Test abschwächen, um Grün zu bekommen, weil die Regel es verbietet und der Mutation Check einen Test entlarven würde, der nichts schützt.
 - **Die Architekturentscheidungen sind meine.** Die Pure-Logic-Seams, der Strategy-Split fürs Async-Backend, das Follow-Modell ohne Re-Parenting, der Generation-Guard gegen veraltete Handles — das sind bewusste Entscheidungen, getroffen für Testbarkeit und Korrektheit, dann mit KI-Unterstützung implementiert.
 

@@ -2,7 +2,7 @@
 
 > **Zweck:** Abarbeitbare Liste, mit der wir **jedes vom Nutzer wahrnehmbare** Feature des AudioTools vorführbar machen — als kleine, in sich geschlossene Demo-Module mit Primitiven (Box, Plane, Kugel), **ohne Art-Assets**. Jedes Modul liefert ein „Aha, so funktioniert das".
 >
-> **Verhältnis zum Rest:** Dies ist die Detailaufschlüsselung des BACKLOG-Punkts *„Demo-Szene für 60-Sek-Verkaufsvideo"* (Teil B → Release-Hygiene). **Wissen → [`CLAUDE.md`](CLAUDE.md) · Aufgaben → [`BACKLOG.md`](BACKLOG.md) · diese Datei → reine Showcase-Planung.** Keine durable Architektur-Erkenntnis hier ablegen — die gehört in CLAUDE.md.
+> **Verhältnis zum Rest:** Dies ist die Detailaufschlüsselung des BACKLOG-Punkts *„Demo-Szene für 60-Sek-Verkaufsvideo"* (Teil B → V1, Release-Hygiene). **Einstieg → [`CLAUDE.md`](CLAUDE.md) · Architektur & Warum → [`ARCHITECTURE.md`](ARCHITECTURE.md) · Aufgaben → [`BACKLOG.md`](BACKLOG.md) · diese Datei → reine Showcase-Planung.** Keine durable Architektur-Erkenntnis hier ablegen — die gehört in `ARCHITECTURE.md`.
 >
 > **Drei Realitäten, die die ganze Liste prägen:**
 > 1. **Audio ist unsichtbar.** Ein Zuschauer hört Occlusion/Ducking nicht garantiert (Handy stumm, Scrubbing, laute Umgebung). Jedes Modul muss das Hörbare **sichtbar telegrafieren** (Caption, Cutoff-Meter, Raycast-Linie, Volume-Balken). Siehe Leitprinzip #3.

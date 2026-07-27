@@ -93,6 +93,7 @@ namespace AudioFramework.Pooling
         public bool IsHandleCurrent(AudioHandle handle)
         {
             if (handle.PoolIndex < 0 || handle.PoolIndex >= poolArray.Length) return false;
+
             return AudioHandleValidator.IsCurrent(handle.PoolIndex, handle.Generation, poolArray[handle.PoolIndex].Generation, poolArray.Length);
         }
     }
