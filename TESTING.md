@@ -6,7 +6,7 @@
 >
 > **Die beiden Teile haben unterschiedliche Haltbarkeit — das ist wichtig:**
 > - **Teil I ist verbindlich und darf NICHT veralten.** Er ist die Arbeitsanweisung für jede neue Methode.
->   Änderungen daran nur bewusst und mit Patricks Go.
+>   Änderungen daran nur bewusst und mit dem Go des Maintainers.
 > - **Teil II ist eine Mess-/Analyse-Momentaufnahme und DARF veralten.** Er beschreibt einen Stand, keine
 >   Regel; bei Bedarf neu erheben.
 >
@@ -20,7 +20,7 @@
 
 ## 1. Der TDD-Loop
 
-DIE Regel für jede neue Methode / jedes neue Feature. Von Patrick formalisiert, bindend. In Reihenfolge:
+DIE Regel für jede neue Methode / jedes neue Feature. Vom Maintainer formalisiert, bindend. In Reihenfolge:
 
 1. **Zuerst den fehlschlagenden Test schreiben.** Er muss rot sein, bevor Implementierung existiert.
 2. **Diese Tests sind danach EINGEFROREN — werden nie wieder angefasst.** Bestehende Tests werden nicht
@@ -30,37 +30,37 @@ DIE Regel für jede neue Methode / jedes neue Feature. Von Patrick formalisiert,
    macht — vorher vorhersagen welchen. Beweist, dass die Tests wirklich etwas schützen.
 5. **Nach bestätigtem Rot: korrekten Zustand wiederherstellen.** Danach die Tests in Ruhe lassen.
 6. **Wird eine Methode so umgebaut, dass ihre eingefrorenen Tests obsolet werden**, wandert die Nacharbeit als
-   TODO in den BACKLOG — und wird NIE ohne Patricks ausdrückliche Anweisung ausgeführt. Keine stillen
+   TODO in den BACKLOG — und wird NIE ohne die ausdrückliche Anweisung des Maintainers ausgeführt. Keine stillen
    Test-Rewrites.
 
-**Patricks Kernangst sind tautologische / Change-Detector-Tests.** Red-first + Einfrieren + Mutation Check
+**Die Kernsorge des Maintainers sind tautologische / Change-Detector-Tests.** Red-first + Einfrieren + Mutation Check
 sind die konkreten Schutzwälle dagegen.
 
 ## 2. Gate-Disziplin: ein Schritt, ein Stopp, eine Bestätigung
 
 > **Anlass (2026-06-28):** In der `DuckEnvelope`-Session wurden Stub, grüne Implementierung **und** der
-> vorweggenommene Mutation-Check in *einem* Zug geliefert. Damit hatte Patrick nie ein echtes, **selbst
+> vorweggenommene Mutation-Check in *einem* Zug geliefert. Damit hatte der Maintainer nie ein echtes, **selbst
 > beobachtetes** Rot/Grün in der Hand — die Gates waren entwertet. Wurzel wie 2026-06-20: „Fortschritt
 > machen" wurde über „jeden Schritt einzeln beweisen" gestellt.
 
 **Der Loop ist KEINE Schritt-Liste zum Abarbeiten, sondern eine Reihe von Bestätigungs-Gates.** Jeder Schritt
-endet mit einem STOPP; der nächste beginnt **erst, wenn Patrick das von ihm beobachtete Testergebnis
+endet mit einem STOPP; der nächste beginnt **erst, wenn der Maintainer das selbst beobachtete Testergebnis
 bestätigt hat** — nicht, wenn *ich* den Zustand für richtig halte.
 
 - **Gate 1 — Rot:** Tests + `NotImplementedException`-Stub schreiben. **STOPP.** Keine Implementierung
-  schreiben — auch nicht „schon mal vorbereiten" — bevor Patrick das laufende Rot bestätigt hat.
-- **Gate 2 — Grün:** Implementierung schreiben. **STOPP.** Kein Mutation-Check, bevor Patrick das Grün
+  schreiben — auch nicht „schon mal vorbereiten" — bevor der Maintainer das laufende Rot bestätigt hat.
+- **Gate 2 — Grün:** Implementierung schreiben. **STOPP.** Kein Mutation-Check, bevor der Maintainer das Grün
   bestätigt hat.
 - **Gate 3 — Mutation:** Genau eine Mutation einbauen und die Vorhersage (welcher *benannte* Test rot wird)
-  im selben Schritt nennen — aber erst *jetzt*, nie früher. **STOPP.** Patrick bestätigt das Rot gegen die
+  im selben Schritt nennen — aber erst *jetzt*, nie früher. **STOPP.** Der Maintainer bestätigt das Rot gegen die
   Vorhersage.
-- **Gate 4 — Wiederherstellung:** Korrekten Zustand wiederherstellen. **STOPP.** Patrick bestätigt das erneute
+- **Gate 4 — Wiederherstellung:** Korrekten Zustand wiederherstellen. **STOPP.** Der Maintainer bestätigt das erneute
   Grün. Danach sind die Tests eingefroren.
 
 **Eiserne Regeln, die die Gates absichern:**
 - **Nie mehr als ein Gate pro Antwort.** Stub und Implementierung niemals im selben Zug.
 - **Nie einen späteren Schritt vorab ankündigen oder vorbereiten** (z. B. die Mutation nennen, während wir
-  noch im Grün-Gate stehen). Das nimmt Patrick die eigene Beobachtung vorweg.
+  noch im Grün-Gate stehen). Das nimmt dem Maintainer die eigene Beobachtung vorweg.
 - **„Der Vertrag ist klar" rechtfertigt schnelleres *Vorbereiten*, nie das Überspringen eines Gates.**
 - **Im Zweifel: STOPP und fragen.** Der teurere Fehler ist das Vorpreschen, nicht die Rückfrage.
 
@@ -68,7 +68,7 @@ bestätigt hat** — nicht, wenn *ich* den Zustand für richtig halte.
 
 - **Erwartungswerte kommen aus der SPEZIFIKATION, nicht aus dem Code.** Vor dem Blick auf die Implementierung
   aus dem Vertrag hand-ableiten. Wenn „korrekt" ohne Code-Lesen nicht sagbar ist → STOP, erst das Soll mit
-  Patrick klären. *(Dieselbe Grundregel trägt auch das Review-Verfahren — `REVIEW_PROTOCOL.md` §1.)*
+  dem Maintainer klären. *(Dieselbe Grundregel trägt auch das Review-Verfahren — `REVIEW_PROTOCOL.md` §1.)*
 - **Erstes Rot darf ein „laufendes Rot" sein:** neuen Typ/Member als `NotImplementedException`-Stub anlegen,
   damit das Test-Assembly kompiliert und die Tests *laufen* und scheitern (klarer als ein Compile-Fehler).
 - **Aktuell testen wir NUR neuen Code.** Bestandscode nachzutesten ist eine separate, aufgeschobene Aufgabe
@@ -101,7 +101,7 @@ betreten, wenn die vorige als „nicht falsch" bestätigt ist:
 
 **Test-Änderung nur mit vorab benannter Kategorie; Default ist Veto.** Jeder Änderungsvorschlag muss *vor* der
 Änderung einer Kategorie zugeordnet werden: **(a)** echter Authoring-Defekt (z. B. falsche Toleranz),
-**(b)** bewusste Spec-Änderung mit Patricks Go, **(c)** obsolet durch Umbau → BACKLOG (Loop-Regel #6). Passt
+**(b)** bewusste Spec-Änderung mit dem Go des Maintainers, **(c)** obsolet durch Umbau → BACKLOG (Loop-Regel #6). Passt
 nichts davon → keine Änderung. Im Zweifel: Test stehen lassen und fragen.
 
 **Float-Erwartungswerte: Toleranz aus der Rechnung ableiten, nicht aus Reflex.** Entsteht ein Erwartungswert
@@ -141,8 +141,8 @@ Bestandscode liegt die Implementierung **offen vor einem** → die „read off i
 > Der spec-abgeleitete Test wird gegen den *alten* Code ausgeführt:
 > - **grün** → Verhalten ist korrekt und jetzt eingefroren. ✔
 > - **rot** → bewusst entscheiden, **niemals** den Erwartungswert still an den Code anpassen:
->   - **Spec richtig → latenter Bug im Bestandscode gefunden.** STOP, an Patrick melden.
->   - **Code richtig, Spec war naiv** → Spec mit Patrick schärfen, das *Warum* verstehen und neu
+>   - **Spec richtig → latenter Bug im Bestandscode gefunden.** STOP, an den Maintainer melden.
+>   - **Code richtig, Spec war naiv** → Spec mit dem Maintainer schärfen, das *Warum* verstehen und neu
 >     hand-ableiten (nicht den Code-Wert abschreiben — das wäre exakt die Tautologie).
 
 **Die Schritte:**
@@ -162,7 +162,7 @@ Bestandscode liegt die Implementierung **offen vor einem** → die „read off i
 5. **Verdrahtung schließen + Checkliste (§5) abhaken:** die alte Methode zeigt jetzt auf die getestete pure
    Funktion (triviale, per Augenschein prüfbare Delegation).
 6. **Eine Methode pro Runde, eigener Commit.** Kleine, gegenlesbare Diffs; die neuen Tests sind ab dann
-   eingefroren. (Patrick committet.)
+   eingefroren. (Der Maintainer committet.)
 
 **Ehrliche Warnung zum Seam (Schritt 0):** Das Extrahieren ist selbst ein **Refactor von ungetestetem Code**
 (Henne-Ei). Absicherung: rein **mechanisch** halten (denselben Ausdruck kopieren, Eingaben zu Parametern
@@ -402,7 +402,7 @@ Einziger Besitzer von `source.volume` (Stufe 1) → [`ARCHITECTURE.md`](ARCHITEC
    Implementierung korrekt → Hand-Herleitung korrekt → Fehler bei **Stufe 3 (Mutant/Prognose)**, nicht beim
    Test. Ersetzt durch einen **echten** Mutanten (`return 1f` → `return product`). Lehre: einen Mutanten nie
    *auf den Test-Input* legen — das ist ein blinder Fleck, kein Schutzbeweis.
-2. **Die `1.5`-Falle (von Patrick gefangen).** Der „Fix" für Stolperstein 1 war, einen Test mit Input `1.5`
+2. **Die `1.5`-Falle (vom Maintainer gefangen).** Der „Fix" für Stolperstein 1 war, einen Test mit Input `1.5`
    zu ergänzen. Die *Assertion* (1.5 → 1) ist spec-konform — aber den **Wert 1.5 hatte ich rückwärts aus dem
    Mutanten** konstruiert. Das ist genau die Code-getriebene Tautologie: nicht nur die Assertion, auch der
    **Input** muss aus der Spec kommen. Test **verworfen**, nicht aufgenommen.

@@ -15,21 +15,18 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void NoCachedListener_NeedsResolve()
         {
-            // Nothing cached yet (startup, or a previous resolve found none) -> must resolve.
             Assert.IsTrue(ListenerCachePolicy.NeedsResolve(_hasCached: false, _isAliveAndActive: false));
         }
 
         [Test]
         public void CachedButStale_NeedsResolve()
         {
-            // Cached listener went stale (destroyed on respawn, or disabled by a camera switch) -> must resolve.
             Assert.IsTrue(ListenerCachePolicy.NeedsResolve(_hasCached: true, _isAliveAndActive: false));
         }
 
         [Test]
         public void CachedAndAliveAndActive_DoesNotNeedResolve()
         {
-            // Steady state: the cached listener is still the live, active one -> no resolve, just read it.
             Assert.IsFalse(ListenerCachePolicy.NeedsResolve(_hasCached: true, _isAliveAndActive: true));
         }
     }

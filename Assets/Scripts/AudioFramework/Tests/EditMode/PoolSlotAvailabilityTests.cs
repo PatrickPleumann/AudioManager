@@ -32,15 +32,12 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void Paused_IsNotFree_EvenWhenOtherwiseFree()
         {
-            // Silent + busy-window elapsed, but we paused this slot: it must stay occupied (a paused source
-            // reports isPlaying == false, so the pause guard is the only thing keeping it from being reused).
             Assert.IsFalse(PoolSlotAvailability.IsFree(isPlaying: false, currentTime: 10f, busyUntilTime: 5f, isPaused: true));
         }
 
         [Test]
         public void CurrentTimeEqualsBusyUntil_IsFree()
         {
-            // Boundary: "busy-window elapsed" is inclusive — currentTime >= busyUntilTime, so equality is free.
             Assert.IsTrue(PoolSlotAvailability.IsFree(isPlaying: false, currentTime: 5f, busyUntilTime: 5f, isPaused: false));
         }
     }

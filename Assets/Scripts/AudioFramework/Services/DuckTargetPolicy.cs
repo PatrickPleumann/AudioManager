@@ -32,7 +32,7 @@ namespace AudioFramework.Services.Mixing
                 DuckPair pair = pairs[i];
 
                 if (pair.Target != target) continue;
-                if (pair.Trigger == target) continue;   // a category never ducks itself
+                if (pair.Trigger == target) continue;
                 if (!IsActive(pair.Trigger, activeCategories)) continue;
 
                 if (pair.DuckedVolume < result) result = pair.DuckedVolume;

@@ -31,7 +31,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void Resolve_WallCheckSound_StartsAtOpenCutoff()
         {
-            // Until the first wall-check tick runs, the slot must start transparent (open cutoff), not pre-occluded.
             LowPassDispatchState state = LowPassDispatchPolicy.Resolve(useWallCheck: true, defaultCutoffFrequency: 22000f);
             Assert.AreEqual(22000f, state.CutoffFrequency, Delta);
         }
@@ -39,7 +38,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void Resolve_ForwardsConfiguredCutoff_Regardless()
         {
-            // The policy must not invent a frequency — it forwards whatever the system config defines as "open".
             LowPassDispatchState state = LowPassDispatchPolicy.Resolve(useWallCheck: false, defaultCutoffFrequency: 17500f);
             Assert.AreEqual(17500f, state.CutoffFrequency, Delta);
         }

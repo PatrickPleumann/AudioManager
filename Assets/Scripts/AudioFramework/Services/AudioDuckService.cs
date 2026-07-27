@@ -27,7 +27,6 @@ namespace AudioFramework.Services.Mixing
 
         private IDuckRuleProvider provider;
 
-        // Reused per-frame buffers (GC-free).
         private readonly List<AudioCategory> activeCategories = new();
         private readonly List<DuckPair> flattenedPairs = new();
         private readonly List<AudioCategory> duckTargets = new();
@@ -58,7 +57,6 @@ namespace AudioFramework.Services.Mixing
         {
             if (provider == null)
             {
-                // No ducking configured: every category is un-ducked. Skip the whole scan.
                 currentDuck.Clear();
                 return;
             }

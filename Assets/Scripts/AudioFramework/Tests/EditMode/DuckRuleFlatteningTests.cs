@@ -101,9 +101,9 @@ namespace AudioFramework.Tests.EditMode
         {
             var rules = new[]
             {
-                Rule(AudioCategory.Music, Target(AudioCategory.Music, 0.3f)),   // self-target — must NOT be dropped
+                Rule(AudioCategory.Music, Target(AudioCategory.Music, 0.3f)),
                 Rule(AudioCategory.SFX, Target(AudioCategory.Music, 0.5f)),
-                Rule(AudioCategory.Player, Target(AudioCategory.Music, 0.5f))   // duplicate (trigger,target) factor
+                Rule(AudioCategory.Player, Target(AudioCategory.Music, 0.5f))
             };
             var results = new List<DuckPair>();
 

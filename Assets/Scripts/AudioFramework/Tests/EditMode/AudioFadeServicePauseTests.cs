@@ -30,7 +30,7 @@ namespace AudioFramework.Tests.EditMode
             service.StartFade(0, from: 0f, to: 1f, duration: 2f, stopOnEnd: false);
             targets[0].IsPaused = true;
             service.Tick(1f);
-            Assert.AreEqual(0f, targets[0].Volume, Delta); // frozen at start, not advanced to 0.5
+            Assert.AreEqual(0f, targets[0].Volume, Delta);
         }
 
         [Test]
@@ -39,15 +39,15 @@ namespace AudioFramework.Tests.EditMode
             var (service, targets) = MakeService(1);
             service.StartFade(0, from: 0f, to: 1f, duration: 2f, stopOnEnd: false);
 
-            service.Tick(1f); // elapsed 1 -> 0.5
+            service.Tick(1f);
             Assert.AreEqual(0.5f, targets[0].Volume, Delta);
 
             targets[0].IsPaused = true;
-            service.Tick(1f); // frozen
-            Assert.AreEqual(0.5f, targets[0].Volume, Delta); // discriminating: a buggy Tick would complete to 1 here
+            service.Tick(1f);
+            Assert.AreEqual(0.5f, targets[0].Volume, Delta);
 
             targets[0].IsPaused = false;
-            service.Tick(1f); // elapsed 2 -> 1
+            service.Tick(1f);
             Assert.AreEqual(1f, targets[0].Volume, Delta);
         }
 

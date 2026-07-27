@@ -100,7 +100,7 @@ Eine einzige Demo-Szene als Baukasten; pro Modul nur das jeweils Nötige aktivie
 ### A5 — Follow Emitter (das „vorbeifahrende Auto") `[Hero]` ⭐
 - [ ] **gebaut**
 - **Aha:** „Box fährt links→rechts, der Sound fährt mit — ohne Parenting."
-- **Bühne:** bewegte Box quert das Bild vor fixer Kamera (Patricks Auto-Beispiel).
+- **Bühne:** bewegte Box quert das Bild vor fixer Kamera (Auto-Beispiel aus der Planung).
 - **Aktion:** Box mit Motor-Loop von links nach rechts; Sound wandert hörbar im Stereobild + Distanz.
 - **ADO/Config:** `Spatial Blend = 1`, `Follow Emitter = true`, `Is One Shot = false`.
 - **API:** `PlaySpatial(engineADO, movingBox)`.

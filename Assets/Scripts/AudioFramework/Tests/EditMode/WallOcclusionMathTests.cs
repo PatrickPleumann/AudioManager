@@ -28,34 +28,27 @@ namespace AudioFramework.Tests.EditMode
         private const float Open = 22000f;
         private const float Floor = 1000f;
 
-        // --- Per-wall step: damp toward the floor by the damping fraction ---
-
         [Test]
         public void ApplyWall_DampsTowardFloorByFraction()
         {
-            // 22000 − (22000 − 1000)·0.5 = 22000 − 10500 = 11500.
             Assert.AreEqual(11500f, WallOcclusionMath.ApplyWall(Open, Floor, damping: 0.5f), Delta);
         }
 
         [Test]
         public void ApplyWall_ZeroDamping_LeavesCutoffOpen()
         {
-            // A transparent wall (d = 0) must not touch the cutoff at all.
             Assert.AreEqual(Open, WallOcclusionMath.ApplyWall(Open, Floor, damping: 0f), Delta);
         }
 
         [Test]
         public void ApplyWall_FullDamping_DropsToFloor()
         {
-            // A fully damping wall (d = 1) collapses the whole open range in one step → the floor.
             Assert.AreEqual(Floor, WallOcclusionMath.ApplyWall(Open, Floor, damping: 1f), Delta);
         }
 
         [Test]
         public void ApplyWall_AccumulatesMultiplicativelyAcrossWalls()
         {
-            // Two walls of d = 0.5 from the open cutoff: 22000 -> 11500 -> 6250.
-            // (= 1000 + 21000·(1−0.5)·(1−0.5) = 1000 + 21000·0.25.)
             float afterFirst = WallOcclusionMath.ApplyWall(Open, Floor, 0.5f);
             Assert.AreEqual(6250f, WallOcclusionMath.ApplyWall(afterFirst, Floor, 0.5f), Delta);
         }
@@ -63,19 +56,17 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void ApplyWall_PerWallAbsoluteStepDiminishes()
         {
-            // The whole point of the model: equal damping factors remove LESS Hz on the second wall.
             float afterFirst = WallOcclusionMath.ApplyWall(Open, Floor, 0.5f);
             float afterSecond = WallOcclusionMath.ApplyWall(afterFirst, Floor, 0.5f);
 
-            float firstStep = Open - afterFirst;        // 10500
-            float secondStep = afterFirst - afterSecond; // 5250
+            float firstStep = Open - afterFirst;
+            float secondStep = afterFirst - afterSecond;
             Assert.Less(secondStep, firstStep);
         }
 
         [Test]
         public void ApplyWall_IsOrderIndependent()
         {
-            // d = 0.3 then 0.8 must equal 0.8 then 0.3 (multiplicative ⇒ commutative). Both → 3940.
             float lowThenHigh = WallOcclusionMath.ApplyWall(WallOcclusionMath.ApplyWall(Open, Floor, 0.3f), Floor, 0.8f);
             float highThenLow = WallOcclusionMath.ApplyWall(WallOcclusionMath.ApplyWall(Open, Floor, 0.8f), Floor, 0.3f);
 
@@ -86,13 +77,9 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void ApplyWall_ThenClampToFloor_OverDampedConfigRescuedToFloor()
         {
-            // Composite path: a misconfigured d > 1 drives the cutoff below the floor; the clamp rescues it.
-            // 22000 − 21000·1.5 = −9500 → ClampToFloor → 1000.
             float belowFloor = WallOcclusionMath.ApplyWall(Open, Floor, damping: 1.5f);
             Assert.AreEqual(Floor, WallOcclusionMath.ClampToFloor(belowFloor, Floor), Delta);
         }
-
-        // --- Floor clamp: cutoff never drops below the configured minimum (unchanged, model-agnostic) ---
 
         [Test]
         public void ClampToFloor_BelowFloor_ReturnsFloor()

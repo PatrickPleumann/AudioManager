@@ -29,7 +29,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void Advanced_AccumulatesElapsedAcrossMultipleCalls()
         {
-            // Two 0.5s ticks => 1.0s elapsed => halfway through a 2s fade => 0.5
             var op = new FadeOperation(0f, 1f, 2f).Advanced(0.5f).Advanced(0.5f);
             Assert.AreEqual(0.5f, op.CurrentVolume, Delta);
         }
@@ -61,7 +60,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void FadeOut_Advanced_RampsDown()
         {
-            // 1 -> 0 over 4s, after 1s elapsed => 0.75 remaining
             var op = new FadeOperation(1f, 0f, 4f).Advanced(1f);
             Assert.AreEqual(0.75f, op.CurrentVolume, Delta);
         }

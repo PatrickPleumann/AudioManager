@@ -18,8 +18,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void GenerationMismatch_DoesNotContinue()
         {
-            // Slot was handed to a different dispatch (1 != 2). Even though a playing loop would otherwise
-            // continue, the orphaned loop must stop. This is the R3 fix.
             Assert.IsFalse(WallCheckContinuation.ShouldContinue(
                 startGeneration: 1, currentGeneration: 2,
                 isPaused: false, isOneShot: false, isPlaying: true,
@@ -29,8 +27,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void GenerationMismatch_OverridesPaused_DoesNotContinue()
         {
-            // Locks the clause ORDER: a reused slot may be paused for its NEW sound, but the old loop must
-            // still die. Generation guard sits above the pause check.
             Assert.IsFalse(WallCheckContinuation.ShouldContinue(
                 startGeneration: 1, currentGeneration: 2,
                 isPaused: true, isOneShot: false, isPlaying: false,
@@ -40,8 +36,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void Matched_Paused_Continues()
         {
-            // Same dispatch (5 == 5) and paused: keep the loop alive even though the OneShot is silent and its
-            // busy-window has elapsed — pause wins over the playback clauses.
             Assert.IsTrue(WallCheckContinuation.ShouldContinue(
                 startGeneration: 5, currentGeneration: 5,
                 isPaused: true, isOneShot: true, isPlaying: false,
@@ -69,7 +63,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void OneShot_Playing_Continues()
         {
-            // Playing → continue regardless of the busy window.
             Assert.IsTrue(WallCheckContinuation.ShouldContinue(
                 startGeneration: 5, currentGeneration: 5,
                 isPaused: false, isOneShot: true, isPlaying: true,
@@ -79,7 +72,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void OneShot_Silent_BusyWindowOpen_Continues()
         {
-            // Silent but the OneShot busy-window is still open (3 < 5) → continue.
             Assert.IsTrue(WallCheckContinuation.ShouldContinue(
                 startGeneration: 5, currentGeneration: 5,
                 isPaused: false, isOneShot: true, isPlaying: false,
@@ -89,7 +81,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void OneShot_Silent_BusyWindowElapsed_DoesNotContinue()
         {
-            // Silent and the busy-window has elapsed (10 >= 5) → stop.
             Assert.IsFalse(WallCheckContinuation.ShouldContinue(
                 startGeneration: 5, currentGeneration: 5,
                 isPaused: false, isOneShot: true, isPlaying: false,
@@ -99,8 +90,6 @@ namespace AudioFramework.Tests.EditMode
         [Test]
         public void OneShot_Silent_CurrentTimeEqualsBusyUntil_DoesNotContinue()
         {
-            // Boundary: the busy window is strict (currentTime < busyUntilTime), so equality is NOT open →
-            // stop. Mirrors the OneShot busy semantics and PoolSlotAvailability treating equality as free.
             Assert.IsFalse(WallCheckContinuation.ShouldContinue(
                 startGeneration: 5, currentGeneration: 5,
                 isPaused: false, isOneShot: true, isPlaying: false,

@@ -30,7 +30,7 @@ namespace AudioFramework.Tests.EditMode
             var (service, targets) = MakeService(1);
             targets[0].Volume = 0.8f;
             service.StartFadeOut(index: 0, duration: 4f);
-            Assert.AreEqual(0.8f, targets[0].Volume, Delta); // start value is wherever the sound currently is
+            Assert.AreEqual(0.8f, targets[0].Volume, Delta);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace AudioFramework.Tests.EditMode
             targets[0].Volume = 0.8f;
             service.StartFadeOut(0, duration: 4f);
             service.Tick(1f);
-            Assert.AreEqual(0.6f, targets[0].Volume, Delta); // Evaluate(0.8, 0, 1, 4) = 0.6
+            Assert.AreEqual(0.6f, targets[0].Volume, Delta);
         }
 
         [Test]

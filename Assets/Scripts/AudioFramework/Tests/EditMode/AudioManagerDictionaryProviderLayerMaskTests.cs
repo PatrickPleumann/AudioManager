@@ -42,7 +42,7 @@ namespace AudioFramework.Tests.EditMode
             provider.FillLayerMaskDictionaryWithLayerRelatedValues(new[]
             {
                 Layer(8, 0.5f),
-                Layer(8, 0.9f) // same layer, later value must be ignored
+                Layer(8, 0.9f)
             });
 
             Assert.AreEqual(1, provider.WallLayerMaskDictionary.Count);

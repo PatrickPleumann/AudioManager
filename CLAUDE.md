@@ -4,7 +4,7 @@ Erster Anlaufpunkt für jede neue Session: **was das Projekt ist, wie wir zusamm
 immer gelten — und wo alles andere steht.**
 
 > **📌 Wissensablage-Regel (verbindlich):**
-> Wissen lebt **im Repo**, versioniert und für Patrick lesbar — **nicht** in einem PC-gebundenen
+> Wissen lebt **im Repo**, versioniert und für den Maintainer lesbar — **nicht** in einem PC-gebundenen
 > Claude-Memory. Das Memory bleibt bewusst leer (vermeidet Drift).
 > Jede Information hat **genau eine** Heimat; es gibt keine zweite Kopie in einer anderen Datei. Wer etwas
 > ergänzt, ergänzt es dort, wo es laut Wegweiser unten hingehört, und verlinkt von anderen Stellen nur hin.
@@ -54,13 +54,13 @@ voller Spatializer wie Steam Audio/Oculus. Das ist ein Feature, kein Nachteil �
 
 ---
 
-## Zusammenarbeit mit Patrick
+## Zusammenarbeit mit dem Maintainer
 
 > Die universellen Regeln (Solo-Dev, kein Ja-Sager, kein eigenständiges Committen, erst erklären dann Go,
 > Sauberkeit vor Workaround, warmer Abschluss, Sprache, Testbarkeit) stehen in der user-level
 > `~/.claude/CLAUDE.md` und laden automatisch in jede Session. Hier nur **AudioTool-Spezifisches**:
 
-- **Pro-Plan-Hinweis:** Patrick stößt an Session-Token-Limits (Opus ist der schwere Treiber). Opus für die
+- **Pro-Plan-Hinweis:** Der Maintainer stößt an Session-Token-Limits (Opus ist der schwere Treiber). Opus für die
   harten Teile sparen; Mechanisches kann günstiger laufen. *(Das ist auch der Grund für den Wegweiser oben:
   diese Datei lädt in **jede** Session — was hier steht, wird jedes Mal bezahlt. Tiefe gehört deshalb in die
   Fachdateien, die nur bei Bedarf geöffnet werden.)*
@@ -78,16 +78,37 @@ nachlesen.** Der verbindliche Kern in Kurzform, damit er nie „übersehen" werd
 3. **Mutation Check.** Nach Grün bewusst einen Fehler einbauen und *vorher* vorhersagen, welcher benannte
    Test rot wird. Danach korrekten Zustand wiederherstellen.
 4. **Ein Gate pro Antwort — dann STOPP.** Rot → Grün → Mutation → Wiederherstellung sind vier
-   **Bestätigungs-Gates**, keine Schrittliste. Der nächste Schritt beginnt erst, wenn **Patrick das von ihm
+   **Bestätigungs-Gates**, keine Schrittliste. Der nächste Schritt beginnt erst, wenn **der Maintainer das
    selbst beobachtete Ergebnis bestätigt hat**. Stub und Implementierung nie im selben Zug; einen späteren
    Schritt nie vorab ankündigen oder vorbereiten.
 5. **Erwartungswerte aus der SPEZIFIKATION, nie aus dem Code.** Lässt sich „korrekt" ohne Code-Lesen nicht
-   sagen → STOPP und das Soll mit Patrick klären.
+   sagen → STOPP und das Soll mit dem Maintainer klären.
 6. **Roter Test ≠ Test anfassen.** Diagnose-Reihenfolge: Implementierung → mein Modell → meine Vorhersage →
-   *zuletzt* der Test. Test-Änderung nur mit vorab benannter Kategorie und Patricks Go; Default ist Veto.
+   *zuletzt* der Test. Test-Änderung nur mit vorab benannter Kategorie und dem Go des Maintainers; Default ist Veto.
 
-**Patricks Kernangst sind tautologische / Change-Detector-Tests.** Red-first + Einfrieren + Mutation Check
+**Die Kernsorge des Maintainers sind tautologische / Change-Detector-Tests.** Red-first + Einfrieren + Mutation Check
 sind die Schutzwälle dagegen — deshalb sind sie nicht verhandelbar.
+
+---
+
+## Code-Stil: Kommentar-Verbot als Default — starke Namen stattdessen
+
+**Eine Methode muss sich selbst erklären.** Verlangt sie nach einem Kommentar, ist das ein Befund über den
+*Code*, nicht über die fehlende Erklärung: schwacher Name oder zu viel in einer Methode. Dann wird **umbenannt
+oder zerlegt** — nicht kommentiert.
+
+- **`///`-Summaries bleiben ausdrücklich erwünscht.** Sie tragen Vertrag und Begründung (*was* und *warum*)
+  und sind von dieser Regel **nicht** betroffen. Das Verbot gilt den `//`-Kommentaren im Methodenrumpf.
+- **Neue `//`-Kommentare werden nicht geschrieben.** Kein „hier kurz erklären", keine Sektions-Header in
+  Testklassen, keine Herleitung eines Erwartungswerts, keine Wiederholung dessen, was der Methoden- oder
+  Testname schon sagt.
+- **Ausnahme nur bei einem echten Sonderfall — und nur nach Rücksprache mit dem Maintainer.** Vorher benennen
+  und begründen, nie still mitliefern. Etablierte Ausnahmekategorien (Stand 2026-07-28, aus dem Kommentar-Audit):
+  **(a)** Magic Number ohne andere Heimat, **(b)** technische Schuld, **(c)** „Warnschild"-Fälle, in denen eine
+  harmlos aussehende Änderung still etwas kaputt macht (Wahl der Uhr, Tick-Reihenfolge, die eine dokumentierte
+  Ausnahme von der `source.volume`-Ein-Besitzer-Regel).
+- **Tests fallen unter dieselbe Regel.** Die Aussage trägt der Testname, die Spezifikation das
+  Klassen-`<summary>`.
 
 ---
 

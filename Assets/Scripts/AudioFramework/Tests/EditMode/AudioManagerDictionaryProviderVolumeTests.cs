@@ -90,7 +90,7 @@ namespace AudioFramework.Tests.EditMode
         public void EmptyVolumesArray_LeavesDictionaryEmpty()
         {
             var provider = new AudioManagerDictionaryProvider();
-            provider.FillDictionaryWithKeysAndValues(Transfer()); // params -> empty array
+            provider.FillDictionaryWithKeysAndValues(Transfer());
 
             Assert.AreEqual(0, provider.VolumeDictionary.Count);
         }
@@ -99,7 +99,6 @@ namespace AudioFramework.Tests.EditMode
         public void NullEntry_IsSkipped_RestStillMapped()
         {
             var provider = new AudioManagerDictionaryProvider();
-            // A null slot precedes a valid entry: the null is skipped, iteration continues, the valid one still maps.
             provider.FillDictionaryWithKeysAndValues(Transfer(
                 null,
                 Vol(AudioCategory.Music, 0.8f)));
@@ -114,7 +113,7 @@ namespace AudioFramework.Tests.EditMode
             var provider = new AudioManagerDictionaryProvider();
             provider.FillDictionaryWithKeysAndValues(Transfer(
                 Vol(AudioCategory.SFX, 0.3f),
-                Vol(AudioCategory.SFX, 0.9f))); // same category, later value must be ignored
+                Vol(AudioCategory.SFX, 0.9f)));
 
             Assert.AreEqual(1, provider.VolumeDictionary.Count);
             Assert.AreEqual(0.3f, provider.VolumeDictionary[AudioCategory.SFX], Delta);
