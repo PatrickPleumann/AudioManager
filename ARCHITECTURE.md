@@ -73,6 +73,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `DuckEnvelope` | Duck-Glide pro Frame (Attack beim Tiefer-Ducken, Release zurück) |
 | `DuckTargetPolicy` | aktive Kategorien + Paar-Faktoren → `duck[kategorie]` (`min`-Stacking, kein Selbst-Duck) |
 | `DuckRuleFlattening` | nested `DuckRule` → flache `DuckPair`-Liste (Fill-Stil, GC-frei) |
+| `DuckFactorLedger` | Duck-Zustand **über die Zeit**: wer wird diesen Frame gestept, Ziel via `DuckTargetPolicy`, Glide via `DuckEnvelope`, Retire bei `1.0` |
 
 ---
 
@@ -166,7 +167,7 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
 |---|---|---|
 | `basis[kategorie]` | `VolumeDictionary` (aus den Volume-Assets) | **live pro Frame gelesen** → ein Settings-Slider wirkt sofort, ohne eigene API |
 | `fade[slot]` | `AudioObject.FadeFactor`, geschrieben vom `AudioFadeService` | 0..1 Per-Slot-Rampe |
-| `duck[kategorie]` | im `AudioDuckService` abgeleitet + geglättet | 0..1 Per-Kategorie-Absenkung |
+| `duck[kategorie]` | im `DuckFactorLedger` geführt, pro Frame vom `AudioDuckService` gefüttert | 0..1 Per-Kategorie-Absenkung |
 
 > ⚠️ **Der wichtigste Fakt dieses Abschnitts:** `AudioFadeService` schreibt **nicht** mehr `source.volume`,
 > sondern nur den Faktor. Wer eine neue Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor**
@@ -191,9 +192,19 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
 - **„Aktiv" wird abgeleitet, nicht gezählt:** „Kategorie aktiv" = hat einen spielenden, nicht-pausierten Slot;
   **pro Frame aus dem Pool ermittelt**, kein +1/−1-Mitzählen. Ein OneShot endet von selbst — Ableiten kann
   nicht driften, Buchführung schon. (Dieselbe Philosophie wie der self-healing Listener.)
-- **Optional ohne Kosten:** Ohne registrierten `IDuckRuleProvider` wird der komplette Duck-Scan übersprungen
-  (jedes `duck` bleibt 1). Die Volumes werden trotzdem aufgelöst — der Live-Slider funktioniert also auch
-  ganz ohne Duck-Komponente.
+- **Der Zustand lebt im `DuckFactorLedger`** (pur, EditMode-getestet), nicht im Service. Er führt Buch, welche
+  Kategorie gerade wie stark geduckt ist. Getrackt wird eine Kategorie, solange sie **konfiguriertes Ziel ist
+  ODER sich noch erholt** — die zweite Hälfte ist der Grund, warum eine Kategorie zurückglidet, wenn ihre Regel
+  zur Laufzeit verschwindet, statt auf ihrem letzten Duck-Wert einzufrieren.
+- **Optional ohne Kosten:** Ohne registrierten `IDuckRuleProvider` laufen weder Pool-Scan noch Flattening; der
+  Ledger wird stattdessen mit den Raten **seines letzten Steps** released — eine Config, die weg ist, kann keine
+  neuen liefern. Eine gerade geduckte Kategorie glidet damit aus, statt hart auf voll zu springen (hörbarer
+  Knacks). Hat der Ledger nichts zu tun — der Normalfall ohne Duck-Komponente —, sind das zwei Schleifen über
+  null Elemente. Die Volumes werden weiterhin aufgelöst: der Live-Slider funktioniert auch ganz ohne
+  Duck-Komponente.
+- **Kein Sonderpfad für den Provider-Verlust:** Release *ist* ein Step mit leeren Eingaben — ohne konfigurierte
+  Paare löst die Policy jede getrackte Kategorie ohnehin auf `1.0` auf. Eine zweite Schleife hätte dieselbe
+  Semantik doppelt gepflegt werden müssen.
 - **Die Komponente ist passiv:** `AudioDuckComponent` hat **keinen eigenen `LateUpdate`** und schreibt nie
   `source.volume`. Sie ist reiner Konfigurations-Provider hinter `IDuckRuleProvider` — dasselbe Seam-Muster
   wie `IAudioWallCheckService`/`IAudioListenerProvider`. Registrierung in `OnEnable`, Abmeldung in
@@ -201,7 +212,8 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
   `[RequireComponent(typeof(AudioManagerDynamic))]` erzwingt das gemeinsame GameObject.
 - **Komponente statt ScriptableObject**, weil die Laufzeit-Tiefen mutabler Per-Szenen-Zustand sind — ein SO
   würde beim Editieren zur Laufzeit das Asset mutieren (Footgun).
-- **GC-frei:** alle Per-Frame-Sammlungen im `AudioDuckService` sind wiederverwendete Buffer.
+- **GC-frei:** alle Per-Frame-Sammlungen im `AudioDuckService` **und** im `DuckFactorLedger` sind
+  wiederverwendete Buffer; der Release-Pfad teilt sich statische leere Arrays (`Array.Empty`).
 
 ---
 

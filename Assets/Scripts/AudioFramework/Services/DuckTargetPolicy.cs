@@ -22,7 +22,7 @@ namespace AudioFramework.Services.Mixing
         /// </summary>
         public static float ResolveDuck(
             AudioCategory target,
-            IReadOnlyCollection<AudioCategory> activeCategories,
+            IReadOnlyList<AudioCategory> activeCategories,
             IReadOnlyList<DuckPair> pairs)
         {
             float result = 1.0f;
@@ -41,11 +41,17 @@ namespace AudioFramework.Services.Mixing
             return result;
         }
 
-        private static bool IsActive(AudioCategory category, IReadOnlyCollection<AudioCategory> activeCategories)
+        /// <summary>
+        /// Indexed on purpose: this runs per matching pair, every frame. A <c>foreach</c> over the
+        /// <see cref="IReadOnlyList{T}"/> parameter cannot use the caller's struct enumerator and would box one
+        /// on the heap per call — the parameter type is <see cref="IReadOnlyList{T}"/> rather than
+        /// <see cref="IReadOnlyCollection{T}"/> precisely so this loop can stay allocation-free.
+        /// </summary>
+        private static bool IsActive(AudioCategory category, IReadOnlyList<AudioCategory> activeCategories)
         {
-            foreach (AudioCategory active in activeCategories)
+            for (int i = 0; i < activeCategories.Count; i++)
             {
-                if (active == category) return true;
+                if (activeCategories[i] == category) return true;
             }
 
             return false;

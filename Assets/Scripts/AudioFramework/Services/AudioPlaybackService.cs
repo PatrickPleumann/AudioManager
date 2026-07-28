@@ -113,7 +113,9 @@ namespace AudioFramework.Services.Playback
             // on (base · fade · duck, live); this frame-0 write just keeps the very first frame correct (duck = 1).
             float baseVolume = ResolveVolume(audioDataObject);
             float fadeFactor = startSilent ? 0f : 1f;
+
             poolAcquisitionService.SetFadeFactor(poolIndex, fadeFactor);
+
             source.volume = VolumeResolver.Resolve(baseVolume, fadeFactor, 1f);
 
             source.spatialBlend = isSpatial ? audioDataObject.SpatialBlend : 0f;
