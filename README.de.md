@@ -87,12 +87,11 @@ Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwisc
 - **`Physics.RaycastNonAlloc`** in einen wiederverwendeten Buffer für den WallCheck — kein Array-Churn pro Frame.
 - **`AudioHandle` ist ein `readonly struct`** `{ PoolIndex, Generation }` — ein Value-Type-Ticket, keine Heap-Referenz.
 
-Der Per-Frame-Pfad ist per Design allokationsfrei — und wo er es aktuell nicht ist, benenne ich es lieber selbst, als es einem Profiler zu überlassen:
+Der Per-Frame-Pfad ist per Design allokationsfrei — und die eine Allokation, die das Framework dennoch macht, benenne ich lieber selbst, als sie einem Profiler zu überlassen:
 
 - Der Start eines *wand-geprüften* Sounds alloziert eine `CancellationTokenSource` für seine Raycast-Schleife — ein Kostenpunkt pro `Play()`, nicht pro Frame.
-- Das Auflösen der Duck-Faktoren boxt pro Aktiv-Prüfung einen Enumerator, weil die Policy ihre Eingabe als Interface entgegennimmt. Das passiert nur, wenn Ducking tatsächlich konfiguriert ist, und es sind eine Handvoll kleiner Allokationen pro Frame — aber es heißt eben, dass „null GC pro Frame" für den Kernpfad gilt und für diesen einen noch nicht.
 
-Beides ist getrackt, nicht unter den Teppich gekehrt: Eine kleine ehrliche Ausnahme zu benennen ist mehr wert als eine absolute Behauptung, die ein Profiler widerlegen kann.
+Sie ist getrackt, nicht unter den Teppich gekehrt: Eine kleine ehrliche Ausnahme zu benennen ist mehr wert als eine absolute Behauptung, die ein Profiler widerlegen kann.
 
 ### Schutz vor veralteten Handles via Generations
 

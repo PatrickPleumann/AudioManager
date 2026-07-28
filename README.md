@@ -87,12 +87,11 @@ This is a deliberate trade-off in favour of **honest tests**: where the choice w
 - **`Physics.RaycastNonAlloc`** into a reused buffer for the wall check — no per-frame array churn.
 - **`AudioHandle` is a `readonly struct`** `{ PoolIndex, Generation }` — a value-type ticket, not a heap reference.
 
-The per-frame path is allocation-free by design — and where it currently isn't, I'd rather name it than let a benchmark find it:
+The per-frame path is allocation-free by design — and the one allocation the framework does make, I'd rather name than let a benchmark find:
 
 - Starting a *wall-checked* sound allocates one `CancellationTokenSource` for its raycast loop — a per-`Play()` cost, not a per-frame one.
-- Resolving duck factors boxes an enumerator per active-category check, because the policy takes its input as an interface. This only happens when ducking is actually configured, and it is a handful of small allocations per frame — but it does mean "zero per-frame GC" holds for the core path, not yet for that one.
 
-Both are tracked, not swept under the rug: naming a small honest exception is worth more than an absolute claim that a profiler can falsify.
+It is tracked, not swept under the rug: naming a small honest exception is worth more than an absolute claim that a profiler can falsify.
 
 ### Stale-handle safety via generations
 
