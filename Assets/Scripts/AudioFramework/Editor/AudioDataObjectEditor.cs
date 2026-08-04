@@ -15,11 +15,20 @@ namespace AudioFramework.EditorTools
     /// auditionable, the resolved category volume shown inline, and a plain-language summary of what this
     /// asset will do at runtime. Purely presentational: every edit goes through SerializedProperty, so
     /// Undo, multi-object editing and prefab overrides behave exactly as before.
+    ///
+    /// Fields added to AudioDataObject later are never swallowed: every property this layout draws is
+    /// registered through <see cref="Claim"/>, and whatever is left over lands in its own section at the
+    /// bottom with Unity's default control. A new field therefore shows up by itself — giving it a proper
+    /// home is an improvement, not a repair.
     /// </summary>
     [CustomEditor(typeof(AudioDataObject))]
     [CanEditMultipleObjects]
     public class AudioDataObjectEditor : Editor
     {
+        private const string ScriptReferencePropertyPath = "m_Script";
+
+        private readonly Dictionary<string, SerializedProperty> claimedProperties = new Dictionary<string, SerializedProperty>();
+
         private SerializedProperty clipsProperty;
         private SerializedProperty categoryProperty;
         private SerializedProperty spatialBlendProperty;
@@ -33,14 +42,28 @@ namespace AudioFramework.EditorTools
 
         private void OnEnable()
         {
-            clipsProperty = serializedObject.FindProperty(nameof(AudioDataObject.CurrentClips));
-            categoryProperty = serializedObject.FindProperty(nameof(AudioDataObject.CurrentType));
-            spatialBlendProperty = serializedObject.FindProperty(nameof(AudioDataObject.SpatialBlend));
-            followEmitterProperty = serializedObject.FindProperty(nameof(AudioDataObject.FollowEmitter));
-            isOneShotProperty = serializedObject.FindProperty(nameof(AudioDataObject.IsOneShot));
-            canHandleAudioSourceProperty = serializedObject.FindProperty(nameof(AudioDataObject.CanHandleAudioSource));
-            useWallCheckProperty = serializedObject.FindProperty(nameof(AudioDataObject.UseWallCheck));
-            respectsGlobalPauseProperty = serializedObject.FindProperty(nameof(AudioDataObject.RespectsGlobalPause));
+            claimedProperties.Clear();
+
+            clipsProperty = Claim(nameof(AudioDataObject.CurrentClips));
+            categoryProperty = Claim(nameof(AudioDataObject.CurrentType));
+            spatialBlendProperty = Claim(nameof(AudioDataObject.SpatialBlend));
+            followEmitterProperty = Claim(nameof(AudioDataObject.FollowEmitter));
+            isOneShotProperty = Claim(nameof(AudioDataObject.IsOneShot));
+            canHandleAudioSourceProperty = Claim(nameof(AudioDataObject.CanHandleAudioSource));
+            useWallCheckProperty = Claim(nameof(AudioDataObject.UseWallCheck));
+            respectsGlobalPauseProperty = Claim(nameof(AudioDataObject.RespectsGlobalPause));
+        }
+
+        /// <summary>
+        /// Looks up a property and records that this layout takes care of drawing it. Claiming is the only
+        /// way a property is fetched, so the "not laid out yet" section below can never disagree with what
+        /// the sections above actually draw — and a field can never end up drawn twice or not at all.
+        /// </summary>
+        private SerializedProperty Claim(string propertyName)
+        {
+            SerializedProperty property = serializedObject.FindProperty(propertyName);
+            claimedProperties[propertyName] = property;
+            return property;
         }
 
         private void OnDisable()
@@ -84,6 +107,7 @@ namespace AudioFramework.EditorTools
             DrawRoutingSection(snapshot, accent);
             DrawSpaceSection(accent);
             DrawPlaybackSection(accent);
+            DrawUnclaimedSection(accent);
             DrawSummarySection(snapshot, findings, accent);
         }
 
@@ -94,14 +118,65 @@ namespace AudioFramework.EditorTools
                 "summary are shown for a single selection only.",
                 MessageType.Info);
 
-            EditorGUILayout.PropertyField(clipsProperty, new GUIContent("Clips"), true);
-            EditorGUILayout.PropertyField(categoryProperty, new GUIContent("Category"));
-            EditorGUILayout.PropertyField(spatialBlendProperty, new GUIContent("Spatial Blend"));
-            EditorGUILayout.PropertyField(followEmitterProperty, new GUIContent("Follow Emitter"));
-            EditorGUILayout.PropertyField(useWallCheckProperty, new GUIContent("Wall Check"));
-            EditorGUILayout.PropertyField(isOneShotProperty, new GUIContent("One-Shot"));
-            EditorGUILayout.PropertyField(canHandleAudioSourceProperty, new GUIContent("Returns Handle"));
-            EditorGUILayout.PropertyField(respectsGlobalPauseProperty, new GUIContent("Respects Global Pause"));
+            foreach (SerializedProperty property in TopLevelProperties())
+                EditorGUILayout.PropertyField(property, true);
+        }
+
+        /// <summary>
+        /// Draws every field this layout does not place itself. Empty in the normal case — it fills up the
+        /// moment AudioDataObject grows a field, which keeps a new field visible and editable long before
+        /// anyone gets round to designing a row for it.
+        /// </summary>
+        private void DrawUnclaimedSection(Color accent)
+        {
+            List<SerializedProperty> unclaimed = UnclaimedProperties();
+            if (unclaimed.Count == 0) return;
+
+            AudioInspectorSkin.BeginSection("Not laid out yet", unclaimed.Count.ToString(), accent);
+
+            EditorGUILayout.LabelField(
+                "These fields exist on AudioDataObject but have no place in the sections above yet. They are " +
+                "drawn with Unity's default control so nothing is lost.",
+                AudioInspectorSkin.OptionHint);
+            EditorGUILayout.Space(2f);
+
+            foreach (SerializedProperty property in unclaimed)
+                EditorGUILayout.PropertyField(property, true);
+
+            AudioInspectorSkin.EndSection();
+        }
+
+        private List<SerializedProperty> UnclaimedProperties()
+        {
+            List<SerializedProperty> unclaimed = new List<SerializedProperty>();
+
+            foreach (SerializedProperty property in TopLevelProperties())
+                if (!claimedProperties.ContainsKey(property.propertyPath))
+                    unclaimed.Add(property);
+
+            return unclaimed;
+        }
+
+        /// <summary>
+        /// Every serialized field of the asset itself, in declaration order and fully materialised, so that
+        /// drawing a field can never disturb the walk that produced it.
+        /// </summary>
+        private List<SerializedProperty> TopLevelProperties()
+        {
+            List<SerializedProperty> properties = new List<SerializedProperty>();
+
+            SerializedProperty iterator = serializedObject.GetIterator();
+            bool enterChildren = true;
+
+            while (iterator.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (iterator.propertyPath == ScriptReferencePropertyPath) continue;
+
+                properties.Add(iterator.Copy());
+            }
+
+            return properties;
         }
 
         private AudioDataObjectSnapshot BuildSnapshot()
@@ -291,9 +366,8 @@ namespace AudioFramework.EditorTools
         {
             AudioInspectorSkin.BeginSection("Routing", null, accent);
 
-            EditorGUILayout.PropertyField(categoryProperty, new GUIContent(
-                "Category",
-                "Which mixer bucket this sound belongs to. The matching AudioSourceVolumes asset supplies its base volume."));
+            AudioInspectorSkin.DrawPropertyRow(categoryProperty, "Category",
+                "The bucket this sound belongs to. The matching AudioSourceVolumes asset supplies its base volume.");
 
             DrawResolvedVolume(snapshot);
 

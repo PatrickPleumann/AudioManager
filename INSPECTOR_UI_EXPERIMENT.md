@@ -58,7 +58,29 @@ Sind die Dateien weg, fällt Unity automatisch auf den Default-Inspector aus Tab
   Undo/Redo, Multi-Object-Editing und Prefab-Overrides laufen über Unitys Standardweg.
 - **UI-Sprache ist Englisch**, wie der übrige Code — das Tool geht in den Asset Store.
 
-## 4. Offen, falls die UI bleibt
+## 4. Wenn `AudioDataObject` neue Felder bekommt
+
+Der Inspector ist **additiv gebaut**: er zeichnet keine feste Feldliste, sondern *beansprucht* Properties.
+
+- Jede Property wird in `OnEnable` über `Claim(nameof(...))` geholt. `Claim` merkt sich den Namen.
+- Am Ende läuft `DrawUnclaimedSection` über **alle** sichtbaren Felder des Assets und zeichnet jedes, das
+  nicht beansprucht wurde, im Abschnitt **„Not laid out yet"** mit Unitys Default-Control.
+
+Daraus folgt das Verhalten, das die Sorge auflöst:
+
+| Fall | Was passiert |
+|---|---|
+| **Feld hinzugefügt** | Erscheint automatisch unten in „Not laid out yet" — sichtbar und editierbar, ohne dass eine Zeile am Editor geändert wird. |
+| **Feld dort belassen** | Funktioniert dauerhaft. Der Abschnitt ist kein Fehler, sondern eine Warteschlange. |
+| **Feld schön einsortieren** | Zwei Zeilen: `Claim(nameof(...))` in `OnEnable` + ein Aufruf im passenden Abschnitt (`DrawOptionRow` für `bool`, `DrawPropertyRow` für alles andere). Es verschwindet dadurch von selbst aus „Not laid out yet" — die Liste kann gar nicht mit dem Layout auseinanderlaufen, weil beide aus derselben Quelle stammen. |
+| **Feld entfernt** | `nameof(AudioDataObject.X)` **kompiliert nicht mehr**. Bewusst so: der Compiler zeigt exakt die zwei Zeilen, die weg müssen. Ein lautes Signal ist hier besser als eine still verschwindende Zeile. |
+| **Feld umbenannt** | Rider-Rename fasst `nameof` mit an — nichts zu tun. |
+
+Nicht automatisch mitwachsend sind die **Prosa-Zusammenfassung** und die **Befunde** (`AudioDataObjectInspectorModel`).
+Ein neues Feld taucht dort erst auf, wenn es in `AudioDataObjectSnapshot` aufgenommen und in `Describe` /
+`Validate` verwendet wird. Das ist Absicht: ein Satz über ein Feld lässt sich nicht generisch erzeugen.
+
+## 5. Offen, falls die UI bleibt
 
 Die Entscheidungslogik (Validierungs-Befunde, Zusammenfassungssatz, Code-Snippet) liegt bewusst in einer
 eigenen, Unity-GUI-freien Klasse (`AudioDataObjectInspectorModel`). Sie ist damit **testbar geschnitten**,

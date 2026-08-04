@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioDataObject
   CurrentClips:
   - {fileID: 8300000, guid: 09e22874557a04dd1834c6cc34e7afd7, type: 3}
-  CurrentType: 2
+  CurrentType: 3
   SpatialBlend: 1
   FollowEmitter: 0
   IsOneShot: 0

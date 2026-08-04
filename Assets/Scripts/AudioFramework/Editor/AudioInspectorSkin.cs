@@ -281,6 +281,24 @@ namespace AudioFramework.EditorTools
         }
 
         /// <summary>
+        /// The non-boolean counterpart of <see cref="DrawOptionRow"/>: any property with a title and the same
+        /// muted explanation underneath. One call is all a newly added field needs to look like it belongs.
+        /// </summary>
+        internal static void DrawPropertyRow(SerializedProperty property, string title, string hint)
+        {
+            EditorGUILayout.PropertyField(property, new GUIContent(title), true);
+
+            if (!string.IsNullOrEmpty(hint))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField(hint, OptionHint);
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(3f);
+        }
+
+        /// <summary>
         /// Renders a validation finding. Errors and warnings use Unity's help box so they read exactly like
         /// every other problem report in the editor; hints stay quiet and unboxed.
         /// </summary>
