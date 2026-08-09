@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using AudioFramework.Data;
 using AudioFramework.Core;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 
 public class TestScript : MonoBehaviour
 {
@@ -14,6 +16,8 @@ public class TestScript : MonoBehaviour
     public Button B_SFX;
     public Button B_BehindWall;
     public Button B_WallOnOff;
+
+    public Button B_SwitchScene;
 
     public Button B_StopSource;
     public Button B_UnPauseAll;
@@ -81,6 +85,35 @@ public class TestScript : MonoBehaviour
         
         B_FadeInSpatial.onClick.AddListener(FadeInSpatial);
         B_CrossFadeSpatial.onClick.AddListener(CrossFadeSpatial);
+
+        B_SwitchScene.onClick.AddListener(SwitchSceneToTestScene);
+    }
+
+    private void OnDisable()
+    {
+        B_Ambient.onClick.RemoveListener(PlayAmbientTest);
+        B_Player.onClick.RemoveListener(PlayPlayerTest);
+        B_SFX.onClick.RemoveListener(PlaySFXTest);
+        B_BehindWall.onClick.RemoveListener(PlayBehindWallTest);
+        B_WallOnOff.onClick.RemoveListener(SetWallOnOff);
+        B_StopSource.onClick.RemoveListener(StopSourcePlaying);
+        B_UnPauseAll.onClick.RemoveListener(UnPauseAll);
+
+        B_StopBehindWall.onClick.RemoveListener(StopBehindWall);
+
+        B_FadeInNonSpatial.onClick.RemoveListener(FadeInNonSpatial);
+        B_FadeOut.onClick.RemoveListener(FadeOutSound);
+        B_CrossFade.onClick.RemoveListener(CrossFade);
+
+        B_FadeInSpatial.onClick.RemoveListener(FadeInSpatial);
+        B_CrossFadeSpatial.onClick.RemoveListener(CrossFadeSpatial);
+
+        B_SwitchScene.onClick.RemoveListener(SwitchSceneToTestScene);
+    }
+
+    private void SwitchSceneToTestScene()
+    {
+        SceneManager.LoadSceneAsync(1);
     }
 
     private void PlayAmbientTest()

@@ -68,8 +68,8 @@ namespace AudioFramework.Services.WallCheck
                 if (IsCurrentlyActive(_poolIndex))
                     ApplyWallCheckFilter(_poolIndex);
 
-                // R4: real-clock interval (UnscaledDeltaTime) so the wall-check keeps ticking at timeScale = 0 —
-                // consistent with M1/M4. To actually pause occlusion the game calls PauseAll, not timeScale.
+                // real-clock interval (UnscaledDeltaTime) so the wall-check keeps ticking at timeScale = 0
+                // To actually pause occlusion the game calls PauseAll, not timeScale.
                 bool canceled = await UniTask.Delay(checkIntervalMs, delayType: DelayType.UnscaledDeltaTime, cancellationToken: _token).SuppressCancellationThrow();
                 if (canceled) return;
             }

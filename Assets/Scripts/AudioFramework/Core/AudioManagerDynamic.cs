@@ -57,6 +57,7 @@ namespace AudioFramework.Core
             }
 
             instance = this;
+            MakePersistentAcrossScenes();
 
             dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.WallDampingPerLayer);
             dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
@@ -98,6 +99,30 @@ namespace AudioFramework.Core
 
             followService = new AudioFollowService(poolAcquisitionService, wallCheckService, fadeService);
             occlusionSmoothingService = new AudioOcclusionSmoothingService(poolAcquisitionService, systemConfig);
+        }
+
+        /// <summary>
+        /// Lets the manager — and with it the pooled AudioSources, which are its children — survive a scene change, so
+        /// music and ambience continue across a load instead of being cut off mid-clip. Called only for the instance
+        /// that actually takes over, so a duplicate or a misconfigured manager is never made immortal.
+        /// <para>
+        /// Unity applies DontDestroyOnLoad to ROOT GameObjects only; on a nested manager the call does nothing but log
+        /// an easily missed engine warning. That case is therefore reported with an actionable message and the call is
+        /// skipped, rather than leaving the user with a documented persistence promise that never takes effect.
+        /// </para>
+        /// </summary>
+        private void MakePersistentAcrossScenes()
+        {
+            if (transform.parent != null)
+            {
+                Debug.LogWarning(
+                    $"[AudioTool] The AudioManagerDynamic GameObject '{name}' is a child of '{transform.parent.name}'. " +
+                    "Unity's DontDestroyOnLoad only works on root GameObjects, so this manager will NOT survive a scene " +
+                    "change and every playing sound is cut off on load. Move it to the top level of the Hierarchy.", this);
+                return;
+            }
+
+            DontDestroyOnLoad(gameObject);
         }
 
         private void LateUpdate()
