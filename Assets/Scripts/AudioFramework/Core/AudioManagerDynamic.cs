@@ -130,8 +130,7 @@ namespace AudioFramework.Core
             followService?.UpdateFollowers();
             occlusionSmoothingService?.Tick(Time.unscaledDeltaTime);
             fadeService?.Tick(Time.unscaledDeltaTime);
-            // Must run AFTER the fade tick: the fade writes the per-slot fade factor, the duck service is the single
-            // owner that reads it (with live base volume + duck) and resolves source.volume.
+            //duckservice as last - it still contains the single writer of source.volume which should be changed soon
             duckService?.Tick(Time.unscaledDeltaTime);
         }
 
