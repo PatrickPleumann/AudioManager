@@ -13,42 +13,29 @@ namespace AudioFramework.Services.Mixing
     /// handed out through <see cref="ICategoryFactorSource"/> and combined with the other factors by
     /// <see cref="AudioVolumeWriteService"/> — this service never touches source.volume.
     ///
-    /// With no <see cref="IDuckRuleProvider"/> registered the ledger is released with the rates it last ran on — a
-    /// config that is gone can no longer supply them — so a category that was ducked glides out instead of
-    /// snapping back. All per-frame collections are reused buffers — no allocation in the tick.
+    /// The provider is handed in once at construction and never changes: the whole service only exists when
+    /// ducking is switched on in the config, so there is no "provider disappeared at runtime" state to handle.
+    /// Switching ducking off entirely means this service is not created at all — the writer then substitutes 1.0
+    /// and nothing else in the volume chain notices. All per-frame collections are reused buffers — no allocation
+    /// in the tick.
     /// </summary>
     public class AudioDuckService : ICategoryFactorSource
     {
         private readonly AudioObject[] pool;
-
-        private IDuckRuleProvider provider;
+        private readonly IDuckRuleProvider provider;
 
         private readonly List<AudioCategory> activeCategories = new();
         private readonly List<DuckPair> flattenedPairs = new();
         private readonly DuckFactorLedger duckFactors = new();
 
-        public AudioDuckService(AudioObject[] _pool)
+        public AudioDuckService(AudioObject[] _pool, IDuckRuleProvider _provider)
         {
             pool = _pool;
-        }
-
-        /// <summary>Registers the passive duck config provider (called from the component's OnEnable).</summary>
-        public void SetProvider(IDuckRuleProvider duckProvider) => provider = duckProvider;
-
-        /// <summary>Clears the provider if it is the one registered (called from the component's OnDisable).</summary>
-        public void ClearProvider(IDuckRuleProvider duckProvider)
-        {
-            if (provider == duckProvider) provider = null;
+            provider = _provider;
         }
 
         public void Tick(float deltaTime)
         {
-            if (provider == null)
-            {
-                duckFactors.ReleaseAll(deltaTime);
-                return;
-            }
-
             DeriveActiveCategories();
             DuckRuleFlattening.Flatten(provider.Rules, flattenedPairs);
 

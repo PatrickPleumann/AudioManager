@@ -86,7 +86,7 @@ namespace AudioFramework.Core
 
             fadeService = new AudioFadeService(fadeTargets);
 
-            duckService = new AudioDuckService(pool);
+            duckService = systemConfig.EnableDucking ? new AudioDuckService(pool, systemConfig) : null;
 
             var volumeTargets = new IVolumeTarget[pool.Length];
 
@@ -146,13 +146,6 @@ namespace AudioFramework.Core
             //the volume write must stay last - it consumes the factors every service above resolved this frame
             volumeWriteService?.Apply();
         }
-
-        /// <summary>Registers a passive duck config provider (called by AudioDuckComponent.OnEnable). Instance
-        /// method — the component reaches it via GetComponent on the shared GameObject, never via the static API.</summary>
-        public void RegisterDuckProvider(IDuckRuleProvider provider) => duckService?.SetProvider(provider);
-
-        /// <summary>Unregisters the duck config provider (called by AudioDuckComponent.OnDisable).</summary>
-        public void UnregisterDuckProvider(IDuckRuleProvider provider) => duckService?.ClearProvider(provider);
 
         /// <summary>
         /// Plays a sound as positional 3D audio at <paramref name="_source"/>. The sound is attenuated by distance and,

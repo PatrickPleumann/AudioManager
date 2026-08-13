@@ -152,8 +152,8 @@ generalisiert gehören. Die verbindliche Tick-Reihenfolge (`ARCHITECTURE.md` §1
    `AudioOcclusionSmoothingService`.
 4. **Fade-Familie** — `AudioFadeService`, `FadeOperation`, `AudioFadeMath`, `PooledFadeTarget`.
 5. **Mixing/Ducking** — `AudioVolumeWriteService`, `CategoryVolumeSource`, `PooledVolumeTarget`,
-   `AudioDuckService`, `AudioDuckComponent`, `VolumeResolver`, `DuckEnvelope`, `DuckTargetPolicy`,
-   `DuckRuleFlattening`, `DuckFactorLedger`. **Kern-Invariante:** `AudioVolumeWriteService` ist der *einzige*
+   `AudioDuckService`, `VolumeResolver`, `DuckEnvelope`, `DuckTargetPolicy`, `DuckRuleFlattening`,
+   `DuckFactorLedger`, `DuckConfigValidation` (+ die Duck-Konfiguration in `AudioSystemConfig`). **Kern-Invariante:** `AudioVolumeWriteService` ist der *einzige*
    Schreiber von `source.volume` (`ARCHITECTURE.md` §6) — jeden anderen Schreibzugriff als Befund werten.
    **Zweite Invariante:** Faktor-Lieferanten lösen nur auf und legen ihren Wert ab; löst ein Lieferant fremde
    Faktoren mit auf oder schreibt er selbst, ist das ein Befund.

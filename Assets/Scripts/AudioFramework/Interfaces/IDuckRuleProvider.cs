@@ -6,9 +6,12 @@ namespace AudioFramework.Interfaces
     /// <summary>
     /// Passive provider seam for the ducking config, mirrored on <see cref="AudioFramework.Interfaces"/> siblings
     /// like <c>IAudioWallCheckService</c>. The runtime <c>AudioDuckService</c> reads the configured duck rules and
-    /// the global attack/release rates through this interface every frame — it never owns the config itself. When
-    /// no provider is registered the service treats every category as un-ducked (factor 1) and skips the duck scan
-    /// entirely, so ducking is fully opt-in with no per-frame cost.
+    /// the global attack/release rates through this interface every frame — it never owns the config itself.
+    /// Implemented by <c>AudioSystemConfig</c> and handed to the service once at construction; the seam stays so
+    /// the rules can come from somewhere else without touching the service.
+    ///
+    /// Ducking is opt-in through the config's master switch: with it off the duck service is never created, so no
+    /// rule is read and the per-frame scan for active categories does not run at all.
     /// </summary>
     public interface IDuckRuleProvider
     {

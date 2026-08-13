@@ -29,7 +29,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioFollowService             → kopiert Emitter-Position pro Frame, ohne Parenting
 ├── AudioFadeService               → treibt alle Fades pro Frame über IFadeTarget[]; schreibt den Per-Slot-FadeFactor
 ├── AudioDuckService               → liefert duck[kategorie] als ICategoryFactorSource; führt den DuckFactorLedger
-│   └── AudioDuckComponent         → optionaler, passiver Regel-Provider (IDuckRuleProvider) — kein eigener Tick
+│   └── AudioSystemConfig          → ist selbst der Regel-Provider (IDuckRuleProvider); nur bei EnableDucking gebaut
 ├── CategoryVolumeSource           → liefert basis[kategorie] als ICategoryFactorSource, live aus dem VolumeDictionary
 ├── AudioVolumeWriteService        → EINZIGER Schreiber von source.volume; kombiniert die Faktoren über IVolumeTarget[]
 ├── AudioPauseService              → Pause/Unpause der Pool-Slots (global, scope-bewusst)
@@ -77,6 +77,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `DuckEnvelope` | Duck-Glide pro Frame (Attack beim Tiefer-Ducken, Release zurück) |
 | `DuckTargetPolicy` | aktive Kategorien + Paar-Faktoren → `duck[kategorie]` (`min`-Stacking, kein Selbst-Duck) |
 | `DuckRuleFlattening` | nested `DuckRule` → flache `DuckPair`-Liste (Fill-Stil, GC-frei) |
+| `DuckConfigValidation` | Widerspruch zwischen Ducking-Master-Schalter und konfigurierten Regeln (beide Richtungen) |
 | `DuckFactorLedger` | Duck-Zustand **über die Zeit**: wer wird diesen Frame gestept, Ziel via `DuckTargetPolicy`, Glide via `DuckEnvelope`, Retire bei `1.0` |
 
 ---
@@ -97,7 +98,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `Config/AudioSystemConfig.cs` | ScriptableObject — zentrale System-Konfiguration |
 | `Config/DuckRule.cs` · `DuckTarget.cs` | Serialisierte Duck-Regeln: Trigger-Kategorie → Ziele `{ Kategorie, Faktor }` |
 | `Config/CategoryMixerRoute.cs` | **Reservierter Stufe-2-Seam** (Kategorie → AudioMixerGroup) — deklariert, noch nicht gelesen |
-| `Components/AudioDuckComponent.cs` | Optionale, passive MonoBehaviour: Duck-Matrix + globale Attack/Release |
+| `Config/DuckConfigIssue.cs` · `DuckConfigValidation.cs` | Inspector-Guard: Master-Schalter vs. Regeln (Entscheidung pur, Wortlaut im `OnValidate`) |
 | `Interfaces/IAudioWallCheckService.cs` | Strategy-Seam für WallCheck (UniTask/Coroutine) |
 | `Interfaces/IAudioListenerProvider.cs` | Seam gegen stale Listener-Transform (`TryGetPosition`) |
 | `Interfaces/IDuckRuleProvider.cs` | Seam für die Duck-Konfiguration (Regeln + Attack/Release-Rate) |
@@ -206,23 +207,30 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
   Kategorie gerade wie stark geduckt ist. Getrackt wird eine Kategorie, solange sie **konfiguriertes Ziel ist
   ODER sich noch erholt** — die zweite Hälfte ist der Grund, warum eine Kategorie zurückglidet, wenn ihre Regel
   zur Laufzeit verschwindet, statt auf ihrem letzten Duck-Wert einzufrieren.
-- **Optional ohne Kosten:** Ohne registrierten `IDuckRuleProvider` laufen weder Pool-Scan noch Flattening; der
-  Ledger wird stattdessen mit den Raten **seines letzten Steps** released — eine Config, die weg ist, kann keine
-  neuen liefern. Eine gerade geduckte Kategorie glidet damit aus, statt hart auf voll zu springen (hörbarer
-  Knacks). Hat der Ledger nichts zu tun — der Normalfall ohne Duck-Komponente —, sind das zwei Schleifen über
-  null Elemente. Der Volume-Write läuft davon **unabhängig** weiter: der Live-Slider funktioniert auch ganz
-  ohne Duck-Komponente. Und der ganze `AudioDuckService` ist weglassbar — fehlt die Duck-Quelle, setzt der
-  Writer `1.0` ein, und Basis-Lautstärke wie Fade laufen unverändert.
-- **Kein Sonderpfad für den Provider-Verlust:** Release *ist* ein Step mit leeren Eingaben — ohne konfigurierte
-  Paare löst die Policy jede getrackte Kategorie ohnehin auf `1.0` auf. Eine zweite Schleife hätte dieselbe
-  Semantik doppelt gepflegt werden müssen.
-- **Die Komponente ist passiv:** `AudioDuckComponent` hat **keinen eigenen `LateUpdate`** und schreibt nie
-  `source.volume`. Sie ist reiner Konfigurations-Provider hinter `IDuckRuleProvider` — dasselbe Seam-Muster
-  wie `IAudioWallCheckService`/`IAudioListenerProvider`. Registrierung in `OnEnable`, Abmeldung in
-  `OnDisable`, **kein** Manager-Zugriff im `Awake` (Enable-Reihenfolge darf egal sein).
-  `[RequireComponent(typeof(AudioManagerDynamic))]` erzwingt das gemeinsame GameObject.
-- **Komponente statt ScriptableObject**, weil die Laufzeit-Tiefen mutabler Per-Szenen-Zustand sind — ein SO
-  würde beim Editieren zur Laufzeit das Asset mutieren (Footgun).
+- **Optional ohne Kosten — über einen Master-Schalter, nicht über Anwesenheit:** `EnableDucking` in der
+  `AudioSystemConfig` wird **einmal beim Start** gelesen. Ist er aus, wird der `AudioDuckService` gar nicht erst
+  gebaut: keine Regel wird gelesen, der Per-Frame-Pool-Scan läuft nicht, und `AudioVolumeWriteService` setzt für
+  den Duck-Faktor `1.0` ein. Basis-Lautstärke, Live-Slider und Fade laufen unverändert weiter — genau das ist der
+  Ertrag der Faktor-Trennung aus §6. Bewusst **kein Laufzeit-Toggle:** Umschalten im Betrieb bräuchte einen
+  Ausblend-Pfad, sonst springt jede geduckte Kategorie in *einem* Frame auf voll zurück (hörbarer Knacks).
+- **Ein Gate, nicht zwei:** Ein zusätzliches „leeres Regel-Array ⟹ kein Scan" gibt es bewusst **nicht** — zwei
+  Mechanismen für dieselbe Sache erzeugen den klassischen „warum duckt es nicht?"-Supportfall. Stattdessen meldet
+  die pure `DuckConfigValidation` beide Widersprüche im Inspector: Schalter an ohne Regeln (Scan läuft umsonst)
+  und Regeln ohne Schalter (werden nie gelesen).
+- **Die Konfiguration lebt im Asset, nicht auf einem GameObject:** Regeln, Attack/Release und der reservierte
+  Mixer-Seam sitzen in der `AudioSystemConfig`, die `IDuckRuleProvider` **selbst** implementiert und dem Service
+  einmalig im Konstruktor übergeben wird. Der Grund ist die Persistenz: Der Manager überlebt Szenenwechsel, also
+  wäre jede szenen-lokale Konfiguration stillschweigend die der **zuerst geladenen** Szene. Ein Asset kennt dieses
+  Problem nicht. Nebeneffekt: kein `OnEnable`/`OnDisable`-Lebenszyklus, keine Enable-Reihenfolge, kein „letzter
+  gewinnt" bei zwei Komponenten — und **eine** Komponente auf **einem** GameObject als ganzes Setup.
+- **ScriptableObject statt Komponente** — die frühere Begründung („Laufzeit-Tiefen sind mutabler Per-Szenen-Zustand,
+  ein SO mutiert beim Editieren das Asset") wurde bewusst umgedreht: Bei einer Komponente gehen im Play Mode
+  getunte Duck-Werte beim Stoppen **verloren**, beim Asset bleiben sie — für Balance-Tuning ein Vorteil, nicht ein
+  Footgun. Die Kehrseite (wer im Play Mode „nur mal testet", ändert sein Asset dauerhaft) gehört in die User-Doku.
+- **`DuckFactorLedger.ReleaseAll` ist derzeit unerreichbar:** Der Pfad stammt aus der Zeit, als die Duck-Config
+  eine zur Laufzeit deaktivierbare Komponente war. Mit dem Master-Schalter kann der Provider nicht mehr
+  verschwinden. Methode **und ihre zwei EditMode-Tests bleiben bewusst stehen** — sie kosten nichts, und ein
+  späterer Laufzeit-Toggle bräuchte sie sofort wieder.
 - **GC-frei:** alle Per-Frame-Sammlungen im `AudioDuckService` **und** im `DuckFactorLedger` sind
   wiederverwendete Buffer; der Release-Pfad teilt sich statische leere Arrays (`Array.Empty`).
 

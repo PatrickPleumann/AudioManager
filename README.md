@@ -34,7 +34,8 @@ AudioManagerDynamic            MonoBehaviour singleton · public API · LateUpda
 ├── AudioOcclusionSmoothingService glides filter cutoff toward TargetCutoff (per frame)
 ├── AudioFollowService            copies emitter position per frame — no re-parenting
 ├── AudioFadeService              drives all fades per frame — writes the per-slot fade factor
-├── AudioDuckService              the single owner of source.volume · resolves base · fade · duck
+├── AudioDuckService              resolves the per-category duck factor (optional — off by default)
+├── AudioVolumeWriteService       the single writer of source.volume · combines base · fade · duck
 ├── AudioPauseService             scope-aware global pause / unpause
 └── AudioManagerDictionaryProvider  volume + layer-mask dictionaries
 ```
@@ -66,10 +67,13 @@ The math and policy decisions live in small **Unity-free** classes, unit-tested 
 |---|---|
 | `AudioFadeMath` | fade curve / volume-over-time |
 | `FadeOperation` | immutable per-slot fade progress (elapsed time → volume via `AudioFadeMath`) |
+| `CategoryVolumeSource` | base gain of a category, read live from the volume dictionary (no entry → 1.0) |
 | `VolumeResolver` | the one gain equation: base × fade × duck, clamped to `[0,1]` |
 | `DuckEnvelope` | per-frame glide of a category's duck factor (attack down / release back) |
 | `DuckTargetPolicy` | duck factor for one target category — strongest wins, never self-ducks, no cascade |
 | `DuckRuleFlattening` | nested inspector rules → flat (trigger, target) pairs, filling a reused list |
+| `DuckFactorLedger` | duck state over time — who is stepped this frame, target via policy, glide via envelope |
+| `DuckConfigValidation` | ducking master switch vs. configured rules — reports either contradiction |
 | `WallOcclusionMath` | per-wall multiplicative damping step (factor → cutoff) + floor clamp (the swappable occlusion model seam) |
 | `OcclusionSmoothing` | per-frame glide toward target cutoff |
 | `WallLayerMask` | physics layer indices → one layer-mask bitmask (shared by both wall-check backends) |

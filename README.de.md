@@ -34,7 +34,8 @@ AudioManagerDynamic            MonoBehaviour-Singleton · öffentliche API · La
 ├── AudioOcclusionSmoothingService gleitet den Filter-Cutoff Richtung TargetCutoff (pro Frame)
 ├── AudioFollowService            kopiert die Emitter-Position pro Frame — kein Re-Parenting
 ├── AudioFadeService              treibt alle Fades pro Frame — schreibt den Fade-Faktor pro Slot
-├── AudioDuckService              der einzige Besitzer von source.volume · löst Basis · Fade · Duck auf
+├── AudioDuckService              löst den Duck-Faktor pro Kategorie auf (optional — standardmäßig aus)
+├── AudioVolumeWriteService       der einzige Schreiber von source.volume · kombiniert Basis · Fade · Duck
 ├── AudioPauseService             scope-bewusste globale Pause / Unpause
 └── AudioManagerDictionaryProvider  Volume- + Layer-Mask-Dictionaries
 ```
@@ -66,10 +67,13 @@ Die Mathematik- und Policy-Entscheidungen leben in kleinen **Unity-freien** Klas
 |---|---|
 | `AudioFadeMath` | Fade-Kurve / Lautstärke über Zeit |
 | `FadeOperation` | unveränderlicher Fade-Fortschritt pro Slot (verstrichene Zeit → Lautstärke via `AudioFadeMath`) |
+| `CategoryVolumeSource` | Basis-Gain einer Kategorie, live aus dem Volume-Dictionary gelesen (kein Eintrag → 1.0) |
 | `VolumeResolver` | die eine Gain-Gleichung: Basis × Fade × Duck, geklemmt auf `[0,1]` |
 | `DuckEnvelope` | Per-Frame-Glide des Duck-Faktors einer Kategorie (Attack runter / Release zurück) |
 | `DuckTargetPolicy` | Duck-Faktor für eine Ziel-Kategorie — der stärkste gewinnt, nie Selbst-Duck, keine Kaskade |
 | `DuckRuleFlattening` | verschachtelte Inspector-Regeln → flache (Trigger, Ziel)-Paare, füllt eine wiederverwendete Liste |
+| `DuckFactorLedger` | Duck-Zustand über die Zeit — wer wird diesen Frame gestept, Ziel via Policy, Glide via Envelope |
+| `DuckConfigValidation` | Ducking-Master-Schalter vs. konfigurierte Regeln — meldet beide Widersprüche |
 | `WallOcclusionMath` | multiplikativer Dämpfungsschritt pro Wand (Faktor → Cutoff) + Floor-Clamp (der austauschbare Occlusion-Modell-Seam) |
 | `OcclusionSmoothing` | Per-Frame-Glide Richtung Ziel-Cutoff |
 | `WallLayerMask` | Physik-Layer-Indizes → eine Layer-Mask-Bitmaske (von beiden WallCheck-Backends geteilt) |

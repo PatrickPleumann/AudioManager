@@ -127,8 +127,8 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioOcclusionSmoothingService  → gleitet den Cutoff pro Frame
 ├── AudioFollowService              → kopiert Emitter-Position pro Frame, ohne Parenting
 ├── AudioFadeService                → treibt Fades; schreibt den Per-Slot-FadeFactor
-├── AudioDuckService                → liefert duck[kategorie]; führt den DuckFactorLedger
-│   └── AudioDuckComponent          → optionaler, passiver Regel-Provider (kein eigener Tick)
+├── AudioDuckService                → liefert duck[kategorie]; nur bei EnableDucking überhaupt gebaut
+│   └── AudioSystemConfig           → ist selbst der Regel-Provider (IDuckRuleProvider)
 ├── CategoryVolumeSource            → liefert basis[kategorie], live aus dem VolumeDictionary
 ├── AudioVolumeWriteService         → EINZIGER Schreiber von source.volume (basis · fade · duck)
 ├── AudioPauseService               → Pause/Unpause der Pool-Slots (scope-bewusst)
@@ -136,8 +136,8 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ```
 
 Die gesamte Entscheidungslogik liegt in **puren, Unity-freien Klassen** (EditMode-getestet) — Liste und
-Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **136 EditMode-Tests**; die pure Schicht
-umfasst **16 Einheiten** (die Liste in §2 ist deren Single Source).
+Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **140 EditMode-Tests**; die pure Schicht
+umfasst **17 Einheiten** (die Liste in §2 ist deren Single Source).
 
 ---
 
