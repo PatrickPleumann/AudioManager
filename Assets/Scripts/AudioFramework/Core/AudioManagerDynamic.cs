@@ -34,6 +34,8 @@ namespace AudioFramework.Core
         private AudioFadeService fadeService;
         private AudioDuckService duckService;
         private AudioVolumeWriteService volumeWriteService;
+        private CategoryVolumeSource categoryVolumeSource;
+        private CategoryVolumeWriter categoryVolumeWriter;
 
         /// <summary>
         /// The scene this manager was loaded with, captured BEFORE it is made persistent. Once
@@ -112,9 +114,12 @@ namespace AudioFramework.Core
             for (int i = 0; i < volumeTargets.Length; i++)
                 volumeTargets[i] = new PooledVolumeTarget(pool, i);
 
+            categoryVolumeSource = new CategoryVolumeSource(dictionaryProvider.VolumeDictionary);
+            categoryVolumeWriter = new CategoryVolumeWriter(dictionaryProvider.VolumeDictionary);
+
             volumeWriteService = new AudioVolumeWriteService(
                 volumeTargets,
-                new CategoryVolumeSource(dictionaryProvider.VolumeDictionary),
+                categoryVolumeSource,
                 duckService
             );
 
@@ -336,6 +341,46 @@ namespace AudioFramework.Core
         public static void PauseAll() => instance?.pauseService?.PauseAll();
 
         public static void UnpauseAll() => instance?.pauseService?.UnpauseAll();
+
+        /// <summary>
+        /// Sets the base volume of an entire category at runtime — this is what a settings-menu slider calls.
+        /// Applies to sounds that are ALREADY playing, not just to new ones: the value is read live while the gain
+        /// is resolved, so the change is audible on the next frame.
+        /// <para>
+        /// Values outside [0, 1] are clamped rather than rejected, so what <see cref="GetCategoryVolume"/> reads
+        /// back is always what the player actually hears. A category with no configured entry is created on the
+        /// fly and reported — that almost always means a missing AudioSourceVolumes asset, not an intended
+        /// runtime addition.
+        /// </para>
+        /// <para>
+        /// The change lives for this session only; the AudioSourceVolumes assets are never written. Persisting the
+        /// player's choice (PlayerPrefs or your own save system) is deliberately left to your game.
+        /// </para>
+        /// </summary>
+        /// <param name="_category">The category whose base volume changes.</param>
+        /// <param name="_volume">The new base volume, clamped to [0, 1].</param>
+        public static void SetCategoryVolume(AudioCategory _category, float _volume)
+        {
+            if (instance == null) return;
+
+            if (instance.categoryVolumeWriter.Set(_category, _volume) == CategoryVolumeWriteOutcome.EntryCreated)
+                Debug.LogWarning($"[AudioTool] Category '{_category}' had no volume entry and was created at runtime. " +
+                                 "Add an AudioSourceVolumes asset for it to your AudioVolumesTransferObject so it " +
+                                 "starts at the value you configured instead of at full volume.");
+        }
+
+        /// <summary>
+        /// The current base volume of a category — what a settings slider shows when the menu opens. Returns 1.0
+        /// for a category that has no configured entry, and also while no manager is alive, so a menu that builds
+        /// itself before the manager wakes up starts at full volume instead of at silence.
+        /// </summary>
+        /// <param name="_category">The category to read.</param>
+        public static float GetCategoryVolume(AudioCategory _category)
+        {
+            if (instance == null) return 1f;
+
+            return instance.categoryVolumeSource.For(_category);
+        }
 
         private void OnDestroy()
         {

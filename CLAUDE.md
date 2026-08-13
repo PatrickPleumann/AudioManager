@@ -130,14 +130,15 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioDuckService                → liefert duck[kategorie]; nur bei EnableDucking überhaupt gebaut
 │   └── AudioSystemConfig           → ist selbst der Regel-Provider (IDuckRuleProvider)
 ├── CategoryVolumeSource            → liefert basis[kategorie], live aus dem VolumeDictionary
+├── CategoryVolumeWriter            → schreibt basis[kategorie] (Settings-Slider), gleiches Dictionary
 ├── AudioVolumeWriteService         → EINZIGER Schreiber von source.volume (basis · fade · duck)
 ├── AudioPauseService               → Pause/Unpause der Pool-Slots (scope-bewusst)
 └── AudioManagerDictionaryProvider  → Volume- & LayerMask-Dictionaries
 ```
 
 Die gesamte Entscheidungslogik liegt in **puren, Unity-freien Klassen** (EditMode-getestet) — Liste und
-Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **140 EditMode-Tests**; die pure Schicht
-umfasst **17 Einheiten** (die Liste in §2 ist deren Single Source).
+Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **147 EditMode-Tests**; die pure Schicht
+umfasst **18 Einheiten** (die Liste in §2 ist deren Single Source).
 
 ---
 
@@ -162,6 +163,11 @@ AudioHandle h = AudioManagerDynamic.CrossfadeSpatial(fromHandle, toADO, sourceTr
 // Pause
 AudioManagerDynamic.PauseAll();
 AudioManagerDynamic.UnpauseAll();
+
+// Laufzeit-Volume pro Kategorie (Settings-Menü) — wirkt sofort, auch auf laufende Sounds.
+// Setter klemmt auf [0,1]; Getter liefert 1.0 für unkonfigurierte Kategorien und ohne lebenden Manager.
+AudioManagerDynamic.SetCategoryVolume(AudioCategory.Music, 0.3f);
+float current = AudioManagerDynamic.GetCategoryVolume(AudioCategory.Music);
 ```
 
 `Crossfade` ist **Komposition** aus `FadeOut(from)` + `FadeIn(to)`, kein Spezial-Pfad.

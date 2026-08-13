@@ -31,6 +31,7 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioDuckService               → liefert duck[kategorie] als ICategoryFactorSource; führt den DuckFactorLedger
 │   └── AudioSystemConfig          → ist selbst der Regel-Provider (IDuckRuleProvider); nur bei EnableDucking gebaut
 ├── CategoryVolumeSource           → liefert basis[kategorie] als ICategoryFactorSource, live aus dem VolumeDictionary
+├── CategoryVolumeWriter           → schreibt basis[kategorie] (Settings-Slider); Gegenstück zur Source, gleiches Dictionary
 ├── AudioVolumeWriteService        → EINZIGER Schreiber von source.volume; kombiniert die Faktoren über IVolumeTarget[]
 ├── AudioPauseService              → Pause/Unpause der Pool-Slots (global, scope-bewusst)
 └── AudioManagerDictionaryProvider → Volume- & LayerMask-Dictionaries
@@ -73,6 +74,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `PoolSlotAvailability` | „Slot frei?" (still + Busy-Fenster abgelaufen + nicht pausiert) |
 | `AudioHandleValidator` | Handle-Currency: Bounds + Generation |
 | `CategoryVolumeSource` | Basis-Gain einer Kategorie aus dem `VolumeDictionary` — **live** gelesen (Slider wirkt sofort), ohne Eintrag `1.0`, bewusst ohne Clamp |
+| `CategoryVolumeWriter` | Schreibseite desselben `VolumeDictionary` (Settings-Slider): klemmt auf `[0,1]` **an der API** (Read-Back-Ehrlichkeit), legt eine unbekannte Kategorie an und meldet das als `CategoryVolumeWriteOutcome` |
 | `VolumeResolver` | Stufe-1-Gain: `clamp01(basis · fade · duck)` |
 | `DuckEnvelope` | Duck-Glide pro Frame (Attack beim Tiefer-Ducken, Release zurück) |
 | `DuckTargetPolicy` | aktive Kategorien + Paar-Faktoren → `duck[kategorie]` (`min`-Stacking, kein Selbst-Duck) |
