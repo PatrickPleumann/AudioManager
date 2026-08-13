@@ -333,19 +333,28 @@ kennt keine Tokens — vollständige Interface-Abstraktion hinter `IAudioWallChe
 
 ## 14. Singleton & Lebensdauer
 
-- Mehrere Instanzen werden in `Awake` erkannt und zerstört (mit Warning).
+- **Der Manager ist persistent** (`DontDestroyOnLoad`, gesetzt in `MakePersistentAcrossScenes` direkt nach
+  `instance = this` — also nur für die Instanz, die tatsächlich übernimmt). Unity wendet das nur auf
+  **Root**-GameObjects an; liegt der Manager als Kind, wird das erkannt und mit Handlungsanweisung gemeldet,
+  statt still wirkungslos zu bleiben.
+- **Ein Duplikat zerstört nur seine eigene Komponente** (`Destroy(this)`), **nie** das GameObject. Der Manager
+  kann sich sein Objekt mit Nutzer-Skripten teilen — das ganze Objekt für ein *erwartetes* Duplikat abzuräumen
+  wäre Datenverlust. Preis: ein leeres GameObject bleibt stehen. Bewusst so.
+- **Ein Manager pro Szene ist der RICHTIGE Einbau** (sonst lässt sich eine Szene nicht isoliert starten). Mit
+  der Persistenz heißt das: Ab der zweiten Szene trifft der Duplikat-Pfad bei **jedem** Laden zu. Er ist
+  deshalb **still**. Gewarnt wird nur, wenn zwei Manager in *derselben* Szene liegen — dafür merkt sich der
+  Manager seine `originScene`, **bevor** er persistent wird (danach meldet `gameObject.scene` nur noch Unitys
+  interne „DontDestroyOnLoad"-Szene, ein Vergleich wäre also immer „verschiedene Szene").
+- Ein Duplikat mit **abweichender** `AudioSystemConfig` bekommt eine Warnung: seine Config wird ignoriert, weil
+  der zuerst geladene Manager samt seiner Config weiterläuft.
 - `OnDestroy` räumt **nur**, wenn es die echte Instanz ist (`if (instance != this) return;`) — sonst würde ein
   am Frame-Ende zerstörtes Duplikat (z. B. additives Szenenladen) die statische Referenz auf die *lebende*
   Instanz nullen.
-- Vorbedingungen (Config, AudioListener) werden **vor** `instance = this` geprüft → Invariante:
-  `instance != null` ⟺ voll initialisiert.
-
-> ⚠️ **Offener Punkt — Szenen-Persistenz:** Der Manager ruft aktuell **kein** `DontDestroyOnLoad` (im
-> gesamten Projekt nicht vorhanden). Die ausgelieferte User-Doku beschreibt ihn aber als
-> „`DontDestroyOnLoad`-Singleton, der Szenenwechsel überlebt". **Code und Doku widersprechen sich hier.**
-> Die Entscheidung (Persistenz nachrüsten vs. Doku korrigieren) steht offen — siehe BACKLOG.
-> Der Rest von Abschnitt 15 (Call-statt-Event) bleibt davon inhaltlich unberührt: die Argumentation gilt
-> für einen langlebigen Owner und wird durch echte Persistenz nur *stärker*, nicht hinfällig.
+- **Vorbedingung ist allein die Config:** Sie wird **vor** `instance = this` geprüft → Invariante:
+  `instance != null` ⟺ voll initialisiert. Ein fehlender **AudioListener** ist bewusst **keine** Vorbedingung
+  mehr (nur eine Warnung): Das saubere Muster für Persistenz ist eine schlanke Bootstrap-Szene, die ihre Level
+  — und damit die Kamera — erst danach lädt. `SceneAudioListenerProvider` kommt mit `null` als Startwert klar
+  und löst beim ersten Zugriff selbst auf.
 
 ---
 

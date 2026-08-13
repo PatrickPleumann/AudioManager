@@ -47,8 +47,9 @@ namespace AudioFramework.Services.Following
                         pool[i].Source.Stop();
                         wallCheckService.StopActiveCheck(i);
 #if UNITY_EDITOR
-                        Debug.LogWarning($"[AudioTool] A sound's follow target was destroyed while still playing (pool slot {i}). " +
-                            "Sound stopped. If you need to control when it ends, play it with a CanHandleAudioSource handle and call Stop().");
+                        Debug.Log($"[AudioTool] A following sound stopped because its emitter was destroyed (pool slot {i}). " +
+                            "On a scene change this is the expected course. If it happened mid-scene and you wanted the " +
+                            "sound to outlive its emitter, play it without Follow Emitter, or hold a handle and stop it yourself.");
 #endif
                     }
                     poolAcquisitionService.ResetSlotBusy(i);

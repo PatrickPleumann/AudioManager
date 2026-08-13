@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 using AudioFramework.Configuration;
 using AudioFramework.Services.WallCheck;
@@ -34,12 +35,28 @@ namespace AudioFramework.Core
         private AudioDuckService duckService;
         private AudioVolumeWriteService volumeWriteService;
 
+        /// <summary>
+        /// The scene this manager was loaded with, captured BEFORE it is made persistent. Once
+        /// <see cref="MakePersistentAcrossScenes"/> has run, Unity has moved the GameObject into its internal
+        /// "DontDestroyOnLoad" scene, so <c>gameObject.scene</c> no longer answers "where did I come from?" — and a
+        /// later duplicate could never be told apart from an expected one. Do not move this assignment below it.
+        /// </summary>
+        private Scene originScene;
+
+        /// <summary>
+        /// Shown when the static API is called with no manager alive. Names both fixes, because with a persistent
+        /// manager there are two valid setups: one manager per scene, or a single one in the first scene. The
+        /// second is exactly what produces this message when a later scene is play-tested on its own.
+        /// </summary>
+        private const string NoManagerWarning =
+            "[AudioTool] No AudioManagerDynamic found. Add one to this scene, or enter play mode from the scene " +
+            "that has it — the manager survives scene loads, so a single one in your first scene covers the whole game.";
+
         private void Awake()
         {
             if (instance != null)
             {
-                Debug.LogWarning("[AudioTool] Multiple AudioManagerDynamic instances detected. Destroying duplicate.");
-                Destroy(gameObject);
+                DestroySelfAsDuplicate();
                 return;
             }
             if (systemConfig == null)
@@ -52,11 +69,13 @@ namespace AudioFramework.Core
             AudioListener audioListener = FindFirstObjectByType<AudioListener>();
             if (audioListener == null)
             {
-                Debug.LogError("[AudioTool] No AudioListener found in the scene (usually on the Main Camera). AudioManager is disabled.", this);
-                enabled = false;
-                return;
+                Debug.LogWarning("[AudioTool] No AudioListener found yet (it usually sits on the Main Camera). " +
+                                 "The manager keeps running and picks one up by itself as soon as it appears — " +
+                                 "this is normal for a bootstrap scene that loads its levels afterwards. Until " +
+                                 "then 3D sounds have nothing to be positioned against; 2D sounds are unaffected.", this);
             }
 
+            originScene = gameObject.scene;
             instance = this;
             MakePersistentAcrossScenes();
 
@@ -114,6 +133,48 @@ namespace AudioFramework.Core
         }
 
         /// <summary>
+        /// Handles a second manager meeting the one that is already running. One manager per scene is the CORRECT
+        /// setup — without it a scene cannot be play-tested on its own — so with a persistent manager this path runs
+        /// on every single scene load. It therefore stays SILENT for that case; warning there would train the user
+        /// to ignore this tool's console output. Only two managers in the same scene are a real mistake.
+        /// <para>
+        /// Removes only this COMPONENT whenever the GameObject carries anything else: the manager may share its
+        /// object with the user's own scripts, and tearing that down over an expected duplicate would delete their
+        /// work. A GameObject holding nothing but this component — the recommended setup — is removed as a whole,
+        /// so the recommended case leaves no empty leftover in the hierarchy either.
+        /// </para>
+        /// </summary>
+        private void DestroySelfAsDuplicate()
+        {
+            if (gameObject.scene == instance.originScene)
+            {
+                Debug.LogWarning($"[AudioTool] Two AudioManagerDynamic components exist in the scene " +
+                                 $"'{gameObject.scene.name}'. Only the first one runs, this one is removed. " +
+                                 "Keep a single manager per scene.", this);
+            }
+            else if (systemConfig != null && systemConfig != instance.systemConfig)
+            {
+                Debug.LogWarning($"[AudioTool] The AudioManagerDynamic in '{gameObject.scene.name}' points at a " +
+                                 $"different AudioSystemConfig ('{systemConfig.name}') than the manager already " +
+                                 $"running ('{instance.systemConfig.name}'). The running one keeps its config: the " +
+                                 "manager survives scene loads, so the first config that loads is the one in use.", this);
+            }
+
+            const int transformPlusThisComponent = 2;
+
+            bool objectExistsOnlyForThisManager = transform.childCount == 0
+                                                  && GetComponents<Component>().Length <= transformPlusThisComponent;
+
+            if (objectExistsOnlyForThisManager)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Destroy(this);
+        }
+
+        /// <summary>
         /// Lets the manager — and with it the pooled AudioSources, which are its children — survive a scene change, so
         /// music and ambience continue across a load instead of being cut off mid-clip. Called only for the instance
         /// that actually takes over, so a duplicate or a misconfigured manager is never made immortal.
@@ -159,7 +220,7 @@ namespace AudioFramework.Core
         {
             if (instance == null)
             {
-                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                Debug.LogWarning(NoManagerWarning);
                 return AudioHandle.Invalid;
             }
             return instance.playbackService.DispatchAudio(_data, _source);
@@ -187,7 +248,7 @@ namespace AudioFramework.Core
         {
             if (instance == null)
             {
-                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                Debug.LogWarning(NoManagerWarning);
                 return AudioHandle.Invalid;
             }
             return instance.playbackService.DispatchAudioNonSpatial(_data);
@@ -205,7 +266,7 @@ namespace AudioFramework.Core
         {
             if (instance == null)
             {
-                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                Debug.LogWarning(NoManagerWarning);
                 return AudioHandle.Invalid;
             }
 
@@ -249,7 +310,7 @@ namespace AudioFramework.Core
         {
             if (instance == null)
             {
-                Debug.LogWarning("[AudioTool] No AudioManagerDynamic found in scene.");
+                Debug.LogWarning(NoManagerWarning);
                 return AudioHandle.Invalid;
             }
 

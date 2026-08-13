@@ -35,7 +35,7 @@
 ### Prerequisites
 
 - Unity 6 or higher
-- An **AudioListener** in the scene (by default on the Main Camera). Without an AudioListener the `AudioManagerDynamic` disables itself and logs an error.
+- An **AudioListener** in the scene (by default on the Main Camera). If none exists at startup the `AudioManagerDynamic` logs a warning but keeps running, and picks the listener up automatically as soon as one appears — so a bootstrap scene that loads its levels afterwards works too. Until then 3D sounds have nothing to be positioned against; 2D sounds are unaffected.
 - **UniTask** (version **2.3.0** or higher) — recommended, must be installed separately:
   [https://github.com/Cysharp/UniTask](https://github.com/Cysharp/UniTask)
   *(If UniTask is not installed, or an older version is present, the tool automatically switches to the Coroutine variant. It works fully but is not recommended.)*
@@ -44,7 +44,19 @@
 
 ### Step 1 — Add AudioManagerDynamic to the scene
 
-Create an empty GameObject in your scene and add the `AudioManagerDynamic` component. This object is the central entry point of the tool and must be present **once per scene**. Additional instances are automatically detected and destroyed.
+Create an empty GameObject in your scene and add the `AudioManagerDynamic` component. This object is the central entry point of the tool.
+
+> **Important:** The GameObject must sit at the **top level** of the hierarchy, i.e. not be a child of another object. Otherwise Unity's `DontDestroyOnLoad` does not apply and the manager will not survive a scene change — the tool points this out with a message should it happen.
+
+**With multiple scenes:** The AudioManager deliberately survives scene changes so that music and ambience keep playing across a load. This leaves you with two valid setups:
+
+| | One manager in **every** scene | One manager in the **first scene** only |
+|---|---|---|
+| Starting a single scene directly | always works | only via the first scene |
+| On a scene change | the new scene's manager notices the running one and removes itself silently | nothing to do |
+| Recommended for | the normal case | bootstrap scenes that load their levels afterwards |
+
+**Recommendation: one manager per scene** — only then can every scene be started and tested on its own in the Editor. Multiple managers across different scenes are explicitly **not** an error: the one loaded first stays in control, including its System Config, and every further one removes itself silently. Two managers in the **same** scene, however, are a setup mistake and are reported with a warning.
 
 ---
 

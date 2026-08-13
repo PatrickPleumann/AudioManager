@@ -35,7 +35,7 @@
 ### Voraussetzungen
 
 - Unity 6 oder höher
-- Ein **AudioListener** in der Szene (standardmäßig auf der Main Camera). Ohne AudioListener deaktiviert sich der `AudioManagerDynamic` selbst und gibt einen Fehler aus.
+- Ein **AudioListener** in der Szene (standardmäßig auf der Main Camera). Fehlt er beim Start, warnt der `AudioManagerDynamic`, läuft aber weiter und übernimmt den Listener automatisch, sobald einer auftaucht — so funktioniert auch eine Bootstrap-Szene, die ihre Level erst danach lädt. Bis dahin fehlt 3D-Sounds der Bezugspunkt für die Positionierung; 2D-Sounds sind nicht betroffen.
 - **UniTask** (ab Version **2.3.0**) — empfohlen, muss separat installiert werden:
   [https://github.com/Cysharp/UniTask](https://github.com/Cysharp/UniTask)
   *(Ist UniTask nicht oder in einer älteren Version installiert, schaltet das Tool automatisch auf die Coroutine-Variante um. Diese funktioniert vollständig, wird aber nicht empfohlen.)*
@@ -44,7 +44,19 @@
 
 ### Schritt 1 — AudioManagerDynamic in die Szene einbinden
 
-Erstelle ein leeres GameObject in deiner Szene und füge die Komponente `AudioManagerDynamic` hinzu. Dieses Objekt ist der zentrale Einstiegspunkt des Tools und muss **einmal pro Szene** vorhanden sein. Mehrfach vorhandene Instanzen werden automatisch erkannt und zerstört.
+Erstelle ein leeres GameObject in deiner Szene und füge die Komponente `AudioManagerDynamic` hinzu. Dieses Objekt ist der zentrale Einstiegspunkt des Tools.
+
+> **Wichtig:** Das GameObject muss auf der **obersten Ebene** der Hierarchie liegen, also kein Kind eines anderen Objekts sein. Andernfalls greift Unitys `DontDestroyOnLoad` nicht und der Manager überlebt keinen Szenenwechsel — das Tool weist im Fall der Fälle mit einer Meldung darauf hin.
+
+**Bei mehreren Szenen:** Der AudioManager überlebt Szenenwechsel bewusst, damit Musik und Ambient über einen Ladevorgang hinweg weiterlaufen. Daraus ergeben sich zwei gültige Varianten:
+
+| | Ein Manager in **jeder** Szene | Ein Manager nur in der **Startszene** |
+|---|---|---|
+| Einzelne Szene direkt starten | funktioniert immer | nur über die Startszene |
+| Beim Szenenwechsel | der Manager der neuen Szene erkennt den bereits laufenden und entfernt sich lautlos | nichts zu tun |
+| Empfohlen für | den Normalfall | Bootstrap-Szenen, die ihre Level nachladen |
+
+**Empfehlung: ein Manager pro Szene** — nur so lässt sich jede Szene einzeln im Editor starten und testen. Mehrere Manager über verschiedene Szenen hinweg sind ausdrücklich **kein** Fehler: Der zuerst geladene behält die Kontrolle inklusive seiner System Config, jeder weitere entfernt sich still. Zwei Manager in **derselben** Szene sind dagegen ein Einbaufehler und werden mit einer Warnung gemeldet.
 
 ---
 
