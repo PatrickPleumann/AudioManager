@@ -133,7 +133,7 @@ Eine einzige Demo-Szene als Baukasten; pro Modul nur das jeweils Nötige aktivie
 - [ ] **gebaut**
 - **Aha:** „Settings-Slider regelt eine ganze Sound-Kategorie live."
 - **Bühne:** mehrere Sounds verschiedener Kategorien gleichzeitig + UI-Slider pro Kategorie (Music/SFX/Ambient).
-- **ADO/Config:** Sounds verschiedener `Current Type`; `AudioSourceVolume`-Assets pro Kategorie.
+- **ADO/Config:** Sounds verschiedener `Current Type`; ein `Category Volumes`-Eintrag pro Kategorie in der Config.
 - **API:** Laufzeit-Override des Kategorie-Volumes (über das Volume-Dictionary/Asset).
 - **Sichtbar:** Slider ziehen → zugehöriger Volume-Balken folgt sofort; Caption „One slider = whole category".
 

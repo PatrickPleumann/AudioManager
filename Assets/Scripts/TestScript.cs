@@ -45,13 +45,6 @@ public class TestScript : MonoBehaviour
     public AudioDataObject BehindWall;
     
     private AudioHandle behindWallHandle;
-    
-    [Space]
-    [Header("Audio Volumes")]
-    public AudioSourceVolumes AmbientVol;
-    public AudioSourceVolumes PlayerVol;
-    public AudioSourceVolumes SFXVol;
-    public AudioSourceVolumes BehindWallVol;
 
     [Space]
     [Header("Test Transforms")]
@@ -61,11 +54,16 @@ public class TestScript : MonoBehaviour
     [SerializeField] private GameObject walls;
 
 
-    private void Awake()
+    /// <summary>
+    /// Applies the inspector test volumes through the public runtime API. Deliberately in Start, not Awake:
+    /// SetCategoryVolume needs a live manager, and Awake order between two components is undefined — from
+    /// Start, every Awake in the scene has already run.
+    /// </summary>
+    private void Start()
     {
-        AmbientVol.Volume = AmbientVolume;
-        PlayerVol.Volume = PlayerVolume;
-        SFXVol.Volume = SFXVolume;
+        AudioManagerDynamic.SetCategoryVolume(AudioCategory.Ambient, AmbientVolume);
+        AudioManagerDynamic.SetCategoryVolume(AudioCategory.Player, PlayerVolume);
+        AudioManagerDynamic.SetCategoryVolume(AudioCategory.SFX, SFXVolume);
     }
     private void OnEnable()
     {

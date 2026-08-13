@@ -82,7 +82,7 @@ namespace AudioFramework.Core
             MakePersistentAcrossScenes();
 
             dictionaryProvider.FillLayerMaskDictionaryWithLayerRelatedValues(systemConfig.WallDampingPerLayer);
-            dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.TransferObject);
+            dictionaryProvider.FillDictionaryWithKeysAndValues(systemConfig.CategoryVolumes);
 
             IAudioListenerProvider listenerProvider = new SceneAudioListenerProvider(audioListener);
 
@@ -349,11 +349,11 @@ namespace AudioFramework.Core
         /// <para>
         /// Values outside [0, 1] are clamped rather than rejected, so what <see cref="GetCategoryVolume"/> reads
         /// back is always what the player actually hears. A category with no configured entry is created on the
-        /// fly and reported — that almost always means a missing AudioSourceVolumes asset, not an intended
-        /// runtime addition.
+        /// fly and reported — that almost always means a missing entry in the config's category volume list, not
+        /// an intended runtime addition.
         /// </para>
         /// <para>
-        /// The change lives for this session only; the AudioSourceVolumes assets are never written. Persisting the
+        /// The change lives for this session only; the AudioSystemConfig asset is never written. Persisting the
         /// player's choice (PlayerPrefs or your own save system) is deliberately left to your game.
         /// </para>
         /// </summary>
@@ -365,8 +365,8 @@ namespace AudioFramework.Core
 
             if (instance.categoryVolumeWriter.Set(_category, _volume) == CategoryVolumeWriteOutcome.EntryCreated)
                 Debug.LogWarning($"[AudioTool] Category '{_category}' had no volume entry and was created at runtime. " +
-                                 "Add an AudioSourceVolumes asset for it to your AudioVolumesTransferObject so it " +
-                                 "starts at the value you configured instead of at full volume.");
+                                 "Add it to the category volume list in your AudioSystemConfig so it starts at the " +
+                                 "value you configured instead of at full volume.");
         }
 
         /// <summary>

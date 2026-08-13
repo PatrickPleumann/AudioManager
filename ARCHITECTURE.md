@@ -93,6 +93,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `DuckTargetPolicy` | aktive Kategorien + Paar-Faktoren → `duck[kategorie]` (`min`-Stacking, kein Selbst-Duck) |
 | `DuckRuleFlattening` | nested `DuckRule` → flache `DuckPair`-Liste (Fill-Stil, GC-frei) |
 | `DuckConfigValidation` | Widerspruch zwischen Ducking-Master-Schalter und konfigurierten Regeln (beide Richtungen) |
+| `CategoryVolumeCoverage` | Volume-Liste einer Config gegen alle `AudioCategory`-Werte: fehlend · doppelt · auf 0 (Duplikat entscheidet über den **ersten** Eintrag, spiegelt keep-first) |
 | `DuckFactorLedger` | Duck-Zustand **über die Zeit**: wer wird diesen Frame gestept, Ziel via `DuckTargetPolicy`, Glide via `DuckEnvelope`, Retire bei `1.0` |
 
 ---
@@ -107,13 +108,13 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `Core/AudioCategory.cs` | Enum — Lautstärke-Kategorien (Beispielwerte, vom Nutzer anzupassen) |
 | `Core/WallDampingLayer.cs` | Serialisiert: Layer + `WallDampingFactor` (`[Range(0,1)]`) |
 | `Data/AudioDataObject.cs` | ScriptableObject — Konfiguration pro Sound (ADO, „Control Surface") |
-| `Data/AudioSourceVolumes.cs` | ScriptableObject — Lautstärke pro Kategorie |
-| `Data/AudioVolumesTransferObject.cs` | Bündelt alle AudioSourceVolume-Assets (nur eine Instanz) |
 | `Data/SoundRequest.cs` | Readonly struct `{ Ado, Source }` — Payload für `PlaySpatial(SoundRequest)` |
 | `Config/AudioSystemConfig.cs` | ScriptableObject — zentrale System-Konfiguration |
+| `Config/CategoryVolume.cs` | Serialisiert: `{ Kategorie, Volume }` — die Basis-Lautstärke, in der Config statt in Einzel-Assets |
 | `Config/DuckRule.cs` · `DuckTarget.cs` | Serialisierte Duck-Regeln: Trigger-Kategorie → Ziele `{ Kategorie, Faktor }` |
 | `Config/CategoryMixerRoute.cs` | **Reservierter Stufe-2-Seam** (Kategorie → AudioMixerGroup) — deklariert, noch nicht gelesen |
 | `Config/DuckConfigIssue.cs` · `DuckConfigValidation.cs` | Inspector-Guard: Master-Schalter vs. Regeln (Entscheidung pur, Wortlaut im `OnValidate`) |
+| `Config/CategoryVolumeCoverage.cs` | Abdeckungs-Verdikt der Volume-Liste (Entscheidung pur, Wortlaut im Config-Inspector) |
 | `Interfaces/IAudioWallCheckService.cs` | Strategy-Seam für WallCheck (UniTask/Coroutine) |
 | `Interfaces/IAudioListenerProvider.cs` | Seam gegen stale Listener-Transform (`TryGetPosition`) |
 | `Interfaces/IDuckRuleProvider.cs` | Seam für die Duck-Konfiguration (Regeln + Attack/Release-Rate) |

@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 using AudioFramework.Core;
-using AudioFramework.Data;
 using AudioFramework.Interfaces;
 namespace AudioFramework.Configuration
 {
@@ -42,6 +41,13 @@ namespace AudioFramework.Configuration
             "value tracks faster; 0 disables smoothing (the cutoff snaps instantly). Tune by ear — ~50000 transitions " +
             "a typical wall in roughly a third of a second.")]
         public float OcclusionSmoothingSpeed = 50000f;
+        [Space]
+
+        [Header(" --- Category volumes --- ")]
+        [Tooltip("The base volume per category, read once when the manager wakes up. A category that is not " +
+                 "listed here plays at full volume. Changing a value at runtime is done through " +
+                 "AudioManagerDynamic.SetCategoryVolume — this list is the starting point, not a live value.")]
+        [SerializeField] private CategoryVolume[] categoryVolumes;
         [Space]
 
         [Header(" --- Wallcheck Interval --- ")]
@@ -84,14 +90,10 @@ namespace AudioFramework.Configuration
         [Space]
 
         [Header(" --- References ---")]
-        [Tooltip("This transfer object contains all the audio source volumes which will be handled automatically by the " +
-                 " [AudioTool]. Double click on this element to see which audio source volumes are handled at the moment")]
-        public AudioVolumesTransferObject TransferObject;
-        [Space]
-
         [Tooltip("This is simply the basic 3D Audio Object which will be pooled and used for this [AudioTool]")]
         public GameObject AudioGameObjectPrefab;
 
+        public IReadOnlyList<CategoryVolume> CategoryVolumes => categoryVolumes;
         public IReadOnlyList<DuckRule> Rules => duckRules;
         public float AttackRate => attackRate;
         public float ReleaseRate => releaseRate;

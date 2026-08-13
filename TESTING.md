@@ -344,6 +344,13 @@ Float-Drift. *(Modell-Begründung → [`ARCHITECTURE.md`](ARCHITECTURE.md) §9.)
 ### 9 — `AudioManagerDictionaryProvider.FillDictionaryWithKeysAndValues` → **Exzellent**
 **Vertrag:** `CurrentAudioType → Volume`; drei null/leer-Guards; **null-Eintrag = skip-but-continue**; Duplikat = keep-first.
 
+> ⚠️ **Dieser Eintrag beschreibt den Stand vor dem 2026-08-14.** Mit dem Umzug der Lautstärken in die
+> `AudioSystemConfig` nimmt die Methode eine `IReadOnlyList<CategoryVolume>` statt eines Transfer-Objekts:
+> die drei Guards sind zu einem zusammengefallen, und **der unten gelobte null-Eintrag-Diskriminator
+> existiert nicht mehr** — ein Struct-Element kann nicht null sein. Verbleibend sind 4 Tests; der
+> Duplikat-Test wurde beim Umzug per Mutation (`TryAdd` → `[key] =`) erneut als scharf bestätigt.
+> Der Text darunter bleibt als Snapshot stehen; das nächste Audit ersetzt ihn.
+
 - **Mutation — die null-Eintrag-Logik ist ideal diskriminierend gebaut:** `NullEntry_IsSkipped_RestStillMapped` setzt das `null` **vor** einen gültigen Eintrag. Mit `break` statt `continue` bliebe Music ungemappt (Count 0); ohne null-Check → NRE. Beides fällt. ✔✔
 - Drei Guard-Branches (null transfer / null array / leer) einzeln getestet. ✔ keep-first gepinnt. ✔
 - **Sauberkeit:** `TearDown` mit `DestroyImmediate` für die erzeugten ScriptableObjects — vorbildlich (kein Native-Leak in EditMode).

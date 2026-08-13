@@ -17,8 +17,8 @@ namespace AudioFramework.Services.Mixing
     /// An unconfigured category is CREATED rather than rejected — a settings menu is the wrong place to throw at
     /// a misconfiguration — and the creation is reported so the caller can warn about it.
     ///
-    /// Deliberately writes ONLY the dictionary, never the AudioSourceVolumes asset: writing the ScriptableObject
-    /// would permanently rewrite the user's assets from play mode.
+    /// Deliberately writes ONLY the dictionary, never the AudioSystemConfig asset: writing the ScriptableObject
+    /// would permanently rewrite the user's configuration from play mode.
     /// </summary>
     public class CategoryVolumeWriter
     {

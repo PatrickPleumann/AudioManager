@@ -26,10 +26,18 @@ MonoBehaviour:
     WallDampingFactor: 0.82
   - SingleLayer: 4
     WallDampingFactor: 0.876
+  categoryVolumes:
+  - Category: 1
+    Volume: 1
+  - Category: 3
+    Volume: 0.5
+  - Category: 4
+    Volume: 0.1
+  - Category: 5
+    Volume: 0.5
   EnableDucking: 0
   duckRules: []
   attackRate: 5
   releaseRate: 2
   reservedMixerRoutes: []
-  TransferObject: {fileID: 11400000, guid: 843c919408375934eb35da73c106976f, type: 2}
   AudioGameObjectPrefab: {fileID: 377295153041213637, guid: ad4150fbf24cd714685ef117c5421b69, type: 3}

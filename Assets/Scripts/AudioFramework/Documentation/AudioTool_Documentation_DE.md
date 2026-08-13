@@ -16,7 +16,7 @@
 
 - **Fades & Crossfades eingebaut** — Sounds lassen sich über eine konfigurierbare Dauer ein- und ausblenden oder ineinander überblenden (Crossfade). Ideal für Musikwechsel, sanfte Ambient-Übergänge oder das weiche Starten/Stoppen von Loops.
 
-- **Organisiertes Volumen-System** — Sounds werden kategorisiert (z.B. Ambient, SFX, Player). Jede Kategorie hat ein eigenes `AudioSourceVolume`-Asset dessen Wert zur Laufzeit überschrieben werden kann — ideal für Lautstärke-Slider in einem Einstellungsmenü.
+- **Organisiertes Volumen-System** — Sounds werden kategorisiert (z.B. Ambient, SFX, Player). Die Lautstärke jeder Kategorie steht als ein Eintrag in der `AudioSystemConfig` und kann zur Laufzeit überschrieben werden — ideal für Lautstärke-Slider in einem Einstellungsmenü.
 
 - **2D- und 3D-Sounds** — Räumliche Sounds (`PlaySpatial`) werden an einer Weltposition abgespielt, distanzabhängig gedämpft und optional wand-geprüft. Nicht-räumliche Sounds (`PlayNonSpatial`) spielen überall gleich laut — ideal für UI-Klicks, Musik oder globale Stinger.
 
@@ -87,6 +87,14 @@ Das `AudioSystemConfig`-Asset ist die zentrale Konfigurationsdatei des Tools. Al
 
 ---
 
+### Category Volumes
+
+| Feld | Beschreibung |
+|---|---|
+| **Category Volumes** | Die Basis-Lautstärke pro Kategorie. Jeder Eintrag besteht aus **Category** (ein Wert aus deinem `AudioCategory`-Enum) und **Volume** (0.0 – 1.0). Eine Kategorie, die hier nicht aufgeführt ist, spielt auf voller Lautstärke. Führe jede Kategorie höchstens einmal auf — bei einem Duplikat gewinnt der erste Eintrag. Die Liste wird einmalig beim Start gelesen; zur Laufzeit ändert `SetCategoryVolume(...)` die Werte, nicht diese Liste. |
+
+---
+
 ### Wall Check Interval
 
 | Feld | Beschreibung | Empfehlung |
@@ -110,7 +118,6 @@ Eine Liste von Unity-Layern die als Wände gelten, jeweils mit einem Dämpfungsf
 
 | Feld | Beschreibung |
 |---|---|
-| **Transfer Object** | Das mitgelieferte `AudioVolumesTransferObject`-Asset. Enthält alle `AudioSourceVolume`-Assets die vom System verwaltet werden. |
 | **Audio GameObject Prefab** | Das mitgelieferte Audio-Source-Prefab. Wird für jeden Pool-Slot instanziiert. Dieses Feld nicht verändern. |
 
 ---
@@ -180,37 +187,28 @@ namespace AudioFramework.Core
 }
 ```
 
-> **Hinweis:** Einmal angelegte Enum-Werte sollten nicht in ihrer Reihenfolge verändert werden, da dies die betroffenen `AudioDataObject`- und `AudioSourceVolume`-Assets beeinflusst. Neue Werte können jederzeit bedenkenlos am Ende hinzugefügt werden. Der erste Enum-Wert muss immer explizit auf `= 1` gesetzt werden.
+> **Hinweis:** Einmal angelegte Enum-Werte sollten nicht in ihrer Reihenfolge verändert werden, da dies die betroffenen `AudioDataObject`-Assets und die Lautstärke-Liste in der Config beeinflusst. Neue Werte können jederzeit bedenkenlos am Ende hinzugefügt werden. Der erste Enum-Wert muss immer explizit auf `= 1` gesetzt werden.
 
 ---
 
-### Schritt 4 — AudioSourceVolume Assets anlegen
+### Schritt 4 — Kategorie-Lautstärken eintragen
 
-Das Tool verwaltet Lautstärken über `AudioSourceVolume`-Assets. Jedes Asset repräsentiert eine Lautstärke-Kategorie aus `AudioCategory`.
+Die Lautstärken leben direkt in deiner `AudioSystemConfig` — unter **Category Volumes**. Ein Eintrag pro Kategorie, mehr braucht es nicht.
 
-Erstelle für jede gewünschte Kategorie ein neues Asset über:
-> **Rechtsklick im Project-Fenster → Create → Scriptable Objects → AudioSourceVolume**
+Klicke auf **+**, wähle die **Category** und stelle das **Volume** ein:
 
 | Feld | Beschreibung |
 |---|---|
-| **Current Audio Type** | Die Kategorie dieses Assets — muss mit dem `AudioCategory`-Wert im zugehörigen `AudioDataObject` übereinstimmen. |
-| **Volume** | Der Standardlautstärkewert (0.0 – 1.0). Dieser Wert kann zur Laufzeit überschrieben werden, z.B. durch einen Einstellungs-Slider. |
+| **Category** | Die Kategorie dieses Eintrags — dieselben Werte, die du in Schritt 3 im `AudioCategory`-Enum definiert hast. |
+| **Volume** | Der Standardlautstärkewert (0.0 – 1.0). Zur Laufzeit überschreibbar, z.B. durch einen Einstellungs-Slider (siehe `SetCategoryVolume` in der API-Referenz). |
 
----
-
-### Schritt 5 — AudioVolumesTransferObject befüllen
-
-Das `AudioVolumesTransferObject` ist bereits im mitgelieferten `AudioSystemConfig`-Asset eingetragen und muss nicht neu angelegt werden.
-
-Klicke im Inspector auf das `AudioVolumesTransferObject` und drücke den Button **Populate Array**. Das System sucht automatisch alle vorhandenen `AudioSourceVolume`-Assets im Projekt und trägt sie ein.
-
-> **Wichtig:** Dieser Schritt muss jedes Mal wiederholt werden, wenn neue `AudioSourceVolume`-Assets hinzugefügt werden.
+> **Hinweis:** Eine Kategorie ohne Eintrag spielt auf voller Lautstärke (1.0). Führst du dieselbe Kategorie zweimal auf, gewinnt der erste Eintrag und der zweite wird ignoriert.
 
 ---
 
 ## Wall Check konfigurieren
 
-### Schritt 6 — Unity Layer definieren
+### Schritt 5 — Unity Layer definieren
 
 Der Wall Check nutzt Unity-Layer um zu bestimmen welche Objekte als Wände gelten. Definiere zunächst die gewünschten Layer in Unity:
 > **Edit → Project Settings → Tags and Layers**
@@ -219,7 +217,7 @@ Beispiele für sinnvolle Layer-Namen: `WallThick`, `WallThin`, `WallGlass`.
 
 ---
 
-### Schritt 7 — Per-Layer Wall Damping konfigurieren
+### Schritt 6 — Per-Layer Wall Damping konfigurieren
 
 Öffne das `AudioSystemConfig`-Asset im Inspector. Unter **Per-layer wall damping** kannst du für jeden Wand-Layer einen Dämpfungsfaktor definieren.
 
@@ -242,7 +240,7 @@ Klicke auf **+** um einen neuen Eintrag hinzuzufügen und weise ihm folgende Wer
 
 ---
 
-### Schritt 8 — Minimalwert konfigurieren
+### Schritt 7 — Minimalwert konfigurieren
 
 Das Feld **Min Cutoff Freq Value** im `AudioSystemConfig`-Asset definiert die untere Grenze der Cutoff Frequency. Die Frequenz wird nie unter diesen Wert gesenkt, egal wie viele Wände sich zwischen Sound und Spieler befinden.
 

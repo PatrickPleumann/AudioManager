@@ -16,7 +16,7 @@
 
 - **Built-in fades & crossfades** — Sounds can be faded in and out over a configurable duration, or crossfaded into one another. Ideal for music changes, smooth ambient transitions or softly starting/stopping loops.
 
-- **Organised volume system** — Sounds are categorised (e.g. Ambient, SFX, Player). Each category has its own `AudioSourceVolume` asset whose value can be overwritten at runtime — ideal for volume sliders in a settings menu.
+- **Organised volume system** — Sounds are categorised (e.g. Ambient, SFX, Player). Each category's volume is one entry in the `AudioSystemConfig` and can be overwritten at runtime — ideal for volume sliders in a settings menu.
 
 - **2D and 3D sounds** — Spatial sounds (`PlaySpatial`) play at a world position, are attenuated by distance and optionally wall-checked. Non-spatial sounds (`PlayNonSpatial`) play everywhere at equal level — ideal for UI clicks, music or global stingers.
 
@@ -87,6 +87,14 @@ The `AudioSystemConfig` asset is the central configuration file of the tool. All
 
 ---
 
+### Category Volumes
+
+| Field | Description |
+|---|---|
+| **Category Volumes** | The base volume per category. Each entry consists of **Category** (a value from your `AudioCategory` enum) and **Volume** (0.0 – 1.0). A category that is not listed here plays at full volume. List each category at most once — if one appears twice, the first entry wins. The list is read once at startup; at runtime `SetCategoryVolume(...)` changes the values, not this list. |
+
+---
+
 ### Wall Check Interval
 
 | Field | Description | Recommendation |
@@ -110,7 +118,6 @@ A list of Unity layers that count as walls, each with a damping factor between 0
 
 | Field | Description |
 |---|---|
-| **Transfer Object** | The included `AudioVolumesTransferObject` asset. Contains all `AudioSourceVolume` assets managed by the system. |
 | **Audio GameObject Prefab** | The included audio source prefab. Instantiated for each pool slot. Do not change this field. |
 
 ---
@@ -180,37 +187,28 @@ namespace AudioFramework.Core
 }
 ```
 
-> **Note:** Once defined, enum values should not be reordered as this affects the associated `AudioDataObject` and `AudioSourceVolume` assets. New values can safely be added at the end at any time. The first enum value must always be explicitly set to `= 1`.
+> **Note:** Once defined, enum values should not be reordered as this affects the associated `AudioDataObject` assets and the volume list in the config. New values can safely be added at the end at any time. The first enum value must always be explicitly set to `= 1`.
 
 ---
 
-### Step 4 — Create AudioSourceVolume assets
+### Step 4 — Enter the category volumes
 
-The tool manages volumes through `AudioSourceVolume` assets. Each asset represents a volume category from `AudioCategory`.
+Volumes live directly in your `AudioSystemConfig` — under **Category Volumes**. One entry per category, that is all it takes.
 
-Create a new asset for each desired category via:
-> **Right-click in the Project window → Create → Scriptable Objects → AudioSourceVolume**
+Click **+**, pick the **Category** and set its **Volume**:
 
 | Field | Description |
 |---|---|
-| **Current Audio Type** | The category of this asset — must match the `AudioCategory` value in the corresponding `AudioDataObject`. |
-| **Volume** | The default volume value (0.0 – 1.0). This value can be overwritten at runtime, e.g. by a settings slider. |
+| **Category** | The category of this entry — the same values you defined in the `AudioCategory` enum in Step 3. |
+| **Volume** | The default volume value (0.0 – 1.0). Can be overwritten at runtime, e.g. by a settings slider (see `SetCategoryVolume` in the API reference). |
 
----
-
-### Step 5 — Populate the AudioVolumesTransferObject
-
-The `AudioVolumesTransferObject` is already included in the provided `AudioSystemConfig` asset and does not need to be created manually.
-
-Click on the `AudioVolumesTransferObject` in the Inspector and press the **Populate Array** button. The system will automatically find all existing `AudioSourceVolume` assets in the project and populate the array.
-
-> **Important:** This step must be repeated every time new `AudioSourceVolume` assets are added.
+> **Note:** A category with no entry plays at full volume (1.0). If you list the same category twice, the first entry wins and the second is ignored.
 
 ---
 
 ## Configuring the Wall Check
 
-### Step 6 — Define Unity Layers
+### Step 5 — Define Unity Layers
 
 The Wall Check uses Unity layers to determine which objects count as walls. First define the desired layers in Unity:
 > **Edit → Project Settings → Tags and Layers**
@@ -219,7 +217,7 @@ Examples for useful layer names: `WallThick`, `WallThin`, `WallGlass`.
 
 ---
 
-### Step 7 — Configure Per-Layer Wall Damping
+### Step 6 — Configure Per-Layer Wall Damping
 
 Open the `AudioSystemConfig` asset in the Inspector. Under **Per-layer wall damping** you can define a damping factor for each wall layer.
 
@@ -242,7 +240,7 @@ Click **+** to add a new entry and assign the following values:
 
 ---
 
-### Step 8 — Configure the minimum value
+### Step 7 — Configure the minimum value
 
 The **Min Cutoff Freq Value** field in the `AudioSystemConfig` asset defines the lower limit of the cutoff frequency. The frequency will never drop below this value regardless of how many walls are between the sound and the player.
 

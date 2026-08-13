@@ -26,8 +26,8 @@ namespace AudioFramework.EditorTools
 
     /// <summary>
     /// Everything the inspector needs to know about one AudioDataObject, already resolved: clip counts,
-    /// the flags, and the category volume looked up from the project. Flat and immutable so the wording
-    /// and validation below stay free of Unity API calls.
+    /// the flags, and the category it routes through. Flat and immutable so the wording and validation
+    /// below stay free of Unity API calls.
     /// </summary>
     internal sealed class AudioDataObjectSnapshot
     {
@@ -36,9 +36,6 @@ namespace AudioFramework.EditorTools
         internal int EmptyClipSlots { get; set; }
         internal bool HasDefinedCategory { get; set; }
         internal string CategoryName { get; set; }
-        internal float? CategoryVolume { get; set; }
-        internal string VolumeAssetName { get; set; }
-        internal int VolumeAssetsForCategory { get; set; }
         internal float SpatialBlend { get; set; }
         internal bool FollowEmitter { get; set; }
         internal bool IsOneShot { get; set; }
@@ -90,18 +87,6 @@ namespace AudioFramework.EditorTools
                 findings.Add(new InspectorFinding(InspectorFindingSeverity.Error,
                     "Category is unset or no longer part of AudioCategory. Pick a valid category — otherwise the " +
                     "volume lookup fails at runtime and falls back to 1.0."));
-            else if (!snapshot.CategoryVolume.HasValue)
-                findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
-                    $"No AudioSourceVolumes asset defines '{snapshot.CategoryName}'. Every playback falls back to " +
-                    "volume 1.0 and logs a warning."));
-            else if (snapshot.CategoryVolume.Value <= 0f)
-                findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
-                    $"The '{snapshot.CategoryName}' volume is 0.00, so this sound stays silent."));
-
-            if (snapshot.VolumeAssetsForCategory > 1)
-                findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
-                    $"{snapshot.VolumeAssetsForCategory} AudioSourceVolumes assets define '{snapshot.CategoryName}'. " +
-                    "At runtime the first one loaded wins and the rest are ignored — keep exactly one per category."));
 
             if (snapshot.FollowEmitter && snapshot.SpatialBlend <= 0f)
                 findings.Add(new InspectorFinding(InspectorFindingSeverity.Hint,
@@ -139,10 +124,7 @@ namespace AudioFramework.EditorTools
             if (!snapshot.HasDefinedCategory)
                 return $" at the fallback volume {FallbackVolume:0.00} (no valid category)";
 
-            if (!snapshot.CategoryVolume.HasValue)
-                return $" at the fallback volume {FallbackVolume:0.00} (nothing defines '{snapshot.CategoryName}')";
-
-            return $" at the '{snapshot.CategoryName}' volume of {snapshot.CategoryVolume.Value:0.00}";
+            return $" at the '{snapshot.CategoryName}' volume";
         }
 
         private static string DescribeSpace(AudioDataObjectSnapshot snapshot)

@@ -104,7 +104,7 @@ namespace AudioFramework.EditorTools
             DrawProblems(findings);
 
             DrawClipSection(snapshot, accent);
-            DrawRoutingSection(snapshot, accent);
+            DrawRoutingSection(accent);
             DrawSpaceSection(accent);
             DrawPlaybackSection(accent);
             DrawUnclaimedSection(accent);
@@ -184,9 +184,6 @@ namespace AudioFramework.EditorTools
             AudioCategory category = (AudioCategory)categoryProperty.intValue;
             bool hasDefinedCategory = Enum.IsDefined(typeof(AudioCategory), category);
 
-            CategoryVolumeLocator.CategoryVolume resolved = default;
-            bool hasVolume = hasDefinedCategory && CategoryVolumeLocator.TryResolve(category, out resolved);
-
             return new AudioDataObjectSnapshot
             {
                 AssetName = target.name,
@@ -194,9 +191,6 @@ namespace AudioFramework.EditorTools
                 EmptyClipSlots = CountEmptyClipSlots(),
                 HasDefinedCategory = hasDefinedCategory,
                 CategoryName = hasDefinedCategory ? category.ToString() : null,
-                CategoryVolume = hasVolume ? resolved.Volume : (float?)null,
-                VolumeAssetName = hasVolume ? resolved.AssetName : null,
-                VolumeAssetsForCategory = hasVolume ? resolved.DefiningAssetCount : 0,
                 SpatialBlend = spatialBlendProperty.floatValue,
                 FollowEmitter = followEmitterProperty.boolValue,
                 IsOneShot = isOneShotProperty.boolValue,
@@ -362,50 +356,15 @@ namespace AudioFramework.EditorTools
             StopAudition();
         }
 
-        private void DrawRoutingSection(AudioDataObjectSnapshot snapshot, Color accent)
+        private void DrawRoutingSection(Color accent)
         {
             AudioInspectorSkin.BeginSection("Routing", null, accent);
 
             AudioInspectorSkin.DrawPropertyRow(categoryProperty, "Category",
-                "The bucket this sound belongs to. The matching AudioSourceVolumes asset supplies its base volume.");
-
-            DrawResolvedVolume(snapshot);
+                "The bucket this sound belongs to. Its base volume comes from the category volume list in the " +
+                "AudioSystemConfig the manager is using.");
 
             AudioInspectorSkin.EndSection();
-        }
-
-        private void DrawResolvedVolume(AudioDataObjectSnapshot snapshot)
-        {
-            if (!snapshot.HasDefinedCategory) return;
-
-            Rect row = EditorGUILayout.GetControlRect(false, 18f);
-            Rect label = new Rect(row.x, row.y, EditorGUIUtility.labelWidth, row.height);
-            Rect value = new Rect(row.x + EditorGUIUtility.labelWidth, row.y, row.width - EditorGUIUtility.labelWidth - 60f, row.height);
-            Rect select = new Rect(row.xMax - 56f, row.y, 56f, row.height);
-
-            GUI.Label(label, "Base volume", AudioInspectorSkin.ScaleCaption);
-
-            if (!snapshot.CategoryVolume.HasValue)
-            {
-                GUI.Label(value, "1.00 (fallback — no volume asset)", AudioInspectorSkin.ScaleCaption);
-                return;
-            }
-
-            GUI.Label(value, $"{snapshot.CategoryVolume.Value:0.00}  ·  {snapshot.VolumeAssetName}", AudioInspectorSkin.ScaleCaption);
-
-            if (GUI.Button(select, "Select", EditorStyles.miniButton))
-                SelectVolumeAsset((AudioCategory)categoryProperty.intValue);
-        }
-
-        private static void SelectVolumeAsset(AudioCategory category)
-        {
-            if (!CategoryVolumeLocator.TryResolve(category, out CategoryVolumeLocator.CategoryVolume volume)) return;
-
-            UnityEngine.Object asset = AssetDatabase.LoadMainAssetAtPath(volume.AssetPath);
-            if (asset == null) return;
-
-            Selection.activeObject = asset;
-            EditorGUIUtility.PingObject(asset);
         }
 
         private void DrawSpaceSection(Color accent)
