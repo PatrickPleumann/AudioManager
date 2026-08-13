@@ -14,6 +14,35 @@
 
 # Noch Offen
 
+> ## 👉 Nächster Schritt (Stand 2026-08-13)
+>
+> **Die öffentliche API für den Live-Volume-Slider bauen.** Der vollständige Eintrag mit allen Details steht
+> unter Teil B → 🎯 V1 → Mixer/Bus + Ducking → *„⚠️ Der Live-Volume-Slider ist gebaut, aber nicht bedienbar"*.
+>
+> **Worauf das aufsetzt (alles am 2026-08-13 fertiggestellt, siehe [Erledigt](#erledigt)):** `source.volume` hat
+> jetzt **einen** Schreiber (`AudioVolumeWriteService`); jeder Gain-Faktor wird von einer **eigenen** Einheit
+> aufgelöst (`CategoryVolumeSource` = Basis, `AudioFadeService` = Fade, `AudioDuckService` = Duck), und eine
+> fehlende Quelle steuert `1.0` bei. Die Duck-Konfiguration lebt in der `AudioSystemConfig` (Häkchen
+> `EnableDucking`), die `AudioDuckComponent` ist gelöscht. **Stand: 140 EditMode-Tests, alle grün.**
+>
+> **Warum genau dieser Schritt:** Der Lesepfad ist komplett und test-gesichert — `CategoryVolumeSource` liest das
+> `VolumeDictionary` **live pro Frame** (zwei eingefrorene Tests), der Writer schreibt sofort auf `source.volume`.
+> Eine Wertänderung wäre also unmittelbar hörbar. **Nur kann sie niemand auslösen:** Das Dictionary sitzt in einem
+> privaten Feld von `AudioManagerDynamic`, es gibt keine öffentliche API. „Laufzeit-Volume (Settings-Menü)" ist
+> aber wörtlich Teil dieses V1-Features und laut Produktstrategie der höchste Verkaufshebel.
+>
+> **Vor dem ersten roten Test mit dem Maintainer klären** (Details im Eintrag): Form der API (statisch, wie
+> `PlaySpatial`?) · **der Getter darf nicht fehlen** (ein Slider braucht seinen Startwert) · Verhalten bei
+> unbekannter Kategorie und bei Werten außerhalb `[0,1]`. **Harte Grenze:** nur das Dictionary schreiben,
+> **niemals** das `AudioSourceVolumes`-Asset.
+>
+> *Danach in der Prioritätsliste: Duck-Envelope läuft während `PauseAll()` weiter (das einzige offene Duck-Thema,
+> das ein Nutzer HÖRT) · PlayMode-Test-Infrastruktur (M3 + K1 + vier Smoke-Bündel) · Coroutine-Sammel-Check
+> (sieben ungeprüfte Spiegelungen, seit Monaten kein Compiler) · User-Doku Ducking (jetzt erstmals stabil
+> beschreibbar).*
+
+---
+
 ## Teil A — Release-Härtung (Code-Review IST)
 
 > **Meilenstein:** Alle verbliebenen Teil-A-Punkte (M3, P2–P7, R5/R6/R8) gehören zu **🎯 V1** — billige Härtung/Politur, gebündelt vor dem ersten Release.
@@ -144,7 +173,7 @@
       - **Bug oder Design? Eine Entscheidung, kein Fakt.** „Während Pause ist kein Trigger aktiv" ist in sich konsistent. Empfehlung trotzdem: den Ledger bei globaler Pause **einfrieren** — ein Pausenmenü sollte die Szene beim Verlassen nicht neu abmischen.
       - **Nicht gratis:** Der Duck-Service hat heute keinen Begriff von globaler Pause → braucht ein Seam, kein angeklebtes `if`. Entscheidung des Maintainers.
       - **Aufwand:** M
-    - [ ] **Falscher Performance-Claim im `AudioDuckComponent`-Summary („no per-frame cost")** (gefunden 2026-07-30) — das Summary verspricht: „Leave it off entirely and ducking is simply disabled (every category plays un-ducked, with no per-frame cost)". Ohne Provider wird nur der **Duck-Scan** übersprungen (`DeriveActiveCategories` + `Flatten`); `AudioDuckService.ApplyVolumes` läuft **jeden Frame über den gesamten Pool** und schreibt `source.volume` — absichtlich, damit der Live-Slider auch ohne Duck-Komponente greift. Das Service-Summary sagt das selbst, vier Zeilen darüber.
+    - [x] **GEGENSTANDSLOS 2026-08-13 — das Summary existiert nicht mehr.** `AudioDuckComponent` wurde beim Config-Umzug gelöscht, der falsche Satz ist mit ihr verschwunden. Die korrekte Aussage steht jetzt an der richtigen Stelle: Ohne `EnableDucking` wird der Duck-Service **gar nicht erst gebaut** (kein Scan, kein Flattening), während der `AudioVolumeWriteService` weiterläuft und den Live-Slider trägt — so beschrieben in `ARCHITECTURE.md` §7 und im Tooltip des Häkchens. **Nichts mehr zu tun.** Ursprünglicher Befund: **Falscher Performance-Claim im `AudioDuckComponent`-Summary („no per-frame cost")** (gefunden 2026-07-30) — das Summary verspricht: „Leave it off entirely and ducking is simply disabled (every category plays un-ducked, with no per-frame cost)". Ohne Provider wird nur der **Duck-Scan** übersprungen (`DeriveActiveCategories` + `Flatten`); `AudioDuckService.ApplyVolumes` läuft **jeden Frame über den gesamten Pool** und schreibt `source.volume` — absichtlich, damit der Live-Slider auch ohne Duck-Komponente greift. Das Service-Summary sagt das selbst, vier Zeilen darüber.
       - **Wurzel:** Die Spezifikation oben („Komponente fehlt → Duck-Scan komplett übersprungen → null Zusatzkosten pro Frame") war der Stand **vor** dem Live-Slider. Die Implementierung hat sich bewusst davon entfernt, das Komponenten-Summary hat den alten Satz behalten.
       - **Warum das mehr als Kosmetik ist:** dieselbe Klasse von Über-Claim wie die Zero-GC-Zeile, die am 2026-07-29 im README zurückgenommen werden musste — und diesmal steht sie in einem Summary, das in die User-Doku wandern kann, sobald der Ducking-Abschnitt geschrieben wird (Eintrag weiter unten). **Vor der User-Doku-Runde fällig.**
       - **Empfohlener Text:** „ohne Komponente entfällt der Duck-Scan; die Volume-Auflösung läuft weiter, damit der Live-Slider greift".
