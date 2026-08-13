@@ -151,9 +151,12 @@ generalisiert gehören. Die verbindliche Tick-Reihenfolge (`ARCHITECTURE.md` §1
    `ListenerCachePolicy`, `WallOcclusionMath`, `WallLayerMask`, `WallCheckContinuation`,
    `AudioOcclusionSmoothingService`.
 4. **Fade-Familie** — `AudioFadeService`, `FadeOperation`, `AudioFadeMath`, `PooledFadeTarget`.
-5. **Mixing/Ducking** — `AudioDuckService`, `AudioDuckComponent`, `VolumeResolver`, `DuckEnvelope`,
-   `DuckTargetPolicy`, `DuckRuleFlattening`. **Kern-Invariante:** `AudioDuckService` ist der *einzige*
+5. **Mixing/Ducking** — `AudioVolumeWriteService`, `CategoryVolumeSource`, `PooledVolumeTarget`,
+   `AudioDuckService`, `AudioDuckComponent`, `VolumeResolver`, `DuckEnvelope`, `DuckTargetPolicy`,
+   `DuckRuleFlattening`, `DuckFactorLedger`. **Kern-Invariante:** `AudioVolumeWriteService` ist der *einzige*
    Schreiber von `source.volume` (`ARCHITECTURE.md` §6) — jeden anderen Schreibzugriff als Befund werten.
+   **Zweite Invariante:** Faktor-Lieferanten lösen nur auf und legen ihren Wert ab; löst ein Lieferant fremde
+   Faktoren mit auf oder schreibt er selbst, ist das ein Befund.
 6. **Pause + Follow** — `AudioPauseService`, `AudioFollowService`.
 
 **Achse 2 — Lenses (für AudioTool am wertvollsten):**

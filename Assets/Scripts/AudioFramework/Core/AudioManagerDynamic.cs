@@ -32,6 +32,7 @@ namespace AudioFramework.Core
         private AudioOcclusionSmoothingService occlusionSmoothingService;
         private AudioFadeService fadeService;
         private AudioDuckService duckService;
+        private AudioVolumeWriteService volumeWriteService;
 
         private void Awake()
         {
@@ -85,7 +86,18 @@ namespace AudioFramework.Core
 
             fadeService = new AudioFadeService(fadeTargets);
 
-            duckService = new AudioDuckService(pool, dictionaryProvider.VolumeDictionary);
+            duckService = new AudioDuckService(pool);
+
+            var volumeTargets = new IVolumeTarget[pool.Length];
+
+            for (int i = 0; i < volumeTargets.Length; i++)
+                volumeTargets[i] = new PooledVolumeTarget(pool, i);
+
+            volumeWriteService = new AudioVolumeWriteService(
+                volumeTargets,
+                new CategoryVolumeSource(dictionaryProvider.VolumeDictionary),
+                duckService
+            );
 
             playbackService = new AudioPlaybackService(
                 poolAcquisitionService,
@@ -130,8 +142,9 @@ namespace AudioFramework.Core
             followService?.UpdateFollowers();
             occlusionSmoothingService?.Tick(Time.unscaledDeltaTime);
             fadeService?.Tick(Time.unscaledDeltaTime);
-            //duckservice as last - it still contains the single writer of source.volume which should be changed soon
             duckService?.Tick(Time.unscaledDeltaTime);
+            //the volume write must stay last - it consumes the factors every service above resolved this frame
+            volumeWriteService?.Apply();
         }
 
         /// <summary>Registers a passive duck config provider (called by AudioDuckComponent.OnEnable). Instance

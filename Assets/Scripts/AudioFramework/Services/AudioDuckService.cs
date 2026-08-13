@@ -7,24 +7,19 @@ using AudioFramework.Interfaces;
 namespace AudioFramework.Services.Mixing
 {
     /// <summary>
-    /// Stage-1 runtime glue and the SINGLE owner of <c>source.volume</c>. Driven once per frame from the manager's
-    /// LateUpdate (after the fade tick), it resolves every playing slot's volume as
-    /// <c>VolumeResolver.Resolve(base[category], fadeFactor[slot], duck[category])</c>:
-    /// <list type="bullet">
-    /// <item>base[category] is read LIVE from the volume dictionary, so a settings slider takes effect immediately;</item>
-    /// <item>fadeFactor[slot] is owned by the fade service (it ramps the per-slot factor, no longer source.volume);</item>
-    /// <item>duck[category] is kept by the <see cref="DuckFactorLedger"/>, which this service feeds each frame with
-    /// the currently active categories and the flattened rules.</item>
-    /// </list>
+    /// Supplies ONE gain factor: the per-category duck. Driven once per frame from the manager's LateUpdate, it
+    /// derives which categories are currently active, flattens the configured rules, and hands both to the
+    /// <see cref="DuckFactorLedger"/>, which keeps and glides the factor per category. The resulting value is
+    /// handed out through <see cref="ICategoryFactorSource"/> and combined with the other factors by
+    /// <see cref="AudioVolumeWriteService"/> — this service never touches source.volume.
+    ///
     /// With no <see cref="IDuckRuleProvider"/> registered the ledger is released with the rates it last ran on — a
-    /// config that is gone can no longer supply them — so a category that was ducked glides out instead of snapping
-    /// back. Volumes are still resolved either way, so the live slider works without a duck component. All per-frame
-    /// collections are reused buffers — no allocation in the tick.
+    /// config that is gone can no longer supply them — so a category that was ducked glides out instead of
+    /// snapping back. All per-frame collections are reused buffers — no allocation in the tick.
     /// </summary>
-    public class AudioDuckService
+    public class AudioDuckService : ICategoryFactorSource
     {
         private readonly AudioObject[] pool;
-        private readonly Dictionary<AudioCategory, float> volumeDictionary;
 
         private IDuckRuleProvider provider;
 
@@ -32,10 +27,9 @@ namespace AudioFramework.Services.Mixing
         private readonly List<DuckPair> flattenedPairs = new();
         private readonly DuckFactorLedger duckFactors = new();
 
-        public AudioDuckService(AudioObject[] pool, Dictionary<AudioCategory, float> volumeDictionary)
+        public AudioDuckService(AudioObject[] _pool)
         {
-            this.pool = pool;
-            this.volumeDictionary = volumeDictionary;
+            pool = _pool;
         }
 
         /// <summary>Registers the passive duck config provider (called from the component's OnEnable).</summary>
@@ -49,12 +43,6 @@ namespace AudioFramework.Services.Mixing
 
         public void Tick(float deltaTime)
         {
-            UpdateDuckFactors(deltaTime);
-            ApplyVolumes();
-        }
-
-        private void UpdateDuckFactors(float deltaTime)
-        {
             if (provider == null)
             {
                 duckFactors.ReleaseAll(deltaTime);
@@ -67,6 +55,9 @@ namespace AudioFramework.Services.Mixing
             duckFactors.Step(activeCategories, flattenedPairs, deltaTime, provider.AttackRate, provider.ReleaseRate);
         }
 
+        /// <summary>Current duck factor of the category, 1.0 when it is not ducked.</summary>
+        public float For(AudioCategory category) => duckFactors.FactorFor(category);
+
         /// <summary>Active = a slot that is playing and not paused. Deduplicated into the reused buffer.</summary>
         private void DeriveActiveCategories()
         {
@@ -78,22 +69,6 @@ namespace AudioFramework.Services.Mixing
 
                 AudioCategory category = pool[i].Category;
                 if (!activeCategories.Contains(category)) activeCategories.Add(category);
-            }
-        }
-
-        private void ApplyVolumes()
-        {
-            for (int i = 0; i < pool.Length; i++)
-            {
-                AudioSource source = pool[i].Source;
-                if (source == null || !source.isPlaying) continue;
-
-                AudioCategory category = pool[i].Category;
-                float basis = volumeDictionary.TryGetValue(category, out float configured) ? configured : 1f;
-                float fade = pool[i].FadeFactor;
-                float duck = duckFactors.FactorFor(category);
-
-                source.volume = VolumeResolver.Resolve(basis, fade, duck);
             }
         }
     }

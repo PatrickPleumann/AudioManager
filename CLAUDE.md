@@ -127,15 +127,17 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioOcclusionSmoothingService  → gleitet den Cutoff pro Frame
 ├── AudioFollowService              → kopiert Emitter-Position pro Frame, ohne Parenting
 ├── AudioFadeService                → treibt Fades; schreibt den Per-Slot-FadeFactor
-├── AudioDuckService                → EINZIGER Besitzer von source.volume (basis · fade · duck)
+├── AudioDuckService                → liefert duck[kategorie]; führt den DuckFactorLedger
 │   └── AudioDuckComponent          → optionaler, passiver Regel-Provider (kein eigener Tick)
+├── CategoryVolumeSource            → liefert basis[kategorie], live aus dem VolumeDictionary
+├── AudioVolumeWriteService         → EINZIGER Schreiber von source.volume (basis · fade · duck)
 ├── AudioPauseService               → Pause/Unpause der Pool-Slots (scope-bewusst)
 └── AudioManagerDictionaryProvider  → Volume- & LayerMask-Dictionaries
 ```
 
 Die gesamte Entscheidungslogik liegt in **puren, Unity-freien Klassen** (EditMode-getestet) — Liste und
-Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **120 EditMode-Tests**; die pure Schicht
-umfasst **15 Einheiten** (die Liste in §2 ist deren Single Source).
+Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **136 EditMode-Tests**; die pure Schicht
+umfasst **16 Einheiten** (die Liste in §2 ist deren Single Source).
 
 ---
 
@@ -175,9 +177,11 @@ und Details jeweils in [`ARCHITECTURE.md`](ARCHITECTURE.md).
    **jedem** Dispatch geschrieben werden, **unbedingt, nie in einem `if`**. Sonst trägt ein wiederverwendeter
    Slot den Wert des Vorgängers. *(So entstand der `spatialBlend`-Bug — die einzige real passierte
    Bug-Klasse.)* Neues gespiegeltes Feld → unbedingte Zeile in `AudioPlaybackService.Dispatch` mitsetzen.
-2. **`source.volume` hat genau einen Besitzer** (§6) — `AudioDuckService`. Wer eine neue
-   Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor** (wie Fade und Duck) und schreibt
-   **nie** selbst auf `source.volume`.
+2. **`source.volume` hat genau einen Schreiber** (§6) — `AudioVolumeWriteService`. Jeder Faktor wird von einer
+   **eigenen** Einheit aufgelöst und nur dort abgelegt; der Writer kombiniert sie. Wer eine neue
+   Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor** (wie Basis, Fade und Duck) hinter
+   `ICategoryFactorSource` und schreibt **nie** selbst auf `source.volume`. Eine fehlende Faktor-Quelle
+   steuert `1.0` bei — jeder Faktor ist damit einzeln weglassbar.
 3. **Pausieren heißt `PauseAll()`, nicht `timeScale = 0`** (§11) — das gesamte Tool läuft auf der
    ungeskalierten Uhr (`Time.unscaledTime` / `Time.unscaledDeltaTime`). Neue zeitabhängige Logik hängt an
    derselben Uhr, sonst hängen Slots bei Slow-Mo.

@@ -28,27 +28,30 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ├── AudioOcclusionSmoothingService → gleitet Filter.cutoffFrequency pro Frame Richtung TargetCutoff
 ├── AudioFollowService             → kopiert Emitter-Position pro Frame, ohne Parenting
 ├── AudioFadeService               → treibt alle Fades pro Frame über IFadeTarget[]; schreibt den Per-Slot-FadeFactor
-├── AudioDuckService               → EINZIGER Besitzer von source.volume: basis · fade · duck, live pro Frame
+├── AudioDuckService               → liefert duck[kategorie] als ICategoryFactorSource; führt den DuckFactorLedger
 │   └── AudioDuckComponent         → optionaler, passiver Regel-Provider (IDuckRuleProvider) — kein eigener Tick
+├── CategoryVolumeSource           → liefert basis[kategorie] als ICategoryFactorSource, live aus dem VolumeDictionary
+├── AudioVolumeWriteService        → EINZIGER Schreiber von source.volume; kombiniert die Faktoren über IVolumeTarget[]
 ├── AudioPauseService              → Pause/Unpause der Pool-Slots (global, scope-bewusst)
 └── AudioManagerDictionaryProvider → Volume- & LayerMask-Dictionaries
 ```
 
 ### Tick-Reihenfolge (verbindlich)
 
-`AudioManagerDynamic.LateUpdate` treibt vier Ticks in **dieser** Reihenfolge — die Reihenfolge ist Teil des
+`AudioManagerDynamic.LateUpdate` treibt fünf Ticks in **dieser** Reihenfolge — die Reihenfolge ist Teil des
 Vertrags, nicht Zufall:
 
 ```
 1. followService.UpdateFollowers()            // Positionen zuerst — nach aller Bewegung des Frames
 2. occlusionSmoothingService.Tick(unscaledDeltaTime)
 3. fadeService.Tick(unscaledDeltaTime)        // schreibt AudioObject.FadeFactor
-4. duckService.Tick(unscaledDeltaTime)        // liest FadeFactor → schreibt source.volume
+4. duckService.Tick(unscaledDeltaTime)        // schreibt den DuckFactorLedger
+5. volumeWriteService.Apply()                 // liest alle Faktoren → schreibt source.volume
 ```
 
-**Warum 4 nach 3:** Der Fade schreibt nur noch seinen Per-Slot-**Faktor**; der Duck-Service ist der einzige,
-der daraus (zusammen mit Basis-Lautstärke und Duck) `source.volume` auflöst. Liefe der Duck-Tick vor dem
-Fade-Tick, hinkte die hörbare Lautstärke dem Fade um einen Frame hinterher.
+**Warum 5 zuletzt:** Jeder Tick davor löst **einen Faktor** auf und legt ihn an seinem eigenen Ort ab — der
+Fade den Per-Slot-Faktor, der Duck den Ledger. Erst der Write liest alle zusammen und macht daraus
+`source.volume`. Liefe er früher, hinkte die hörbare Lautstärke den Faktoren um einen Frame hinterher.
 
 ---
 
@@ -69,6 +72,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `LowPassDispatchPolicy` | Filter-Zustand pro Dispatch (an ⟺ UseWallCheck) |
 | `PoolSlotAvailability` | „Slot frei?" (still + Busy-Fenster abgelaufen + nicht pausiert) |
 | `AudioHandleValidator` | Handle-Currency: Bounds + Generation |
+| `CategoryVolumeSource` | Basis-Gain einer Kategorie aus dem `VolumeDictionary` — **live** gelesen (Slider wirkt sofort), ohne Eintrag `1.0`, bewusst ohne Clamp |
 | `VolumeResolver` | Stufe-1-Gain: `clamp01(basis · fade · duck)` |
 | `DuckEnvelope` | Duck-Glide pro Frame (Attack beim Tiefer-Ducken, Release zurück) |
 | `DuckTargetPolicy` | aktive Kategorien + Paar-Faktoren → `duck[kategorie]` (`min`-Stacking, kein Selbst-Duck) |
@@ -99,12 +103,14 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `Interfaces/IDuckRuleProvider.cs` | Seam für die Duck-Konfiguration (Regeln + Attack/Release-Rate) |
 | `Interfaces/IGetPoolIndex.cs` | Toter Platzhalter — steht im BACKLOG zur Entfernung |
 | `Services/IFadeTarget.cs` · `PooledFadeTarget.cs` | Fade-Seam + reale Pool-Implementierung (schreibt den FadeFactor) |
+| `Services/IVolumeTarget.cs` · `PooledVolumeTarget.cs` | Volume-Write-Seam + reale Pool-Implementierung (schreibt `source.volume`) |
+| `Services/ICategoryFactorSource.cs` | Vertrag einer Faktor-Quelle pro Kategorie (heute Basis + Duck) |
 | `Services/DuckPair.cs` | Pure Input-Struct `{ Trigger, Target, DuckedVolume }` für die Duck-Policy |
 
 **Felder von `AudioObject`:** `GameObject`, `Source`, `Filter`, `FollowTarget`, `BusyUntilTime`,
 `TargetCutoff`, `FadeFactor`, `Generation`, `Category`, `IsFollowing`, `RespectsGlobalPause`, `IsPaused`.
 
-**Namespaces:** `AudioFramework.Services.Mixing` (Duck-Familie + `VolumeResolver`),
+**Namespaces:** `AudioFramework.Services.Mixing` (Duck-Familie, `VolumeResolver`, `CategoryVolumeSource`),
 `AudioFramework.Configuration` (Config-/Regel-Typen), `AudioFramework.Interfaces`,
 `AudioFramework.Pooling`, `AudioFramework.Services.{Playback,Fading,Following,WallCheck}`,
 `AudioFramework.Pause`, `AudioFramework.Core`, `AudioFramework.Data`, `AudioFramework.Utilities`.
@@ -155,8 +161,11 @@ Entscheidungslogik sind — `spatialBlend` ⟵ isSpatial, `filter.enabled`/Cutof
 Unitys Signalweg ist `AudioSource(source.volume) → outputAudioMixerGroup → Effekte/Sends → Master → Output`.
 Das Tool besetzt bewusst **nur die vordere Stufe**:
 
-- **Stufe 1 (gebaut, gehört uns):** `source.volume = clamp01(basis · fade · duck)` — aufgelöst von
-  `VolumeResolver`. **Genau ein Besitzer:** `AudioDuckService`.
+- **Stufe 1 (gebaut, gehört uns):** `source.volume = clamp01(basis · fade · duck)` — die Gleichung liegt in
+  `VolumeResolver`, **genau ein Schreiber:** `AudioVolumeWriteService`. Jeder Faktor wird von einer **eigenen**
+  Einheit aufgelöst (`CategoryVolumeSource`, `AudioFadeService`, `AudioDuckService`); der Schreiber löst nichts
+  auf, er kombiniert nur. Eine fehlende Faktor-Quelle steuert `1.0` bei — deshalb ist jeder Faktor einzeln
+  weglassbar, ohne dass die übrigen etwas davon merken.
 - **Stufe 2 (später, additiv):** Routing/Effekte/Reverb/Sends/Snapshots — alles *downstream* von
   `source.volume`. Hängt nur an `outputAudioMixerGroup`, **nicht** daran, wie `source.volume` berechnet wird.
   Der leere `CategoryMixerRoute`-Seam hält dafür die Form offen, ohne heute etwas zu implementieren.
@@ -169,9 +178,10 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
 | `fade[slot]` | `AudioObject.FadeFactor`, geschrieben vom `AudioFadeService` | 0..1 Per-Slot-Rampe |
 | `duck[kategorie]` | im `DuckFactorLedger` geführt, pro Frame vom `AudioDuckService` gefüttert | 0..1 Per-Kategorie-Absenkung |
 
-> ⚠️ **Der wichtigste Fakt dieses Abschnitts:** `AudioFadeService` schreibt **nicht** mehr `source.volume`,
-> sondern nur den Faktor. Wer eine neue Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor**
-> — er schreibt niemals selbst auf `source.volume`. Es gibt genau eine Ausnahme: `AudioPlaybackService.Dispatch`
+> ⚠️ **Der wichtigste Fakt dieses Abschnitts:** **Kein** Faktor-Lieferant schreibt `source.volume` — weder
+> `AudioFadeService` noch `AudioDuckService`. Beide legen nur ihren Faktor ab. Wer eine neue
+> Lautstärke-Beeinflussung baut, macht daraus einen **weiteren Faktor** hinter `ICategoryFactorSource` und
+> übergibt ihn dem Writer — er schreibt niemals selbst. Es gibt genau eine Ausnahme: `AudioPlaybackService.Dispatch`
 > setzt beim Dispatch einmalig `VolumeResolver.Resolve(basis, fadeFactor, 1f)`, damit schon der allererste
 > Frame stimmt, bevor der Duck-Tick das erste Mal läuft.
 
@@ -200,8 +210,9 @@ Das Tool besetzt bewusst **nur die vordere Stufe**:
   Ledger wird stattdessen mit den Raten **seines letzten Steps** released — eine Config, die weg ist, kann keine
   neuen liefern. Eine gerade geduckte Kategorie glidet damit aus, statt hart auf voll zu springen (hörbarer
   Knacks). Hat der Ledger nichts zu tun — der Normalfall ohne Duck-Komponente —, sind das zwei Schleifen über
-  null Elemente. Die Volumes werden weiterhin aufgelöst: der Live-Slider funktioniert auch ganz ohne
-  Duck-Komponente.
+  null Elemente. Der Volume-Write läuft davon **unabhängig** weiter: der Live-Slider funktioniert auch ganz
+  ohne Duck-Komponente. Und der ganze `AudioDuckService` ist weglassbar — fehlt die Duck-Quelle, setzt der
+  Writer `1.0` ein, und Basis-Lautstärke wie Fade laufen unverändert.
 - **Kein Sonderpfad für den Provider-Verlust:** Release *ist* ein Step mit leeren Eingaben — ohne konfigurierte
   Paare löst die Policy jede getrackte Kategorie ohnehin auf `1.0` auf. Eine zweite Schleife hätte dieselbe
   Semantik doppelt gepflegt werden müssen.
