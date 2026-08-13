@@ -15,6 +15,19 @@
 
 ---
 
+## 0. Das Bild dazu
+
+[`AudioTool-Sound-Flow.svg`](AudioTool-Sound-Flow.svg) zeichnet den Weg **eines** Sounds von außen nach innen:
+vom `Play()`-Aufruf über Slot-Vergabe und Dispatch durch die LateUpdate-Kette bis zum geschriebenen
+`source.volume` — und zurück in den Pool. Gedacht als Einstieg **vor** den Listen unten, nicht als deren Ersatz.
+
+> ⚠️ **Momentaufnahme, kein Vertrag.** Das Bild bildet den Stand vom 13.08.2026 (Commit `06057b5`) ab. Die
+> Struktur wächst weiter — es muss **nicht zu jeder Zeit dem aktuellen Stand entsprechen**. Bei Abweichung
+> gilt: der Code hat recht, dann diese Datei, dann das Bild. Wer das Bild nachzieht, aktualisiert die
+> Datumszeile im SVG-Fuß mit.
+
+---
+
 ## 1. Service-Graph
 
 ```
