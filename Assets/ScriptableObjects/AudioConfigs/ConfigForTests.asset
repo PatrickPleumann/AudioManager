@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioFramework.Configuration.AudioSystemConfigSO_Test
   NumberOfAudioSources: 50
   DefaultCutoffFreqValue: 22000
-  MinCutoffFreqValue: 100
+  MinCutoffFreqValue: 10
   OcclusionSmoothingSpeed: 50000
   categoryVolumes:
   - Category: 1

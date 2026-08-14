@@ -16,7 +16,7 @@ namespace AudioFramework.Tests.EditMode
     public class OcclusionRangeValidationTests
     {
         [Test]
-        public void ShippedDefaults_ReportNoIssue()
+        public void FloorBelowOpenCutoff_ReportsNoIssue()
         {
             Assert.AreEqual(OcclusionRangeIssue.None, OcclusionRangeValidation.Evaluate(22000f, 100f));
         }

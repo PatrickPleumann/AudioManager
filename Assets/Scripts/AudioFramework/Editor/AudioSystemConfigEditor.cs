@@ -203,17 +203,22 @@ namespace AudioFramework.EditorTools
             entry.FindPropertyRelative(nameof(CategoryVolume.Volume)).floatValue = 1f;
         }
 
+        private const float LowestFilterFrequency = 10f;
+        private const float HighestFilterFrequency = 22000f;
+
         private void DrawOcclusionSection(Color accent)
         {
             AudioInspectorSkin.BeginSection("Occlusion", wallDampingProperty.arraySize.ToString(), accent);
 
-            AudioInspectorSkin.DrawPropertyRow(defaultCutoffProperty, "Open cutoff",
+            AudioInspectorSkin.DrawFrequencyRow(defaultCutoffProperty, "Open cutoff",
                 "The cutoff a sound returns to with no wall in the way. Keep near 22000 Hz so an unoccluded " +
-                "sound is fully transparent.");
+                "sound is fully transparent.",
+                LowestFilterFrequency, HighestFilterFrequency);
 
-            AudioInspectorSkin.DrawPropertyRow(minCutoffProperty, "Muffled floor",
+            AudioInspectorSkin.DrawFrequencyRow(minCutoffProperty, "Muffled floor",
                 "The lowest cutoff any number of walls can reach. Lower values let a sound become almost " +
-                "inaudible behind heavy geometry.");
+                "inaudible behind heavy geometry.",
+                LowestFilterFrequency, HighestFilterFrequency);
 
             AudioInspectorSkin.DrawPropertyRow(smoothingSpeedProperty, "Glide speed",
                 "How fast the cutoff follows its target, in Hz per second. 0 snaps instantly and pops when " +

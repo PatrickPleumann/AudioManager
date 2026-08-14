@@ -29,11 +29,11 @@ namespace AudioFramework.Configuration
             "subtracted from. Keep it at ~22000 Hz (the top of human hearing) so an un-occluded sound is fully transparent; " +
             "lower values audibly dampen the high end (sounds muffled, as if behind a wall).")]
         [FormerlySerializedAs("defaultCuttoffFreqValue")]
-        public float DefaultCutoffFreqValue = 22000f;
+        public float DefaultCutoffFreqValue = OcclusionDefaults.OpenCutoff;
         [Space]
 
         [Tooltip("The minimum cutoff frequency value. The wall check will never reduce the frequency below this value.")]
-        public float MinCutoffFreqValue = 100f;
+        public float MinCutoffFreqValue = OcclusionDefaults.MinCutoff;
         [Space]
 
         [Tooltip("How fast the low-pass cutoff glides toward its target when a sound moves in or out of occlusion, " +

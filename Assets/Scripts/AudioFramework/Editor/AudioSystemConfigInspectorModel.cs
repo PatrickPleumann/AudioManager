@@ -100,7 +100,7 @@ namespace AudioFramework.EditorTools
                         "Min Cutoff Freq Value is above Default Cutoff Freq Value, which turns occlusion inside out: " +
                         "a sound with nothing in the way already plays at the low Default value and sounds muffled, " +
                         "while a wall raises its cutoff toward Min and makes it brighter. Set Min below Default (the " +
-                        "shipped values are 22000 and 100)."));
+                        $"shipped values are {OcclusionDefaults.OpenCutoff:0.##} and {OcclusionDefaults.MinCutoff:0.##})."));
                     break;
 
                 case OcclusionRangeIssue.MinEqualsDefault:
@@ -133,6 +133,21 @@ namespace AudioFramework.EditorTools
             if (snapshot.WallLayerCount == 0)
                 findings.Add(new InspectorFinding(InspectorFindingSeverity.Hint,
                     "No wall damping layers defined, so sounds with Use Wall Check behave like unoccluded ones."));
+
+            OcclusionRangeAdvice advice = OcclusionRangeValidation.Advise(snapshot.DefaultCutoff, snapshot.MinCutoff);
+
+            if (advice.HasFlag(OcclusionRangeAdvice.OpenCutoffNotTransparent))
+                findings.Add(new InspectorFinding(InspectorFindingSeverity.Hint,
+                    $"Default Cutoff Freq Value is {snapshot.DefaultCutoff:0.##} Hz, so a sound with nothing between " +
+                    "it and the listener is already damped and plays muffled. That is a valid choice for a deliberately " +
+                    "dull space — raise it toward the top of human hearing (~22000 Hz) if open sounds should be fully " +
+                    "transparent."));
+
+            if (advice.HasFlag(OcclusionRangeAdvice.FloorLimitsMuffling))
+                findings.Add(new InspectorFinding(InspectorFindingSeverity.Hint,
+                    $"Min Cutoff Freq Value is {snapshot.MinCutoff:0.##} Hz, so even a fully occluded sound stays " +
+                    "comparatively bright — that is as muffled as walls can ever make it. Lower it if sounds behind " +
+                    "walls should be damped harder."));
 
             if (snapshot.SmoothingSpeed <= 0f)
                 findings.Add(new InspectorFinding(InspectorFindingSeverity.Hint,

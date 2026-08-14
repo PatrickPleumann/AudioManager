@@ -298,6 +298,52 @@ namespace AudioFramework.EditorTools
             EditorGUILayout.Space(3f);
         }
 
+        private const float FrequencyBoxWidth = 62f;
+        private const float FrequencyBoxGap = 5f;
+        private const float SliderVerticalNudge = 2f;
+
+        /// <summary>
+        /// A frequency field drawn as a slider for dragging plus a number box that commits only on Enter or focus
+        /// loss, clamped to the range the AudioLowPassFilter itself accepts.
+        /// </summary>
+        /// <remarks>
+        /// The delayed box is not a nicety, it is the fix for a real editing bug: a plain float field applies every
+        /// single keystroke, so typing "8000" over "22000" passes through the value 8. That intermediate value can
+        /// make a validation warning appear above this row, which re-lays out the inspector, reassigns the IMGUI
+        /// control IDs and steals the focus — the user cannot type past the first digit. Committing late means no
+        /// intermediate value is ever validated.
+        /// </remarks>
+        internal static void DrawFrequencyRow(SerializedProperty property, string title, string hint, float min, float max)
+        {
+            Rect row = EditorGUILayout.GetControlRect();
+            Rect field = EditorGUI.PrefixLabel(row, new GUIContent(title));
+
+            Rect sliderRect = new Rect(field.x, field.y + SliderVerticalNudge,
+                field.width - FrequencyBoxWidth - FrequencyBoxGap, field.height);
+            Rect boxRect = new Rect(field.xMax - FrequencyBoxWidth, field.y, FrequencyBoxWidth, field.height);
+
+            EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
+
+            EditorGUI.BeginChangeCheck();
+            float dragged = GUI.HorizontalSlider(sliderRect, property.floatValue, min, max);
+            if (EditorGUI.EndChangeCheck()) property.floatValue = dragged;
+
+            EditorGUI.BeginChangeCheck();
+            float typed = EditorGUI.DelayedFloatField(boxRect, property.floatValue);
+            if (EditorGUI.EndChangeCheck()) property.floatValue = Mathf.Clamp(typed, min, max);
+
+            EditorGUI.showMixedValue = false;
+
+            if (!string.IsNullOrEmpty(hint))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField(hint, OptionHint);
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(3f);
+        }
+
         /// <summary>
         /// Renders a validation finding. Errors and warnings use Unity's help box so they read exactly like
         /// every other problem report in the editor; hints stay quiet and unboxed.

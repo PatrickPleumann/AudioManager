@@ -1,4 +1,4 @@
-<svg width="990" height="1794" viewBox="0 0 990 1794" role="img" xml:lang="en" aria-label="Flow diagram: the path of a single sound through AudioTool, from the static Play call through slot acquisition, dispatch and the LateUpdate chain to the written source.volume and back into the pool" xmlns="http://www.w3.org/2000/svg">
+<svg width="990" height="1794" viewBox="0 0 990 1794" role="img" xml:lang="de" aria-label="Flussdiagramm: der Weg eines Sounds durch AudioTool, vom statischen Play-Aufruf über Pool-Slot, Dispatch und LateUpdate-Kette bis zum geschriebenen source.volume und zur Freigabe des Slots" xmlns="http://www.w3.org/2000/svg">
   <style>
   svg {
     --ground: #ECEFF0;
@@ -64,16 +64,16 @@
 
   <g class="bands">
     <line class="band-rule" x1="134" y1="40" x2="134" y2="128"/>
-    <text class="t-band" x="116" y="84" text-anchor="middle" transform="rotate(-90 116 84)">1 · Call</text>
+    <text class="t-band" x="116" y="84" text-anchor="middle" transform="rotate(-90 116 84)">1 · Aufruf</text>
 
     <line class="band-rule" x1="134" y1="158" x2="134" y2="382"/>
-    <text class="t-band" x="116" y="270" text-anchor="middle" transform="rotate(-90 116 270)">2 · Facade &amp; Entry</text>
+    <text class="t-band" x="116" y="270" text-anchor="middle" transform="rotate(-90 116 270)">2 · Fassade &amp; Eintritt</text>
 
     <line class="band-rule" x1="134" y1="404" x2="134" y2="480"/>
     <text class="t-band" x="116" y="442" text-anchor="middle" transform="rotate(-90 116 442)">3 · Slot</text>
 
     <line class="band-rule" x1="134" y1="502" x2="134" y2="738"/>
-    <text class="t-band" x="116" y="620" text-anchor="middle" transform="rotate(-90 116 620)">4 · Fill the slot</text>
+    <text class="t-band" x="116" y="620" text-anchor="middle" transform="rotate(-90 116 620)">4 · Slot bestücken</text>
 
     <line class="band-rule" x1="134" y1="760" x2="134" y2="848"/>
     <text class="t-band" x="116" y="804" text-anchor="middle" transform="rotate(-90 116 804)">5 · Start</text>
@@ -82,27 +82,27 @@
     <text class="t-band" x="116" y="914" text-anchor="middle" transform="rotate(-90 116 914)">6 · Handle</text>
 
     <line class="band-rule" x1="134" y1="980" x2="134" y2="1242"/>
-    <text class="t-band" x="116" y="1111" text-anchor="middle" transform="rotate(-90 116 1111)">7 · Every frame</text>
+    <text class="t-band" x="116" y="1111" text-anchor="middle" transform="rotate(-90 116 1111)">7 · Jeder Frame</text>
 
     <line class="band-rule" x1="134" y1="1264" x2="134" y2="1368"/>
     <text class="t-band" x="116" y="1316" text-anchor="middle" transform="rotate(-90 116 1316)">8 · Gain</text>
 
     <line class="band-rule" x1="134" y1="1390" x2="134" y2="1462"/>
-    <text class="t-band" x="116" y="1426" text-anchor="middle" transform="rotate(-90 116 1426)">9 · Out</text>
+    <text class="t-band" x="116" y="1426" text-anchor="middle" transform="rotate(-90 116 1426)">9 · Ton</text>
 
     <line class="band-rule" x1="134" y1="1484" x2="134" y2="1700"/>
-    <text class="t-band" x="116" y="1592" text-anchor="middle" transform="rotate(-90 116 1592)">10 · Release</text>
+    <text class="t-band" x="116" y="1592" text-anchor="middle" transform="rotate(-90 116 1592)">10 · Freigabe</text>
   </g>
 
   <g class="legend">
     <rect class="box-alt" x="660" y="40" width="285" height="100" rx="6"/>
-    <text class="t-title" x="672" y="62">Legend</text>
+    <text class="t-title" x="672" y="62">Legende</text>
     <line class="flow" x1="674" y1="84" x2="704" y2="84"/>
-    <text class="t-soft" x="714" y="88">the path the data takes</text>
+    <text class="t-soft" x="714" y="88">der Weg, den die Daten nehmen</text>
     <line class="flow-stop" x1="674" y1="105" x2="704" y2="105"/>
-    <text class="t-soft" x="714" y="109">abort — the call ends here</text>
+    <text class="t-soft" x="714" y="109">Abbruch — der Aufruf endet hier</text>
     <rect class="box-accent" x="676" y="120" width="26" height="12" rx="3"/>
-    <text class="t-soft" x="714" y="130">invariant / critical spot</text>
+    <text class="t-soft" x="714" y="130">Invariante / kritische Stelle</text>
   </g>
 
   <g class="phase-1">
@@ -110,13 +110,13 @@
     <text class="t-title" x="162" y="60">PlaySpatial(ado, source)</text>
     <text class="t-mono" x="162" y="78">PlaySpatial(soundRequest)</text>
     <text class="t-mono" x="162" y="95">PlayNonSpatial(ado)</text>
-    <text class="t-soft" x="162" y="115">starts audible right away</text>
+    <text class="t-soft" x="162" y="115">startet sofort hörbar</text>
 
     <rect class="box" x="400" y="40" width="230" height="88" rx="6"/>
     <text class="t-title" x="412" y="60">FadeInSpatial(...)</text>
     <text class="t-mono" x="412" y="78">FadeInNonSpatial(...)</text>
     <text class="t-mono" x="412" y="95">Crossfade* = Out + In</text>
-    <text class="t-soft" x="412" y="115">starts silent, fades up</text>
+    <text class="t-soft" x="412" y="115">startet stumm, fadet hoch</text>
 
     <polyline class="flow-plain" points="265,128 265,144 390,144"/>
     <polyline class="flow-plain" points="515,128 515,144 390,144"/>
@@ -125,12 +125,12 @@
 
   <g class="phase-2">
     <rect class="box" x="150" y="158" width="480" height="54" rx="6"/>
-    <text class="t-title" x="162" y="180">AudioManagerDynamic — static facade</text>
-    <text class="t-soft" x="162" y="199">no live manager in the scene → console warning</text>
+    <text class="t-title" x="162" y="180">AudioManagerDynamic — statische Fassade</text>
+    <text class="t-soft" x="162" y="199">kein lebender Manager in der Szene → Konsolenwarnung</text>
     <line class="flow-stop" x1="630" y1="196" x2="656" y2="196"/>
     <rect class="box-stop" x="660" y="176" width="285" height="40" rx="6"/>
     <text class="t-mono" x="672" y="194">AudioHandle.Invalid</text>
-    <text class="t-soft" x="672" y="209">nothing is played</text>
+    <text class="t-soft" x="672" y="209">nichts wird abgespielt</text>
 
     <line class="flow" x1="390" y1="212" x2="390" y2="232"/>
 
@@ -140,18 +140,18 @@
     <text class="t-mono" x="162" y="290">DispatchSilentSpatial · DispatchSilentNonSpatial</text>
     <line class="flow-stop" x1="630" y1="272" x2="656" y2="272"/>
     <rect class="box-stop" x="660" y="250" width="285" height="44" rx="6"/>
-    <text class="t-mono" x="672" y="269">3D call without transform</text>
+    <text class="t-mono" x="672" y="269">3D-Aufruf ohne Transform</text>
     <text class="t-soft" x="672" y="285">LogError · Invalid</text>
 
     <line class="flow" x1="390" y1="304" x2="390" y2="326"/>
 
     <rect class="box" x="150" y="326" width="480" height="56" rx="6"/>
     <text class="t-title" x="162" y="348">Dispatch(ado, source, isSpatial, startSilent)</text>
-    <text class="t-soft" x="162" y="367">a single funnel — every entry point above ends up here</text>
+    <text class="t-soft" x="162" y="367">ein einziger Trichter — jeder Einstieg oben landet hier</text>
     <line class="flow-stop" x1="630" y1="358" x2="656" y2="358"/>
     <rect class="box-stop" x="660" y="336" width="285" height="44" rx="6"/>
-    <text class="t-mono" x="672" y="355">ado == null · no clips</text>
-    <text class="t-soft" x="672" y="371">LogError · returns −1</text>
+    <text class="t-mono" x="672" y="355">ado == null · keine Clips</text>
+    <text class="t-soft" x="672" y="371">LogError · Rückgabe −1</text>
   </g>
 
   <g class="phase-3">
@@ -160,45 +160,45 @@
     <rect class="box" x="150" y="404" width="480" height="76" rx="6"/>
     <text class="t-title" x="162" y="426">AudioPoolAcquisitionService</text>
     <text class="t-mono" x="162" y="445">IsFree(isPlaying, unscaledTime, BusyUntilTime, IsPaused)</text>
-    <text class="t-soft" x="162" y="464">first free slot wins · Generation++ invalidates old handles</text>
+    <text class="t-soft" x="162" y="464">erster freier Slot gewinnt · Generation++ entwertet alte Handles</text>
     <line class="flow-stop" x1="630" y1="428" x2="656" y2="428"/>
     <rect class="box-stop" x="660" y="406" width="285" height="44" rx="6"/>
-    <text class="t-mono" x="672" y="425">pool full → −1</text>
-    <text class="t-soft" x="672" y="441">the sound is dropped silently</text>
+    <text class="t-mono" x="672" y="425">Pool voll → −1</text>
+    <text class="t-soft" x="672" y="441">der Sound entfällt lautlos</text>
   </g>
 
   <g class="phase-4">
     <line class="flow" x1="390" y1="480" x2="390" y2="502"/>
 
     <rect class="box" x="150" y="502" width="480" height="236" rx="6"/>
-    <text class="t-title" x="162" y="524">Filling the slot — every ADO field, on every dispatch</text>
-    <text class="t-soft" x="162" y="548"><tspan class="t-mono">fadeService.ClearFade(slot)</tspan> — leftover fade state gone</text>
-    <text class="t-soft" x="162" y="568"><tspan class="t-mono">source.clip</tspan> = random pick from ado.CurrentClips</text>
-    <text class="t-soft" x="162" y="588"><tspan class="t-mono">base</tspan> = VolumeDictionary[ado.CurrentType], missing → 1.0</text>
+    <text class="t-title" x="162" y="524">Slot bestücken — jedes ADO-Feld, bei jedem Dispatch</text>
+    <text class="t-soft" x="162" y="548"><tspan class="t-mono">fadeService.ClearFade(slot)</tspan> — alte Fade-Reste weg</text>
+    <text class="t-soft" x="162" y="568"><tspan class="t-mono">source.clip</tspan> = zufällig aus ado.CurrentClips</text>
+    <text class="t-soft" x="162" y="588"><tspan class="t-mono">basis</tspan> = VolumeDictionary[ado.CurrentType], fehlt → 1.0</text>
     <text class="t-soft" x="162" y="608"><tspan class="t-mono">FadeFactor</tspan> = startSilent ? 0 : 1</text>
-    <text class="t-soft" x="162" y="628"><tspan class="t-mono">source.volume</tspan> = base · fade · 1 — for frame 0 only</text>
+    <text class="t-soft" x="162" y="628"><tspan class="t-mono">source.volume</tspan> = basis · fade · 1 — nur für Frame 0</text>
     <text class="t-soft" x="162" y="648"><tspan class="t-mono">source.spatialBlend</tspan> = isSpatial ? ado.SpatialBlend : 0</text>
-    <text class="t-soft" x="162" y="668"><tspan class="t-mono">category · RespectsGlobalPause</tspan> onto the slot</text>
-    <text class="t-soft" x="162" y="688"><tspan class="t-mono">position + FollowTarget</tspan> (spatial &amp; FollowEmitter only)</text>
+    <text class="t-soft" x="162" y="668"><tspan class="t-mono">Kategorie · RespectsGlobalPause</tspan> auf den Slot</text>
+    <text class="t-soft" x="162" y="688"><tspan class="t-mono">Position + FollowTarget</tspan> (nur spatial &amp; FollowEmitter)</text>
     <text class="t-soft" x="162" y="708"><tspan class="t-mono">LowPassDispatchPolicy</tspan> → filter.enabled, cutoff, TargetCutoff</text>
 
     <line class="hair" x1="630" y1="596" x2="660" y2="596"/>
     <rect class="box-accent" x="660" y="546" width="285" height="100" rx="6"/>
-    <text class="t-title-accent" x="672" y="568">Invariant 1</text>
-    <text class="t-soft" x="672" y="586">Every field mirrored from the ADO</text>
-    <text class="t-soft" x="672" y="602">is written on EVERY dispatch,</text>
-    <text class="t-soft" x="672" y="618">never inside an if — otherwise the</text>
-    <text class="t-soft" x="672" y="634">slot inherits its predecessor's value.</text>
+    <text class="t-title-accent" x="672" y="568">Invariante 1</text>
+    <text class="t-soft" x="672" y="586">Jedes vom ADO gespiegelte Feld</text>
+    <text class="t-soft" x="672" y="602">wird bei JEDEM Dispatch gesetzt,</text>
+    <text class="t-soft" x="672" y="618">nie in einem if — sonst erbt der</text>
+    <text class="t-soft" x="672" y="634">Slot den Wert des Vorgängers.</text>
   </g>
 
   <g class="phase-5">
     <line class="flow" x1="390" y1="738" x2="390" y2="760"/>
 
     <rect class="box" x="150" y="760" width="480" height="88" rx="6"/>
-    <text class="t-title" x="162" y="782">Playing</text>
+    <text class="t-title" x="162" y="782">Abspielen</text>
     <text class="t-mono" x="162" y="801">ado.IsOneShot → SetSlotBusy(clip.length) · PlayOneShot()</text>
-    <text class="t-mono" x="162" y="818">else → ResetSlotBusy · source.Play()</text>
-    <text class="t-soft" x="162" y="837">globally paused &amp; RespectsGlobalPause → paused again at once</text>
+    <text class="t-mono" x="162" y="818">sonst → ResetSlotBusy · source.Play()</text>
+    <text class="t-soft" x="162" y="837">global pausiert &amp; RespectsGlobalPause → sofort wieder Pause</text>
 
     <line class="flow-accent" x1="630" y1="796" x2="656" y2="796"/>
     <rect class="box-alt" x="660" y="770" width="285" height="52" rx="6"/>
@@ -211,45 +211,45 @@
     <line class="flow" x1="390" y1="848" x2="390" y2="870"/>
 
     <rect class="box" x="150" y="870" width="480" height="88" rx="6"/>
-    <text class="t-title" x="162" y="892">What the caller gets back</text>
-    <text class="t-mono" x="162" y="911">Play* → a handle only if ado.CanHandleAudioSource</text>
-    <text class="t-mono" x="162" y="928">FadeIn* → StartFade(0 → 1), ALWAYS a valid handle</text>
-    <text class="t-soft" x="162" y="947">AudioHandle { PoolIndex, Generation } — nothing else leaves the system</text>
+    <text class="t-title" x="162" y="892">Was der Aufrufer zurückbekommt</text>
+    <text class="t-mono" x="162" y="911">Play* → nur bei ado.CanHandleAudioSource ein Handle</text>
+    <text class="t-mono" x="162" y="928">FadeIn* → StartFade(0 → 1), IMMER ein gültiges Handle</text>
+    <text class="t-soft" x="162" y="947">AudioHandle { PoolIndex, Generation } — mehr wandert nicht nach außen</text>
   </g>
 
   <g class="phase-7">
     <line class="flow" x1="390" y1="958" x2="390" y2="980"/>
 
     <rect class="box-alt" x="150" y="980" width="480" height="262" rx="6"/>
-    <text class="t-title" x="162" y="1002">LateUpdate() — the order is part of the contract</text>
+    <text class="t-title" x="162" y="1002">LateUpdate() — die Reihenfolge ist Vertrag</text>
 
     <rect class="box" x="164" y="1014" width="452" height="40" rx="5"/>
     <text class="t-mono" x="176" y="1032">followService.UpdateFollowers()</text>
-    <text class="t-soft" x="176" y="1047">slot position = emitter position · emitter destroyed → Stop</text>
+    <text class="t-soft" x="176" y="1047">Slot-Position = Emitter-Position · Emitter zerstört → Stop</text>
 
     <rect class="box" x="164" y="1060" width="452" height="40" rx="5"/>
     <text class="t-mono" x="176" y="1078">occlusionSmoothingService.Tick()</text>
-    <text class="t-soft" x="176" y="1093">filter.cutoffFrequency glides toward TargetCutoff</text>
+    <text class="t-soft" x="176" y="1093">filter.cutoffFrequency gleitet Richtung TargetCutoff</text>
 
     <rect class="box" x="164" y="1106" width="452" height="40" rx="5"/>
     <text class="t-mono" x="176" y="1124">fadeService.Tick()</text>
-    <text class="t-soft" x="176" y="1139">writes the FadeFactor · done + stopOnEnd → StopSlot</text>
+    <text class="t-soft" x="176" y="1139">schreibt den FadeFactor · fertig + stopOnEnd → StopSlot</text>
 
     <rect class="box" x="164" y="1152" width="452" height="40" rx="5"/>
     <text class="t-mono" x="176" y="1170">duckService.Tick()</text>
-    <text class="t-soft" x="176" y="1185">duck[category] from the rules · only when EnableDucking</text>
+    <text class="t-soft" x="176" y="1185">duck[Kategorie] aus den Regeln · nur bei EnableDucking</text>
 
     <rect class="box-accent" x="164" y="1198" width="452" height="40" rx="5"/>
     <text class="t-mono" x="176" y="1216">volumeWriteService.Apply()</text>
-    <text class="t-soft" x="176" y="1231">must run last — consumes every factor of this frame</text>
+    <text class="t-soft" x="176" y="1231">muss zuletzt laufen — verbraucht alle Faktoren dieses Frames</text>
 
     <rect class="box-alt" x="660" y="1021" width="285" height="118" rx="6"/>
     <text class="t-title" x="672" y="1043">WallCheckLoop</text>
-    <text class="t-soft" x="672" y="1060">runs asynchronously beside the frame tick</text>
-    <text class="t-mono" x="672" y="1079">RaycastNonAlloc: slot → listener</text>
-    <text class="t-soft" x="672" y="1096">interval from the config, unscaled clock</text>
-    <text class="t-soft" x="672" y="1112">keeps running at timeScale 0</text>
-    <text class="t-soft" x="672" y="1130">writes ONLY TargetCutoff, never the filter</text>
+    <text class="t-soft" x="672" y="1060">läuft asynchron neben dem Frame-Tick</text>
+    <text class="t-mono" x="672" y="1079">RaycastNonAlloc: Slot → Listener</text>
+    <text class="t-soft" x="672" y="1096">Intervall aus dem Config, unskalierte Uhr</text>
+    <text class="t-soft" x="672" y="1112">läuft auch bei timeScale 0 weiter</text>
+    <text class="t-soft" x="672" y="1130">schreibt NUR TargetCutoff, nie den Filter</text>
     <line class="flow-accent" x1="660" y1="1080" x2="620" y2="1080"/>
   </g>
 
@@ -257,17 +257,17 @@
     <line class="flow" x1="390" y1="1242" x2="390" y2="1264"/>
 
     <rect class="box-accent" x="150" y="1264" width="480" height="104" rx="6"/>
-    <text class="t-title-accent" x="162" y="1288">AudioVolumeWriteService — the only writer</text>
-    <text class="t-formula" x="390" y="1318" text-anchor="middle">source.volume = clamp01( base · fade · duck )</text>
-    <text class="t-soft" x="390" y="1340" text-anchor="middle">VolumeResolver — pure logic, EditMode-tested</text>
-    <text class="t-soft" x="390" y="1357" text-anchor="middle">silent slots are skipped</text>
+    <text class="t-title-accent" x="162" y="1288">AudioVolumeWriteService — der einzige Schreiber</text>
+    <text class="t-formula" x="390" y="1318" text-anchor="middle">source.volume = clamp01( basis · fade · duck )</text>
+    <text class="t-soft" x="390" y="1340" text-anchor="middle">VolumeResolver — pure Logik, in EditMode getestet</text>
+    <text class="t-soft" x="390" y="1357" text-anchor="middle">stumme Slots werden übersprungen</text>
 
     <rect class="box-alt" x="660" y="1264" width="285" height="104" rx="6"/>
-    <text class="t-title" x="672" y="1286">the three factors</text>
-    <text class="t-soft" x="672" y="1305"><tspan class="t-mono">base</tspan> CategoryVolumeSource, live</text>
-    <text class="t-soft" x="686" y="1320">from the VolumeDictionary</text>
-    <text class="t-soft" x="672" y="1339"><tspan class="t-mono">fade</tspan> the slot's FadeFactor</text>
-    <text class="t-soft" x="672" y="1358"><tspan class="t-mono">duck</tspan> AudioDuckService, else 1.0</text>
+    <text class="t-title" x="672" y="1286">die drei Faktoren</text>
+    <text class="t-soft" x="672" y="1305"><tspan class="t-mono">basis</tspan> CategoryVolumeSource, live</text>
+    <text class="t-soft" x="686" y="1320">aus dem VolumeDictionary</text>
+    <text class="t-soft" x="672" y="1339"><tspan class="t-mono">fade</tspan> FadeFactor des Slots</text>
+    <text class="t-soft" x="672" y="1358"><tspan class="t-mono">duck</tspan> AudioDuckService, sonst 1.0</text>
     <line class="flow" x1="660" y1="1316" x2="634" y2="1316"/>
   </g>
 
@@ -276,8 +276,8 @@
 
     <rect class="box" x="150" y="1390" width="480" height="72" rx="6"/>
     <text class="t-title" x="162" y="1412">AudioSource · AudioLowPassFilter</text>
-    <text class="t-soft" x="162" y="1431">the pooled GameObject “Pooled Audio Source NNN”</text>
-    <text class="t-soft" x="162" y="1449">→ Unity mixer → speakers</text>
+    <text class="t-soft" x="162" y="1431">das gepoolte GameObject »Pooled Audio Source NNN«</text>
+    <text class="t-soft" x="162" y="1449">→ Unity-Mixer → Lautsprecher</text>
     <g class="speaker">
       <polygon class="glyph" points="556,1420 566,1420 578,1410 578,1442 566,1432 556,1432"/>
       <path class="glyph-line" d="M 585 1416 Q 592 1426 585 1436"/>
@@ -289,26 +289,26 @@
     <line class="flow" x1="390" y1="1462" x2="390" y2="1484"/>
 
     <rect class="box" x="150" y="1484" width="480" height="118" rx="6"/>
-    <text class="t-title" x="162" y="1506">Four ways back into the pool</text>
-    <text class="t-soft" x="162" y="1528"><tspan class="t-mono">Stop(handle)</tspan> → handle still current? → ClearFade + StopSlot</text>
-    <text class="t-soft" x="162" y="1548"><tspan class="t-mono">FadeOut(handle, d)</tspan> → FadeFactor to 0 → StopSlot</text>
-    <text class="t-soft" x="162" y="1568"><tspan class="t-mono">OneShot</tspan> → BusyUntilTime elapsed, clip finished</text>
-    <text class="t-soft" x="162" y="1588"><tspan class="t-mono">Follow</tspan> → emitter destroyed → Stop, so no loop leaks</text>
+    <text class="t-title" x="162" y="1506">Vier Wege zurück in den Pool</text>
+    <text class="t-soft" x="162" y="1528"><tspan class="t-mono">Stop(handle)</tspan> → Handle noch aktuell? → ClearFade + StopSlot</text>
+    <text class="t-soft" x="162" y="1548"><tspan class="t-mono">FadeOut(handle, d)</tspan> → FadeFactor auf 0 → StopSlot</text>
+    <text class="t-soft" x="162" y="1568"><tspan class="t-mono">OneShot</tspan> → BusyUntilTime abgelaufen, Clip zu Ende</text>
+    <text class="t-soft" x="162" y="1588"><tspan class="t-mono">Follow</tspan> → Emitter zerstört → Stop, damit kein Loop leckt</text>
 
     <line class="flow" x1="390" y1="1602" x2="390" y2="1624"/>
 
     <rect class="box" x="150" y="1624" width="480" height="76" rx="6"/>
     <text class="t-title" x="162" y="1646">AudioStopService.StopSlot(slot)</text>
     <text class="t-mono" x="162" y="1665">source.Stop() · ResetSlotBusy · ResetPauseState · StopActiveCheck</text>
-    <text class="t-soft" x="162" y="1684">the slot is free again — the next Play() takes it with Generation+1</text>
+    <text class="t-soft" x="162" y="1684">der Slot ist wieder frei — der nächste Play() nimmt ihn mit Generation+1</text>
 
     <polyline class="flow" points="630,1662 966,1662 966,466 634,466"/>
-    <text class="t-edge" x="958" y="720" text-anchor="middle" transform="rotate(-90 958 720)">slot back in the pool</text>
+    <text class="t-edge" x="958" y="720" text-anchor="middle" transform="rotate(-90 958 720)">Slot zurück im Pool</text>
   </g>
 
   <g class="colophon">
     <line class="hair" x1="150" y1="1736" x2="945" y2="1736"/>
-    <text class="t-soft" x="150" y="1758">Snapshot of 2026-08-13, commit 06057b5. The structure keeps growing —</text>
-    <text class="t-soft" x="150" y="1776">this picture need not match the current state. The code is authoritative.</text>
+    <text class="t-soft" x="150" y="1758">Momentaufnahme vom 13.08.2026, Commit 06057b5. Die Struktur wächst weiter —</text>
+    <text class="t-soft" x="150" y="1776">dieses Bild entspricht nicht zwingend dem aktuellen Stand. Verbindlich ist der Code.</text>
   </g>
 </svg>

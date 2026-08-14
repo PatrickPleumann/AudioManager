@@ -17,14 +17,20 @@
 
 ## 0. Das Bild dazu
 
-[`AudioTool-Sound-Flow.svg`](AudioTool-Sound-Flow.svg) zeichnet den Weg **eines** Sounds von außen nach innen:
-vom `Play()`-Aufruf über Slot-Vergabe und Dispatch durch die LateUpdate-Kette bis zum geschriebenen
-`source.volume` — und zurück in den Pool. Gedacht als Einstieg **vor** den Listen unten, nicht als deren Ersatz.
+🇩🇪 [`AudioTool-Sound-Flow.de.svg`](AudioTool-Sound-Flow.de.svg) · 🇬🇧 [`AudioTool-Sound-Flow.svg`](AudioTool-Sound-Flow.svg)
+
+Das Bild zeichnet den Weg **eines** Sounds von außen nach innen: vom `Play()`-Aufruf über Slot-Vergabe und
+Dispatch durch die LateUpdate-Kette bis zum geschriebenen `source.volume` — und zurück in den Pool. Gedacht
+als Einstieg **vor** den Listen unten, nicht als deren Ersatz.
 
 > ⚠️ **Momentaufnahme, kein Vertrag.** Das Bild bildet den Stand vom 13.08.2026 (Commit `06057b5`) ab. Die
 > Struktur wächst weiter — es muss **nicht zu jeder Zeit dem aktuellen Stand entsprechen**. Bei Abweichung
-> gilt: der Code hat recht, dann diese Datei, dann das Bild. Wer das Bild nachzieht, aktualisiert die
-> Datumszeile im SVG-Fuß mit.
+> gilt: der Code hat recht, dann diese Datei, dann das Bild.
+
+> 📌 **Beide Sprachfassungen sind 1:1 gespiegelt** — wie `README.md` / `README.de.md`. Wer das Bild nachzieht,
+> ändert **beide** SVGs (Geometrie ist identisch, nur die Texte unterscheiden sich) und aktualisiert in beiden
+> die Datumszeile im Fuß. Namensschema wie beim README: Englisch trägt den Default-Namen, Deutsch das
+> `.de`-Suffix.
 
 ---
 
@@ -116,7 +122,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `Config/CategoryMixerRoute.cs` | **Reservierter Stufe-2-Seam** (Kategorie → AudioMixerGroup) — deklariert, noch nicht gelesen |
 | `Config/DuckConfigIssue.cs` · `DuckConfigValidation.cs` | Inspector-Guard: Master-Schalter vs. Regeln (Entscheidung pur, Wortlaut im `OnValidate`) |
 | `Config/CategoryVolumeCoverage.cs` | Abdeckungs-Verdikt der Volume-Liste (Entscheidung pur, Wortlaut im Config-Inspector) |
-| `Config/OcclusionRangeIssue.cs` · `OcclusionRangeValidation.cs` | Inspector-Guard: Cutoff-Boden vs. offener Cutoff (Entscheidung pur, Wortlaut im Config-Inspector) |
+| `Config/OcclusionRangeIssue.cs` · `OcclusionRangeAdvice.cs` · `OcclusionRangeValidation.cs` | Inspector-Guard: Cutoff-Boden vs. offener Cutoff — `Evaluate` verwirft die kaputte Spanne, `Advise` beschreibt die gültige, aber ungewohnte (Entscheidung pur, Wortlaut im Config-Inspector) |
 | `Interfaces/IAudioWallCheckService.cs` | Strategy-Seam für WallCheck (UniTask/Coroutine) |
 | `Interfaces/IAudioListenerProvider.cs` | Seam gegen stale Listener-Transform (`TryGetPosition`) |
 | `Interfaces/IDuckRuleProvider.cs` | Seam für die Duck-Konfiguration (Regeln + Attack/Release-Rate) |
