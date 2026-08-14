@@ -83,7 +83,7 @@ Die Mathematik- und Policy-Entscheidungen leben in kleinen **Unity-freien** Klas
 | `AudioHandleValidator` | Handle-Aktualität: Bounds + Generation |
 | `ListenerCachePolicy` | wann der aktive AudioListener neu aufzulösen ist (self-healing, kein Polling) |
 
-Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwischen einem testbaren Seam (ein Interface / eine reine Klasse, im schnellen EditMode prüfbar) und Logik stand, die nur über langsames, vages PlayMode erreichbar ist, gewinnt der Seam. Das Ergebnis ist eine **EditMode-Suite von über 100 Tests über die Pure-Logic-Schicht**.
+Das ist ein bewusster Trade-off zugunsten **ehrlicher Tests**: Wo die Wahl zwischen einem testbaren Seam (ein Interface / eine reine Klasse, im schnellen EditMode prüfbar) und Logik stand, die nur über langsames, vages PlayMode erreichbar ist, gewinnt der Seam. Das Ergebnis ist eine **EditMode-Suite von über 150 Tests über die Pure-Logic-Schicht**.
 
 ### Null Allokationen pro Frame
 

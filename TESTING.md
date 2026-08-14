@@ -78,6 +78,19 @@ bestätigt hat** — nicht, wenn *ich* den Zustand für richtig halte.
   langsamem/vagem PlayMode prüfbar): die testbare wählen. Ein kleiner Seam ist es wert. Die daraus
   entstandene pure Logik-Schicht ist in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2 gelistet — dort ist ihre
   Single Source, hier bewusst keine zweite Kopie.
+- **Die Testgrenze verläuft am Assembly, nicht am Ordnernamen.** Getestet wird, was im **Runtime-Assembly**
+  (`AudioFramework`) *entscheidet*. Zwei Sorten Code außerhalb davon werden bewusst **nicht** getestet
+  *(entschieden 2026-08-14, für beide Sorten mit derselben Begründung)*:
+  - **Editor-Präsentation** (`AudioFramework.Editor`, `includePlatforms: ["Editor"]`) — zustandslos, schreibt
+    ausschließlich über `SerializedProperty`, strukturell aus jedem Build ausgeschlossen.
+  - **Szenen- und Demo-Glue** (`Assets/Scripts/`, z. B. `TestScript`, `CategoryVolumeSliderBinding`, später die
+    Showcase-Szene) — verzweigungsfreies Durchreichen an die öffentliche API, im EditMode nicht instanziierbar.
+
+  Beide scheitern **sichtbar statt still**, und ein Test darauf wäre ein reiner Change-Detector. Das Weglassen
+  ist deshalb **keine Ausnahme** von dieser Disziplin, sondern ihre korrekte Anwendung.
+  - **Was die Grenze trägt — die Auflage:** Entsteht in solchem Code je eine echte Entscheidung (etwas rechnet
+    oder verzweigt), gehört **diese Entscheidung** als pure Einheit ins Runtime-Assembly und wird dort
+    test-first gebaut. Die Regel schützt nur so lange, wie außerhalb wirklich nur Kabel liegt.
 
 ## 4. Schutzregeln bei rotem Test oder verfehlter Vorhersage
 

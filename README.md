@@ -83,7 +83,7 @@ The math and policy decisions live in small **Unity-free** classes, unit-tested 
 | `AudioHandleValidator` | handle currency: bounds + generation |
 | `ListenerCachePolicy` | when to re-resolve the active AudioListener (self-healing, no polling) |
 
-This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of over 100 tests across the pure-logic layer**.
+This is a deliberate trade-off in favour of **honest tests**: where the choice was a testable seam (an interface/pure class checkable in fast EditMode) versus logic only reachable through slow, vague PlayMode, the seam wins. The result is an **EditMode suite of over 150 tests across the pure-logic layer**.
 
 ### Zero per-frame allocations
 

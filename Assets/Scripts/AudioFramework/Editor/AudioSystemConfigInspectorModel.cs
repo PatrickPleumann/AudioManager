@@ -93,10 +93,23 @@ namespace AudioFramework.EditorTools
                     $"{Join(snapshot.DuplicatedCategories)} listed more than once. The first entry wins at runtime " +
                     "and the others are ignored — keep exactly one entry per category."));
 
-            if (snapshot.MinCutoff >= snapshot.DefaultCutoff)
-                findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
-                    "Min Cutoff Freq Value is not below Default Cutoff Freq Value, so a wall has no room to " +
-                    "dampen anything — occlusion will be inaudible."));
+            switch (OcclusionRangeValidation.Evaluate(snapshot.DefaultCutoff, snapshot.MinCutoff))
+            {
+                case OcclusionRangeIssue.MinAboveDefault:
+                    findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
+                        "Min Cutoff Freq Value is above Default Cutoff Freq Value, which turns occlusion inside out: " +
+                        "a sound with nothing in the way already plays at the low Default value and sounds muffled, " +
+                        "while a wall raises its cutoff toward Min and makes it brighter. Set Min below Default (the " +
+                        "shipped values are 22000 and 100)."));
+                    break;
+
+                case OcclusionRangeIssue.MinEqualsDefault:
+                    findings.Add(new InspectorFinding(InspectorFindingSeverity.Warning,
+                        "Min Cutoff Freq Value equals Default Cutoff Freq Value, so the wall check can never reduce " +
+                        "a cutoff and occlusion does nothing at all. Lower Min below Default to give the wall check " +
+                        "room to work."));
+                    break;
+            }
 
             switch (DuckConfigValidation.Evaluate(snapshot.DuckingEnabled, snapshot.DuckRuleCount))
             {

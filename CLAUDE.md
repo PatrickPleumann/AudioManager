@@ -137,8 +137,8 @@ AudioManagerDynamic (MonoBehaviour — Singleton, öffentliche API, treibt die L
 ```
 
 Die gesamte Entscheidungslogik liegt in **puren, Unity-freien Klassen** (EditMode-getestet) — Liste und
-Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **153 EditMode-Tests**; die pure Schicht
-umfasst **19 Einheiten** (die Liste in §2 ist deren Single Source).
+Verantwortung in [`ARCHITECTURE.md`](ARCHITECTURE.md) §2. Aktuell **157 EditMode-Tests**; die pure Schicht
+umfasst **20 Einheiten** (die Liste in §2 ist deren Single Source).
 
 ---
 

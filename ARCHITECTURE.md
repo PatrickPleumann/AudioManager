@@ -94,6 +94,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `DuckRuleFlattening` | nested `DuckRule` → flache `DuckPair`-Liste (Fill-Stil, GC-frei) |
 | `DuckConfigValidation` | Widerspruch zwischen Ducking-Master-Schalter und konfigurierten Regeln (beide Richtungen) |
 | `CategoryVolumeCoverage` | Volume-Liste einer Config gegen alle `AudioCategory`-Werte: fehlend · doppelt · auf 0 (Duplikat entscheidet über den **ersten** Eintrag, spiegelt keep-first) |
+| `OcclusionRangeValidation` | Cutoff-Boden gegen offenen Cutoff: Boden **über** Default (Occlusion invertiert — offen dumpf, hinter der Wand heller) vs. **gleich** Default (Wall-Check kann nie dämpfen). Gleichheit bewusst exakt, nicht per Epsilon |
 | `DuckFactorLedger` | Duck-Zustand **über die Zeit**: wer wird diesen Frame gestept, Ziel via `DuckTargetPolicy`, Glide via `DuckEnvelope`, Retire bei `1.0` |
 
 ---
@@ -115,6 +116,7 @@ macht (→ [`TESTING.md`](TESTING.md)).
 | `Config/CategoryMixerRoute.cs` | **Reservierter Stufe-2-Seam** (Kategorie → AudioMixerGroup) — deklariert, noch nicht gelesen |
 | `Config/DuckConfigIssue.cs` · `DuckConfigValidation.cs` | Inspector-Guard: Master-Schalter vs. Regeln (Entscheidung pur, Wortlaut im `OnValidate`) |
 | `Config/CategoryVolumeCoverage.cs` | Abdeckungs-Verdikt der Volume-Liste (Entscheidung pur, Wortlaut im Config-Inspector) |
+| `Config/OcclusionRangeIssue.cs` · `OcclusionRangeValidation.cs` | Inspector-Guard: Cutoff-Boden vs. offener Cutoff (Entscheidung pur, Wortlaut im Config-Inspector) |
 | `Interfaces/IAudioWallCheckService.cs` | Strategy-Seam für WallCheck (UniTask/Coroutine) |
 | `Interfaces/IAudioListenerProvider.cs` | Seam gegen stale Listener-Transform (`TryGetPosition`) |
 | `Interfaces/IDuckRuleProvider.cs` | Seam für die Duck-Konfiguration (Regeln + Attack/Release-Rate) |

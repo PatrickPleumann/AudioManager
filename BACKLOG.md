@@ -14,37 +14,38 @@
 
 # Noch Offen
 
-> ## 👉 Nächster Schritt (Stand 2026-08-13)
+> ## 👉 Nächster Schritt (Stand 2026-08-14)
 >
-> **Den Duck-Envelope bei globaler Pause einfrieren.** Der vollständige Eintrag steht unter Teil B → 🎯 V1 →
-> Mixer/Bus + Ducking → *„Duck-Envelope läuft während `PauseAll()` weiter → Volumen-Schwall beim Unpause"*.
+> **Den Duck-Envelope bei globaler Pause einfrieren (M).** Vollständiger
+> Eintrag unter Teil B → 🎯 V1 → Mixer/Bus + Ducking → *„Duck-Envelope läuft während `PauseAll()` weiter →
+> Volumen-Schwall beim Unpause"*. Es ist das **einzige verbliebene Duck-Thema, das ein Nutzer HÖRT** statt sieht:
+> `Source.Pause()` macht `isPlaying` false → `DeriveActiveCategories` findet keine aktive Kategorie → der Ledger
+> glidet jede geduckte Kategorie Richtung 1.0, mit `releaseRate = 2` nach ~0,25–0,5 s Pause vollständig. Beim
+> Unpause kommt sie kurz auf ~92 % hoch und sinkt über ~0,1 s zurück. **Vorab zu klären: Das ist eine
+> Entscheidung, kein Fakt** — „während Pause ist kein Trigger aktiv" ist in sich konsistent. Empfehlung trotzdem
+> einfrieren; ein Pausenmenü sollte die Szene beim Verlassen nicht neu abmischen. **Nicht gratis:** Der
+> Duck-Service kennt keine globale Pause → braucht ein **Seam**, kein angeklebtes `if`.
 >
-> **Worauf das aufsetzt (alles am 2026-08-13 fertiggestellt, siehe [Erledigt](#erledigt)):** `source.volume` hat
-> **einen** Schreiber (`AudioVolumeWriteService`); jeder Gain-Faktor wird von einer **eigenen** Einheit aufgelöst
-> (`CategoryVolumeSource` = Basis, `AudioFadeService` = Fade, `AudioDuckService` = Duck), eine fehlende Quelle
-> steuert `1.0` bei. Die Duck-Konfiguration lebt in der `AudioSystemConfig` (Häkchen `EnableDucking`). Der
-> Live-Volume-Slider ist über `SetCategoryVolume`/`GetCategoryVolume` erreichbar. **Stand: 147 EditMode-Tests.**
+> **Worauf das aufsetzt (Stand 2026-08-14, siehe [Erledigt](#erledigt)):** `source.volume` hat **einen** Schreiber
+> (`AudioVolumeWriteService`), jeder Gain-Faktor kommt aus einer **eigenen** Einheit, eine fehlende Quelle steuert
+> `1.0` bei. Duck-Konfiguration **und** Kategorie-Lautstärken leben in der `AudioSystemConfig` (kein
+> `AudioSourceVolumes`-SO mehr), die einen eigenen Inspector mit Abdeckungs-Pille hat. Die Volume-API
+> (`SetCategoryVolume`/`GetCategoryVolume`) ist **im Editor am Ohr bestätigt**. **Stand: 157 EditMode-Tests,
+> 20 pure Einheiten.**
 >
-> **Warum genau dieser Schritt:** Es ist das **einzige verbliebene Duck-Thema, das ein Nutzer HÖRT** statt sieht.
-> `AudioPauseService` ruft `Source.Pause()` → `isPlaying` wird false → `DeriveActiveCategories` findet keine
-> aktive Kategorie → der Ledger glidet jede geduckte Kategorie Richtung 1.0. Mit dem Default `releaseRate = 2`
-> ist nach ~0,25–0,5 s Pause jeder Duck weg; jedes reale Pausenmenü ist länger. Beim Unpause kommt die geduckte
-> Kategorie kurz auf ~92 % hoch und sinkt über ~0,1 s zurück — ein hörbarer Schwall.
+> **⏳ Zeitkritisch, unabhängig davon:** die **Entscheidung** zu `AudioCategory.cs` (Teil B →
+> Editor-Tooling). Nicht der Bau — die Entscheidung. Sie wird mit jeder weiteren Kategorie teurer und ist nach
+> der Showcase-Szene praktisch nicht mehr umkehrbar.
 >
-> **Vor dem ersten roten Test mit dem Maintainer klären:** Das ist **eine Entscheidung, kein Fakt** — „während
-> Pause ist kein Trigger aktiv" ist in sich konsistent. Empfehlung trotzdem **einfrieren**: ein Pausenmenü sollte
-> die Szene beim Verlassen nicht neu abmischen. **Nicht gratis:** Der Duck-Service kennt heute keine globale
-> Pause → das braucht ein **Seam**, kein angeklebtes `if`. Aufwand M.
->
-> *Danach in der Prioritätsliste: PlayMode-Test-Infrastruktur (M3 + K1 + vier Smoke-Bündel — hier fällt auch die
-> noch ausstehende Ohren-Verifikation der neuen Volume-API an) · Coroutine-Sammel-Check (sieben ungeprüfte
-> Spiegelungen, seit Monaten kein Compiler) · User-Doku Ducking + Volume-API (beides jetzt stabil beschreibbar).*
+> *Danach in der Prioritätsliste: PlayMode-Test-Infrastruktur (M3 + K1 + die Smoke-Bündel) · Coroutine-Sammel-Check
+> (sieben ungeprüfte Spiegelungen, seit Monaten kein Compiler) · User-Doku Ducking + Volume-API (beides jetzt
+> stabil beschreibbar).*
 
 ---
 
 ## Teil A — Release-Härtung (Code-Review IST)
 
-> **Meilenstein:** Alle verbliebenen Teil-A-Punkte (M3, P2–P7, R5/R6/R8) gehören zu **🎯 V1** — billige Härtung/Politur, gebündelt vor dem ersten Release.
+> **Meilenstein:** Alle verbliebenen Teil-A-Punkte (M3, P2–P7, R5/R8) gehören zu **🎯 V1** — billige Härtung/Politur, gebündelt vor dem ersten Release.
 
 ### 🟠 Wichtig (vor Release)
 
@@ -84,9 +85,6 @@
 
 #### R5 — `InitializePool` validiert die Prefab-Komponenten nicht (Review 2026-06-21)
 - [ ] `AudioPoolAcquisitionService.cs` (~Z. 37). `GetComponent<AudioSource>()`/`<AudioLowPassFilter>()` ohne Null-Check → ein falsch gebautes Prefab gibt später einen kryptischen NRE in `GetFreeAudioSourcePoolIndex` (`Source.isPlaying`) statt einer klaren Init-Fehlermeldung. Asset-Store-UX (Idiotensicherheit). Aufwand: S
-
-#### R6 — `AudioSystemConfig` ohne `OnValidate`-Guards (Review 2026-06-21)
-- [ ] `AudioSystemConfig.cs`. Kein Guard, dass `DefaultCutoffFreqValue > MinCutoffFreqValue` (oder dass Prefab/TransferObject gesetzt sind). Bei Fehlkonfig (Min über Default) floort die Occlusion sofort → alles dumpf ab Frame 1, ohne Inspector-Warnung. Härtung. Aufwand: S
 
 #### R8 — Veraltete XML-Doc in `CalculateCutoffFrequency` (Coroutine) (Review 2026-06-21)
 - [ ] `AudioCoroutineWallCheckService.cs` (~Z. 50). `<param name="hitInfo">`/`<param name="originPos">` passen nicht zur Signatur — Copy-Paste-Rest, doc rot in einer ausgelieferten Datei. Trivial. Aufwand: S
@@ -160,8 +158,10 @@
       - **Voller TDD-Loop gate-für-gate durchlaufen**, jedes Gate vom Maintainer am Runner bestätigt. 7 EditMode-Tests in `CategoryVolumeWriterTests.cs`. Der Stub warf bewusst `NotImplementedException` statt `default` zurückzugeben — mit `Updated` als erstem Enum-Wert wäre `ConfiguredCategory_ReportsUpdated` sonst zufällig grün gewesen. Mutation = obere Klemmung entfernt → **nur** `ValueAboveUnity_IsClampedToUnity` rot (1.5 statt 1.0), und `BoundaryValues_ArePassedThroughUnchanged` blieb **wie vorhergesagt grün**, weil 1.0 ohne die Zeile unverändert durchfällt — die beiden Tests überlappen sich also nicht. Stand danach: **147 Tests**.
       - **Plumbing im Manager bewusst ohne roten Test** (Go des Maintainers, gleiche Lage wie Schritt 5 der Duck-Kette): `AudioManagerDynamic` ist ein MonoBehaviour-Singleton, EditMode kann die statische API nicht aufrufen; ein Fake hätte nur bestätigt, dass `Set` aufgerufen wird — genau der tautologische Change-Detector, gegen den die Disziplin gebaut ist. Umfang: zwei Felder, zwei `Awake`-Zeilen, zwei statische Methoden. **Ohne Manager** verpufft der Setter still (wie `Stop`/`FadeOut` — ein `LogWarning` pro Slider-Frame wäre schlimmer als das Problem), und der Getter liefert **`1f` statt `default` = 0**, damit ein vor dem Manager gebautes Menü nicht alle Slider auf stumm zeigt. Konsistent mit der Regel „fehlende Quelle steuert 1.0 bei".
       - **Harte Grenze eingehalten:** geschrieben wird ausschließlich `dictionaryProvider.VolumeDictionary`, **nie** das `AudioSourceVolumes`-Asset.
-      - **⚠️ Noch offen: die Editor-/Ohren-Verifikation.** Dass ein *bereits laufender* Sound beim `SetCategoryVolume`-Aufruf sofort mitgeht, ist strukturell zwingend (Live-Read + Per-Frame-Write, beide test-gesichert) — aber **noch nicht gehört**. Fällt beim PlayMode-Smoke an (M3). Bis dahin nicht als „im Editor bestätigt" weitergeben.
-        - **Warum sie weiter aussteht (festgestellt 2026-08-14):** Der Testszene fehlt schlicht ein **Regler**, mit dem sich die Lautstärke *während* der Wiedergabe verstellen ließe. `TestScript` setzt seine drei Werte einmalig in `Start` — das beweist „der Startwert greift", **nicht** „ein laufender Sound geht mit". Genau die zweite Aussage ist aber die offene. **Nötig:** drei UI-Slider in der SampleScene, die im `onValueChanged` `AudioManagerDynamic.SetCategoryVolume(...)` rufen (das ist zugleich exakt der Nutzungspfad eines echten Settings-Menüs, also kein Wegwerf-Testcode). **Aufwand:** S
+      - [x] **ERLEDIGT 2026-08-14 — Ohren-Verifikation im Editor bestanden: ein bereits laufender Sound geht beim Sliderzug sofort mit.** Vom Maintainer selbst beobachtet. Damit sind die **zwei bis dahin unbewiesenen Stellen** der Kette bestätigt: die Verdrahtung `PooledVolumeTarget` → klingender Slot (bewusst ohne red-first gebaut, „Coverage fällt beim PlayMode-Smoke ab") und die seit dem SO-Umbau neue `Awake`-Zeile `FillDictionaryWithKeysAndValues(systemConfig.CategoryVolumes)` — beide waren einzeln plausibel, aber nie am laufenden System gesehen. Das Feature darf ab jetzt als „im Editor bestätigt" weitergegeben werden.
+        - **Gebaut dafür: `CategoryVolumeSliderBinding`** (`Assets/Scripts/`, ein Binding pro Slider) — `onValueChanged` → `SetCategoryVolume`, Seeding in `Start` (nicht `OnEnable`: braucht einen lebenden Manager, `Awake`-Reihenfolge zwischen Komponenten ist undefiniert) über `GetCategoryVolume` mit **`SetValueWithoutNotify`**: ein benachrichtigendes Seeding würde für eine unkonfigurierte Kategorie beim bloßen Öffnen des Menüs still einen Eintrag anlegen und melden — die `EntryCreated`-Diagnose würde zu Rauschen, das der Nutzer nie ausgelöst hat. **Kein Wegwerf-Code:** das ist exakt der Nutzungspfad eines echten Settings-Menüs und zugleich Punkt (e) der Demo-Szene („Volume-Slider — Live-Kategorie-Lautstärke").
+        - **Bewusst ohne Test** (Entscheidung des Maintainers 2026-08-14): Szenen-/Demo-Code liegt außerhalb des Frameworks — verzweigungsfreie Unity-Glue, im EditMode nicht instanziierbar, scheitert sichtbar statt still. **Dieselbe Grenze wie beim `AudioSystemConfigEditor` am 2026-08-14** („die Grenze verläuft am Assembly"), keine Ausnahme von der Testdisziplin, sondern ihre Anwendung. *Auflage, damit die Grenze trägt: entsteht im Showcase je echte Entscheidungslogik, gehört sie auf die Framework-Seite und wird dort getestet.*
+        - **Nicht mitgeschlossen:** M3 / der PlayMode-Smoke bleibt offen. Ein Ohren-Check bestätigt den IST-Zustand, er sichert keine Regression ab.
       - *Folgearbeit User-Doku (inkl. des Persistenz-Satzes) → eigener Punkt weiter unten.*
       - Ursprünglicher Befund: **⚠️ Der Live-Volume-Slider ist gebaut, aber nicht bedienbar — es fehlt die öffentliche API** (gefunden 2026-08-13 beim Vorbereiten des Editor-Checks nach dem Writer-Umbau) — Der gesamte Lesepfad steht und ist getestet: `CategoryVolumeSource` liest das `VolumeDictionary` **live bei jedem Frame** (zwei eingefrorene Tests sichern genau das ab), und `AudioVolumeWriteService` schreibt das Ergebnis sofort auf `source.volume`. Eine Wertänderung würde also unmittelbar hörbar. **Nur kann sie niemand auslösen:** Das Dictionary ist zwar `public readonly` auf dem `AudioManagerDictionaryProvider` ([`AudioManagerDictionaryProvider.cs:12`](Assets/Scripts/AudioFramework/Utilities/AudioManagerDictionaryProvider.cs)), der Provider selbst aber ein **privates Feld** von `AudioManagerDynamic`. Es gibt keine statische API — der Käufer kommt an den Wert nicht heran.
       - **Warum das release-relevant ist:** „Laufzeit-Volume (Settings-Menü)" steht wörtlich in der Beschreibung dieses V1-Features, und die Produktstrategie nennt das Volume-Menü den **höchsten Verkaufshebel** („fast jedes Spiel braucht Volume-Menü + Ducking"). Ohne API ist die Hälfte des Features vorhanden, aber unerreichbar. Die Notiz „hier fällt der Live-Settings-Slider gratis ab" (Schritt 6 oben) stimmt **strukturell**, nicht **benutzbar** — genau die Art Über-Claim, die wir schon zweimal korrigieren mussten.
@@ -431,6 +431,11 @@ Die Rationale (lightweight vs. occlusion; UI/2D) ist via per-Sound-Flags am Einz
 > Ledger abgeschlossener Aufgaben — **neueste zuerst.** Detaillierte Begründungen und Designentscheidungen leben in [`ARCHITECTURE.md`](ARCHITECTURE.md); hier nur **Was + Datum + Kürzel** (+ Folgearbeit-Pointer, falls offen).
 
 ### 2026-08-14
+- **R6 erledigt — Cutoff-Bereich wird geprüft, an genau einer Stelle.** Neue pure `OcclusionRangeValidation` (`Config/`, Zwilling zu `DuckConfigValidation` und `CategoryVolumeCoverage`) unterscheidet **zwei** Fälle statt einem: Boden **über** dem offenen Cutoff und Boden **gleich** dem offenen Cutoff. **Voller TDD-Loop gate-für-gate**, jedes Gate vom Maintainer am Runner bestätigt — 4 Tests, Stub warf bewusst `NotImplementedException` (mit `None` als erstem Enum-Wert wären zwei Tests sonst zufällig grün gewesen), Mutation `>` → `>=` machte wie vorhergesagt **genau** `FloorEqualToOpenCutoff_ReportsMinEqualsDefault` rot. Suite **153 → 157**, pure Schicht 19 → 20 Einheiten.
+  - **Gemeldet wird nur im Config-Inspector** (Entscheidung des Maintainers 2026-08-14). Die zwischenzeitliche `OnValidate`-Verdrahtung wurde wieder entfernt; `AudioSystemConfig.OnValidate` behält ausschließlich seine Duck-Warnung. Damit steht `OcclusionRangeValidation` im selben Muster wie `CategoryVolumeCoverage`: pure Entscheidung im Runtime-Assembly, Wortlaut im Editor-Assembly, kein Konsolen-Rauschen.
+  - **Dabei einen echten Fehler im Bestand gefunden:** Der Config-Inspector prüfte den Bereich bereits inline mit `MinCutoff >= DefaultCutoff` — eine **zweite, ungetestete Kopie der Regel**, die beide Fälle unter *einen* Text zog, der für die Hälfte seines Geltungsbereichs falsch war („occlusion will be inaudible" beschreibt nur den Gleichstand). Ersetzt durch den Aufruf der getesteten Einheit mit je eigenem Text.
+  - **⚠️ Sprachliche Korrektur, die den ganzen Eintrag betrifft:** Die ursprüngliche R6-Formulierung „bei Min über Default **floort** die Occlusion sofort → alles dumpf ab Frame 1" **beschreibt den Mechanismus falsch** und hat die erste Fassung der neuen Meldungstexte mit vergiftet. Tatsächlich (nachgerechnet an `WallOcclusionMath`): Ohne Wand setzt der Dispatch den Cutoff auf den *offenen* Wert — der ist in diesem Fall der niedrige, also dumpf. Hinter einer Wand rechnet `ApplyWall` **nach oben** Richtung Boden und macht den Sound **heller**. Die Fehlkonfiguration **invertiert** die Occlusion, sie nagelt nichts am Boden fest. Alle Texte (Enum, Klassen-Summary, Inspector-Meldung, Test-Summary, `ARCHITECTURE.md` §2) sagen das jetzt so. *Nicht als „floor"-Formulierung wiederbeleben.*
+  - **Nicht Teil von R6 (bewusst):** der Prefab-Guard aus dem Nebensatz des Ursprungsbefunds → gehört zu **R5** (`InitializePool`); im Inspector existiert er als Error-Finding bereits. Das dort ebenfalls genannte `TransferObject` gibt es seit dem SO-Umbau nicht mehr.
 - **Eigener Inspector für die `AudioSystemConfig` — dieselbe Sprache wie der ADO-Editor** (Wunsch des Maintainers). Banner mit Abdeckungs-Pille (`4/5 categories`, Akzentfarbe aus dem Asset-Namen, damit mehrere Configs unterscheidbar bleiben), die Volume-Liste als **Mischpult statt Array** (Kategorie · Slider · Prozent · Entfernen), darunter die Kategorien **ohne** Eintrag mit einem **Add**-Knopf, der genau diese Kategorie auf 1.0 anlegt — Setup-Schritt 4 ist damit ein Klick pro Kategorie. Dazu Sektionen für Voices, Occlusion, Ducking (Regeln und Raten ausgegraut, wenn der Master-Schalter aus ist) und References, die `Not laid out yet`-Sektion aus dem ADO-Editor (ein neues Config-Feld taucht von selbst auf, statt zu verschwinden), Findings oben / Hints unten und ein Klartext-Satz „Pools 50 audio sources, covers 4 of 5 categories, checks walls on 4 layers every 0,25 s and never ducks". Die Duck-Widersprüche werden **nicht** neu entschieden: das Modell ruft die getestete `DuckConfigValidation` auf.
   - **Neue pure Einheit `CategoryVolumeCoverage`** (Zwilling zu `DuckConfigValidation`) — fehlende · doppelte · auf 0 gesetzte Kategorien. **Red-first gebaut, 8 Tests, Suite 145 → 153.** Erst als Stub mit leeren Listen (6 rot, und **2 grün aus dem falschen Grund** — offen benannt statt als Erfolg verkauft), dann implementiert, dann Mutation: die Silent-Prüfung **vor** den Duplikat-`continue` verschoben → wie vorhergesagt **genau** `DuplicateWithZeroAfterAudibleFirst_IsNotSilent` rot (erwartet 0, bekam 1). Damit ist bewiesen, dass der zuvor wertlose Test die Festlegung „bei einem Duplikat entscheidet der **erste** Eintrag über Silence" wirklich hält — dieselbe keep-first-Semantik wie `TryAdd` im Dictionary, also spiegelt die Anzeige, was man hört.
   - **Erledigt damit den Punkt „Abdeckungsprüfung auf der Config"** — abweichend von der ursprünglichen Skizze sitzt der Wortlaut **im Config-Inspector statt in `OnValidate`**: dort steht er neben der Liste, die er kommentiert, statt in der Konsole. `OnValidate` behält seine Duck-Warnung unverändert.
