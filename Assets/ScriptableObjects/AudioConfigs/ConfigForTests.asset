@@ -16,6 +16,15 @@ MonoBehaviour:
   DefaultCutoffFreqValue: 22000
   MinCutoffFreqValue: 100
   OcclusionSmoothingSpeed: 50000
+  categoryVolumes:
+  - Category: 1
+    Volume: 1
+  - Category: 3
+    Volume: 0.5
+  - Category: 4
+    Volume: 0.1
+  - Category: 5
+    Volume: 0.5
   TimeIntervalBetweenPositionChecks: 0.25
   WallDampingPerLayer:
   - SingleLayer: 9
@@ -26,15 +35,6 @@ MonoBehaviour:
     WallDampingFactor: 0.82
   - SingleLayer: 4
     WallDampingFactor: 0.876
-  categoryVolumes:
-  - Category: 1
-    Volume: 1
-  - Category: 3
-    Volume: 0.5
-  - Category: 4
-    Volume: 0.1
-  - Category: 5
-    Volume: 0.5
   EnableDucking: 0
   duckRules: []
   attackRate: 5
