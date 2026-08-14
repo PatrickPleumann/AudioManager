@@ -3,9 +3,7 @@ using UnityEngine.UI;
 
 using AudioFramework.Data;
 using AudioFramework.Core;
-using UnityEngine.Events;
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
 
 public class TestScript : MonoBehaviour
 {
@@ -32,12 +30,6 @@ public class TestScript : MonoBehaviour
     public Button B_CrossFadeSpatial;
 
     [Space]
-    [Header("Test Values")]
-    public float AmbientVolume;
-    public float SFXVolume;
-    public float PlayerVolume;
-
-    [Space]
     [Header("Audio Data Objects")]
     public AudioDataObject AmbientDataObject;
     public AudioDataObject Player;
@@ -54,17 +46,6 @@ public class TestScript : MonoBehaviour
     [SerializeField] private GameObject walls;
 
 
-    /// <summary>
-    /// Applies the inspector test volumes through the public runtime API. Deliberately in Start, not Awake:
-    /// SetCategoryVolume needs a live manager, and Awake order between two components is undefined — from
-    /// Start, every Awake in the scene has already run.
-    /// </summary>
-    private void Start()
-    {
-        AudioManagerDynamic.SetCategoryVolume(AudioCategory.Ambient, AmbientVolume);
-        AudioManagerDynamic.SetCategoryVolume(AudioCategory.Player, PlayerVolume);
-        AudioManagerDynamic.SetCategoryVolume(AudioCategory.SFX, SFXVolume);
-    }
     private void OnEnable()
     {
         B_Ambient.onClick.AddListener(PlayAmbientTest);
