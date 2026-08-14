@@ -190,10 +190,22 @@ sofort ab. Kommt beim Extrahieren die Versuchung auf, „nebenbei" etwas zu verb
 > **Nachtesten des Bestandscodes** (M2 / Gruppe B) abzuleiten. Die Lehren daraus sind bereits nach Teil I §5
 > hochgezogen — dieser Teil hält die **Belege** dafür.
 >
-> **Audit-Stand:** 2026-06-15, Nachtrag 2026-06-28 (`VolumeResolver`). Auditierte Einheiten: **12** (82 Tests).
-> **Projekt-IST (nachgezählt 2026-07-27): 15 getestete Logik-Einheiten, 118 EditMode-Tests in 19 Dateien.**
-> Die Differenz ist noch **nicht** auditiert (Liste am Ende von Teil II) — das ist eine offene Erhebung,
-> kein Qualitätsurteil.
+> **Audit-Stand: 2026-08-15 — vollständig.** Erhoben über **alle** EditMode-Tests: **165 Tests in 27
+> Testklassen** (+ 3 Test-Doubles), die **23 Produktions-Einheiten** abdecken. Damit gibt es erstmals seit
+> dem Erst-Audit (2026-06-15) **keine unauditierte Restmenge** mehr; die frühere Tabelle „Noch nicht
+> auditiert" ist entfallen, weil sie leer wäre.
+>
+> **Verifizierte Grundlage:** Batchmode-Lauf gegen Unity `6000.3.6f1` am 2026-08-15 —
+> **165/165 grün, 0 rot, 0 übersprungen**, Laufzeit 0,13 s. Jede Bewertung unten steht auf diesem Lauf,
+> nicht auf Vermutung.
+>
+> **📌 Numerierung ist bewusst stabil.** Die Einträge **#1–#12** behalten ihre Nummern aus dem Erst-Audit,
+> weil **Teil I §5 namentlich auf sie verweist** (`#3`, `#5`, `#6`, `#7/#11 vs. #12`, `#8/#9`, `#10`,
+> `#12 Stolperstein 2`). Neu auditierte Einheiten hängen ab **#13** hinten an. Wer hier umnummeriert, bricht
+> die verbindliche Checkliste in Teil I.
+>
+> **📌 Diese Datei nimmt keine Aufgaben auf.** Befunde, aus denen Arbeit folgt, gehören in
+> [`BACKLOG.md`](BACKLOG.md) (Regel aus [`CLAUDE.md`](CLAUDE.md)); hier stehen nur Messung und Bewertung.
 
 ## Bewertungsraster
 
@@ -207,22 +219,38 @@ Jede Methode wurde gegen vier Kriterien geprüft:
 4. **Lücken** — was wird *nicht* geprüft, das geprüft gehören sollte?
 
 **Noten:** **Exzellent** · **Stark** · **Solide** · **Dünn (mit Lücke)**.
-Keine Note „mangelhaft" vergeben — es gibt in dieser Suite keinen schlechten Test.
+Keine Note „mangelhaft" vergeben — es gibt in dieser Suite keinen schlechten Test. Wo „Dünn" steht, ist
+**die Abdeckung** dünn, nicht die Qualität der vorhandenen Tests.
 
 ## Gesamturteil (zuerst, ehrlich)
 
-- ✅ **Kein tautologischer / Change-Detector-Test gefunden.** Kein Test liest die eigene Ausgabe der
-  Implementierung zurück. Der dünnste Fall (`LowPassDispatchPolicy`) pinnt immerhin eine *Entscheidung*.
-- ✅ **Spec-first-Disziplin durchgängig.** Jeder Test-Header trägt die „hand-derived, NOT read off
-  implementation"-Klausel — und die Zahlenwerte (0.3, 0.75, 40, 8000 …) sind unabhängig nachrechenbar, also
-  keine leere Floskel.
-- ✅ **Grenzwert-Disziplin stark, wo es zählt.** Die kritischen `>=`-Ränder sind mit *benachbarten
-  true/false-Paaren* gepinnt (`AudioHandleValidator`, `PoolSlotAvailability`, `FadeOperation.IsComplete`).
-- ✅ **Die „Safety"-Tests sind die Kronjuwelen:** Clobber-Guard (`AudioFadeService.ClearFade`),
-  null-Eintrag-vor-gültigem-Eintrag (`FillDictionaryWithKeysAndValues`), Pause-einfrieren-dann-fortsetzen.
-- ⚠️ **Alle Schwächen sind *minor* und gleichen sich:** (a) einzelne Guards, deren Entfernung am getesteten
-  Input *nichts* ändern würde; (b) unbestätigte Warn-Logs; (c) ein paar degenerate Inputs (negative
-  Dauer/Speed); (d) Operator-Äquivalenzen (`|` vs `+`), die bei den gewählten Inputs nicht unterscheidbar sind.
+- ✅ **Kein tautologischer / Change-Detector-Test gefunden — jetzt über alle 165.** Kein Test liest die
+  eigene Ausgabe der Implementierung zurück. Der dünnste Fall (`LowPassDispatchPolicy`) pinnt immerhin eine
+  *Entscheidung*.
+- ✅ **Spec-first-Disziplin nahezu lückenlos gelebt: 26 von 27 Testklassen** tragen die „hand-derived, NOT
+  read off implementation"-Klausel im Klassen-`<summary>`, und die Zahlenwerte sind unabhängig nachrechenbar.
+  **Die eine Ausnahme** ist `AudioFadeServicePauseTests`: der Header nennt die Spezifikation sauber („a fade
+  on a paused slot is FROZEN"), trägt aber die Pflicht-Boilerplate aus Teil I §5 nicht. Inhaltlich kein
+  Mangel, formal die einzige Abweichung von der Checkliste.
+- ✅ **Grenzwert-Disziplin bleibt die Stärke der Suite.** Die kritischen Ränder sind mit *benachbarten
+  true/false-Paaren* gepinnt — und der neue Bestand hält das Niveau: `WallCheckContinuation` (`<`-Grenze des
+  Busy-Fensters), `OcclusionRangeValidation.Advise` (beide Schwellen als Paar), `OcclusionRangeValidation`
+  (`==`-Fall gegen die schmalstmögliche gültige Spanne).
+- ✅ **Neues stärkstes Muster: der Reihenfolge-Diskriminator.** Mehrere Tests beweisen nicht nur *was*
+  gefiltert wird, sondern *wann* der Filter relativ zur Aggregation greift — `ActiveTriggerBeatsSmallerInactive`
+  (#16), `GenerationMismatch_OverridesPaused` (#14), `DuplicateWithZeroAfterAudibleFirst` (#22),
+  `SilentSlotDoesNotStopLaterSlotsFromBeingWritten` (#19). Das ist die wertvollste Test-Sorte der Suite.
+- ⚠️ **Die alten minor-Schwächen sind nicht verschwunden — teils haben sie sich reproduziert:**
+  (a) „Guard ohne echten Pin" ist in `DuckEnvelope` (#15) **exakt** so wiedergekommen wie in
+  `OcclusionSmoothing` (#6) — obwohl die Lehre daraus schon in Teil I §5 stand;
+  (b) **kein einziges `LogAssert.Expect` in der gesamten Suite**, während seit dem Erst-Audit ein *weiterer*
+  Warn-Log dazugekommen ist (#9);
+  (c) die Operator-Äquivalenz `|` vs. `+` (#10) ist bei `Advise` (#25) neu aufgetreten — beide Male
+  praktisch folgenlos.
+- ⚠️ **Der eine echte Ausreißer: `DuckFactorLedger` (#18).** Die einzige **zustandsbehaftete** pure Einheit
+  trägt mit **2 Tests** die dünnste Abdeckung im Verhältnis zu ihrer Oberfläche. Beide Tests sind gut; um sie
+  herum ist viel ungepinnt. Das ist das Muster des ganzen Audits: die Suite ist exzellent bei puren
+  Funktionen und am dünnsten dort, wo **Zustand** wohnt.
 
 | # | Einheit | Tests | Note | Headline |
 |---|---|---|---|---|
@@ -234,10 +262,25 @@ Keine Note „mangelhaft" vergeben — es gibt in dieser Suite keinen schlechten
 | 6 | `OcclusionSmoothing.Step` | 6 | **Stark** | `maxStep<=0`-Guard nicht echt gepinnt (gen. Pfad fällt zusammen) |
 | 7 | `AudioHandleValidator.IsCurrent` | 6 | **Exzellent** | Beste Grenz-Disziplin: beide Ränder mit true/false-Paaren |
 | 8 | `…Provider.FillLayerMaskDictionary…` | 4 | **Stark** | keep-first gepinnt; Warn-Log auf Duplikat unbestätigt |
-| 9 | `…Provider.FillDictionaryWithKeysAndValues` | 6 | **Exzellent** | null-Eintrag-vor-gültigem = ideale Diskriminierung |
+| 9 | `…Provider.FillDictionaryWithKeysAndValues` | 4 | **Stark** | keep-first gepinnt; **zwei** unbestätigte Warn-Logs (neu erhoben) |
 | 10 | `WallLayerMask.FromLayers` | 4 | **Stark** | `\|` vs `+` nicht unterscheidbar (praktisch moot bei eindeutigen Keys) |
 | 11 | `PoolSlotAvailability.IsFree` | 5 | **Exzellent** | Jede AND-Klausel einzeln gepinnt + `==`-Grenze inklusiv |
 | 12 | `VolumeResolver.Resolve` | 8 | **Stark** | Alle 3 Faktoren einzeln + Operator gepinnt; oberer Clamp prinzip-bedingt nur an *einem* Punkt |
+| 13 | `ListenerCachePolicy.NeedsResolve` | 3 | **Exzellent** | Erschöpfend über die *erreichbare* Domäne; `\|\|`→`&&` wird gefangen |
+| 14 | `WallCheckContinuation.ShouldContinue` | 9 | **Exzellent** | Jede Klausel + die **Klausel-Reihenfolge** + `<`-Grenze als Paar |
+| 15 | `DuckEnvelope.Step` | 8 | **Stark** | Attack/Release-Wahl beidseitig gepinnt; `maxStep<=0` ist die #6-Lücke im Zwilling |
+| 16 | `DuckTargetPolicy.ResolveDuck` | 8 | **Exzellent** | Alle drei `continue`-Guards einzeln + Aktiv-Filter-vor-Min gepinnt |
+| 17 | `DuckRuleFlattening.Flatten` | 8 | **Stark** | `Clear()` + null-`Targets` + Ordnung gepinnt; **`rules == null` dokumentiert, aber ungetestet** |
+| 18 | `DuckFactorLedger` | 2 | **Dünn (mit Lücke)** | Einzige zustandsbehaftete Einheit, dünnste Abdeckung; Attack-Pfad nie durchlaufen |
+| 19 | `AudioVolumeWriteService.Apply` | 9 | **Exzellent** | `continue`-statt-`break` + Per-Slot-Kategorie + fehlende Quelle = 1.0 |
+| 20 | `CategoryVolumeSource.For` | 7 | **Exzellent** | `ConfiguredZero` und die zwei Live-Read-Tests sind ideale Diskriminatoren |
+| 21 | `CategoryVolumeWriter.Set` | 7 | **Stark** | Beide Clamps + beide Outcomes + Reihenfolge-Pin (`ContainsKey` **vor** dem Schreiben) |
+| 22 | `CategoryVolumeCoverage.Evaluate` | 8 | **Stark** | Duplikat-`continue` und Dedup einzeln gepinnt, Enum-Ordnung gepinnt |
+| 23 | `DuckConfigValidation.Evaluate` | 4 | **Stark** | Vollständige 2×2-Wahrheitstafel; Domäne selbst winzig (Wert pro Test wie #4) |
+| 24 | `OcclusionRangeValidation.Evaluate` | 4 | **Stark** | `==`-Fall gegen 1-Hz-Spanne — echtes Nachbarpaar an einer Diskontinuität |
+| 25 | `OcclusionRangeValidation.Advise` | 8 | **Exzellent** | Beide Schwellen als true/false-Paar **und** beide Zweige des Vorrang-Guards gepinnt |
+
+**Summe:** 80 (#1–#12) + 85 (#13–#25) = **165** — deckt sich mit dem gemessenen Lauf.
 
 ---
 
@@ -269,25 +312,30 @@ Keine Note „mangelhaft" vergeben — es gibt in dieser Suite keinen schlechten
 
 ### 3 — `AudioFadeService` (`StartFade`, `Tick`, `ClearFade`, `StartFadeOut`) → **Exzellent**
 Getestet über `FakeFadeTarget` (Recording-Double) — saubere Seam, kein echter `AudioSource`.
+Verteilt auf drei Dateien (7 + 3 + 3 = 13 Tests), damit die eingefrorenen Suiten wörtlich unangetastet blieben.
 
 - **Spec-abgeleitet:** Ja (lineare Kurve, Zahlen aus #1).
 - **Mutation — mehrere *echt* diskriminierende Tests:**
   - **Clobber-Guard** (`ClearFade_…_ClobberGuard`): nach `ClearFade` externe Volume-Setzung, `Tick` darf sie **nicht** überschreiben. Fängt fehlendes `Active=false`. ✔ (Sicherheitskern!)
   - **„Nach Settle nicht erneut schreiben"**: fängt, wenn der Fade nach Abschluss nicht deaktiviert wird. ✔
   - **`StopOnEnd`-Zweig:** `StopCallCount` unterscheidet FadeIn (0) von FadeOut (1). ✔
-  - **Pause-Freeze:** `Tick_PausedThenResumed_ResumesFromWhereItWas` — der Kommentar nennt explizit „a buggy Tick would complete to 1 here". Echte Diskriminierung des `IsPaused`-Short-Circuits. ✔
+  - **Pause-Freeze:** `Tick_PausedThenResumed_ResumesFromWhereItWas` fährt 0.5 → (pausiert) 0.5 → 1.0. Echte Diskriminierung des `IsPaused`-Short-Circuits; ein fehlerhafter `Tick` liefe hier auf 1 durch. ✔
+  - **`Tick_PausedFadeOut_DoesNotCompleteOrStop`** prüft zusätzlich, dass der Freeze auch den `Stop()`-Seiteneffekt zurückhält (`StopCallCount == 0` trotz `Tick(5f)` bei Dauer 2). ✔
   - **`StartFadeOut` startet bei aktueller Lautstärke** (0.8), nicht hardcodiert 1. ✔
-- **Lücken (minor):** (a) `StartFade` auf einem bereits aktiven Slot (Neustart) ungetestet; (b) **zwei gleichzeitig aktive Fades** auf verschiedenen Slots, die zusammen voranschreiten — der „DoesNotTouchInactiveSlots"-Test hat 2 Slots, aber nur einen aktiven.
+- **Lücken (minor, unverändert seit 2026-06-15):** (a) `StartFade` auf einem bereits aktiven Slot (Neustart) ungetestet; (b) **zwei gleichzeitig aktive Fades** auf verschiedenen Slots, die zusammen voranschreiten — der „DoesNotTouchInactiveSlots"-Test hat 2 Slots, aber nur einen aktiven.
+- **Formale Abweichung (2026-08-15):** `AudioFadeServicePauseTests` ist die **einzige** der 27 Testklassen ohne die Spec-first-Pflicht-Boilerplate aus Teil I §5. Die Spezifikation steht im Header, nur der Standardsatz fehlt.
 
 > **Lehre:** Das `FakeFadeTarget`-Muster ist die **Blaupause für Gruppe B** (Unity-gekoppelt): kleines
 > Recording-Double hinter ein Interface, dann am Double assert. Genau so für `ShouldContinueLoop`,
 > `Gate`/`ResolveVolume`, `PauseAll`/`UnpauseAll`.
 
-> ⚠️ **Nachtrag 2026-07-27 (Kontext, kein Audit-Befund):** Seit dem Ducking-Umbau schreibt
-> `PooledFadeTarget.Volume` den **Per-Slot-Fade-Faktor** statt direkt `source.volume`
+> ⚠️ **Nachtrag 2026-07-27, 2026-08-15 erneut bestätigt (Kontext, kein Audit-Befund):** Seit dem
+> Ducking-Umbau schreibt `PooledFadeTarget.Volume` den **Per-Slot-Fade-Faktor** statt direkt `source.volume`
 > ([`ARCHITECTURE.md`](ARCHITECTURE.md) §6). Die hier auditierten Tests blieben davon **unberührt und grün** —
 > sie testen die Rampen-Mathematik über `FakeFadeTarget`, also agnostisch dazu, worauf `Volume` physisch
 > zeigt. Genau dafür war der Seam da; ein Lehrstück, warum Loop-Regel #6 hier nicht greifen musste.
+> *(Der `///`-Summary von `PooledFadeTarget` nennt allerdings weiterhin `AudioDuckService` als Besitzer von
+> `source.volume` — seit dem Writer-Umbau falsch. Doku-Drift im Produktionscode, kein Testbefund.)*
 
 ### 4 — `LowPassDispatchPolicy.Resolve(useWallCheck, defaultCutoff)` → **Solide** (dünn, aber valide)
 **Vertrag:** `Enabled ⟺ useWallCheck`; `CutoffFrequency` = der konfigurierte „offene" Wert, unverändert durchgereicht.
@@ -307,9 +355,12 @@ Wände wird der offene Bereich über dem Floor mit `∏(1 − dᵢ)` skaliert �
 Float-Drift. *(Modell-Begründung → [`ARCHITECTURE.md`](ARCHITECTURE.md) §9.)*
 
 - **Tests (9):** 7× `ApplyWall_*` (Einzelwand-Fraktion, `d=0` transparent, `d=1` → Floor, multiplikative Akkumulation, abnehmender Absolut-Schritt, Reihenfolge-Unabhängigkeit, Komposit `ApplyWall→ClampToFloor` bei `d>1`) + 2× `ClampToFloor_*` (modell-agnostisch).
-- **Spec-abgeleitet:** Ja; alle Erwartungswerte aus der Dämpfungs-/Asymptote-Gleichung hand-abgeleitet (`Open=22000`, `Floor=1000`), nicht aus dem Code.
+- **Spec-abgeleitet:** Ja; alle Erwartungswerte aus der Dämpfungs-/Asymptote-Gleichung hand-abgeleitet (`Open=22000`, `Floor=1000`), nicht aus dem Code. Nachgerechnet 2026-08-15: 11500 · 6250 · 3940 (beide Reihenfolgen) · −9500→1000 stimmen exakt.
 - **Mutation:** `−`→`+` in `ApplyWall`. **5 Tests rot** (Fraktion, Voll-Dämpfung, Akkumulation, Reihenfolge, Komposit), `ZeroDamping` bleibt grün (`+0 == −0`, pinnt bewusst den Wert, nicht den Operator), beide `ClampToFloor` grün. Mutation gefangen → Suite schützt den Vertrag. ✔
 - **Lücke aus der Vorversion geschlossen:** Der „viele Wände → Floor"-Komposit-Pfad ist jetzt als Kette getestet (`ApplyWall_ThenClampToFloor_OverDampedConfigRescuedToFloor`: `d=1.5` → −9500 → Clamp → 1000).
+- **Toleranz:** einzige Klasse mit `Delta = 1e-2f` statt `1e-5f`; die Begründung steht als bewusster
+  Ausnahme-Kommentar (Kategorie „Magic Number ohne andere Heimat") direkt an der Konstante und ist fachlich
+  hergeleitet (Hz-Domäne, JND), nicht per Reflex gesetzt. Vorbildlich.
 
 **Zwei Stolperstellen in dieser Session — ehrlich festgehalten** (Anlass für die Schutzregeln in Teil I §4):
 
@@ -333,7 +384,9 @@ Float-Drift. *(Modell-Begründung → [`ARCHITECTURE.md`](ARCHITECTURE.md) §9.)
   - Richtung hoch/runter beide getestet (Vorzeichenfehler fiele auf). ✔
   - **Kein Overshoot** (`absDiff<=maxStep → target`): `WithinOneStep` (900→1000) — ohne Snap käme 1100. ✔
   - **`speed<=0 → target`:** `ZeroOrNegativeSpeed` unterscheidet sauber von der zweiten Early-Return (`maxStep<=0 → current`): ohne den speed-Guard käme `current` (100) statt `target` (1000). ✔
-- **Lücke (minor):** **`maxStep<=0`-Guard ist nicht echt gepinnt.** `Step_ZeroDeltaTime` liefert 100 — aber auch *ohne* diesen Guard ergäbe der allgemeine Pfad 100 (`current + maxStep(0)`). Der Guard schützt eigentlich **negatives** `dt`/`speed` — und genau die sind ungetestet. Der Test „beweist" hier also weniger, als er suggeriert.
+- **Lücke (minor, 2026-08-15 erneut nachgerechnet und bestätigt):** **`maxStep<=0`-Guard ist nicht echt gepinnt.** `Step_ZeroDeltaTime` liefert 100 — aber auch *ohne* diesen Guard ergäbe der allgemeine Pfad `100 + 0` = 100. Der Guard schützt eigentlich **negatives** `dt`/`speed` — und genau die sind ungetestet. Der Test „beweist" hier also weniger, als er suggeriert.
+- **Zweite (schwächste) Stelle:** `Step_AlreadyAtTarget_StaysPut` ist der Neutralfall-Test dieser Einheit —
+  er dokumentiert, unterscheidet aber keinen Mutanten (vgl. `AllNeutral` in #12).
 
 > **Lehre (wichtig):** Ein Guard, dessen Entfernung am getesteten Input *dasselbe* Ergebnis liefert, ist
 > **nicht** getestet. Beim Schreiben fragen: „Wenn ich diese `if`-Zeile lösche — wird *dieser* Test rot?"
@@ -354,20 +407,26 @@ Float-Drift. *(Modell-Begründung → [`ARCHITECTURE.md`](ARCHITECTURE.md) §9.)
 - **Mutation:** **keep-first** gepinnt (`DuplicateLayer_KeepsFirstValue`): mit `dict[k]=v` statt `TryAdd` käme 9000 statt 5000. ✔ null/leer-Guards getestet (ohne Guard NRE → Test wirft). ✔
 - **Lücke (minor):** Die **Warnung** auf Duplikat wird **nicht** mit `LogAssert.Expect` bestätigt. Das *Verhalten* (keep-first) ist gesichert, die *Diagnose-Meldung* nicht — für ein Asset-Tool Teil des Vertrags.
 
-### 9 — `AudioManagerDictionaryProvider.FillDictionaryWithKeysAndValues` → **Exzellent**
-**Vertrag:** `CurrentAudioType → Volume`; drei null/leer-Guards; **null-Eintrag = skip-but-continue**; Duplikat = keep-first.
+### 9 — `AudioManagerDictionaryProvider.FillDictionaryWithKeysAndValues` → **Stark** *(neu erhoben 2026-08-15)*
+**Vertrag:** `CategoryVolume.Category → Volume` aus einer `IReadOnlyList<CategoryVolume>`; null **und** leer
+sind derselbe Guard (mit Warnung, Dictionary bleibt leer); Duplikat = keep-first (mit Warnung).
 
-> ⚠️ **Dieser Eintrag beschreibt den Stand vor dem 2026-08-14.** Mit dem Umzug der Lautstärken in die
-> `AudioSystemConfig` nimmt die Methode eine `IReadOnlyList<CategoryVolume>` statt eines Transfer-Objekts:
-> die drei Guards sind zu einem zusammengefallen, und **der unten gelobte null-Eintrag-Diskriminator
-> existiert nicht mehr** — ein Struct-Element kann nicht null sein. Verbleibend sind 4 Tests; der
-> Duplikat-Test wurde beim Umzug per Mutation (`TryAdd` → `[key] =`) erneut als scharf bestätigt.
-> Der Text darunter bleibt als Snapshot stehen; das nächste Audit ersetzt ihn.
+> Diese Einheit hat sich mit dem Volume-Umzug in die `AudioSystemConfig` (2026-08-14) verändert; der Eintrag
+> ist deshalb **neu geschrieben**, nicht fortgeschrieben. Die frühere Bewertung „Exzellent" beruhte auf dem
+> **null-Eintrag-vor-gültigem-Eintrag**-Diskriminator und auf einem `TearDown` mit `DestroyImmediate` —
+> **beides existiert nicht mehr:** `CategoryVolume` ist ein Struct (ein Element kann nicht null sein), und die
+> Tests erzeugen keine ScriptableObjects mehr, weshalb es in der ganzen Suite kein `SetUp`/`TearDown` mehr
+> gibt. Aus 6 Tests wurden 4. Die Note fällt von **Exzellent** auf **Stark** — nicht, weil Tests schlechter
+> wurden, sondern weil der stärkste Diskriminator mit dem Datentyp entfallen ist.
 
-- **Mutation — die null-Eintrag-Logik ist ideal diskriminierend gebaut:** `NullEntry_IsSkipped_RestStillMapped` setzt das `null` **vor** einen gültigen Eintrag. Mit `break` statt `continue` bliebe Music ungemappt (Count 0); ohne null-Check → NRE. Beides fällt. ✔✔
-- Drei Guard-Branches (null transfer / null array / leer) einzeln getestet. ✔ keep-first gepinnt. ✔
-- **Sauberkeit:** `TearDown` mit `DestroyImmediate` für die erzeugten ScriptableObjects — vorbildlich (kein Native-Leak in EditMode).
-- **Lücke (minor):** Warn-Logs (wie #8) unbestätigt.
+- **Spec-abgeleitet:** Ja.
+- **Mutation:** keep-first gepinnt (`DuplicateCategory_KeepsFirstValue`, 0.3 vs 0.9): mit `dict[key] = value`
+  statt `TryAdd` käme 0.9. ✔ Beide Zweige des zusammengefallenen Guards einzeln getestet (null / leer). ✔
+  Der Kategorie→Volume-Zuschnitt ist über zwei verschiedene Kategorien in einem Aufruf gepinnt. ✔
+- **Lücke (minor, aber gewachsen):** Diese Methode loggt inzwischen **zwei** verschiedene Warnungen (Duplikat
+  *und* „No category volumes configured … Every category plays at full volume") — **keine** davon ist mit
+  `LogAssert.Expect` bestätigt. Für ein verkauftes Asset ist gerade die zweite Meldung reine UX: sie ist der
+  einzige Hinweis, den ein Erstnutzer mit leerer Config je bekommt.
 
 ### 10 — `WallLayerMask.FromLayers(layers)` → **Stark**
 **Vertrag:** `mask |= 1 << layer` über alle Layer; null/leer → 0.
@@ -385,6 +444,10 @@ Float-Drift. *(Modell-Begründung → [`ARCHITECTURE.md`](ARCHITECTURE.md) §9.)
 - **Jede AND-Klausel einzeln gepinnt:** Playing→belegt; busy-window offen→belegt; paused→belegt (trotz sonst-frei). Jeder Test isoliert genau eine Klausel. ✔
 - **`>=`-Grenze inklusiv gepinnt:** `CurrentTimeEqualsBusyUntil → free` — mit `>` käme false. ✔
 - Vorbild für die kommenden Prädikat-Extraktionen.
+- **Querbezug (2026-08-15):** `WallCheckContinuation` (#14) pinnt dieselbe Busy-Fenster-Grenze aus der
+  *Gegenrichtung* (`currentTime < busyUntilTime` → weiterlaufen). Beide Seiten der Komplementärbedingung sind
+  damit unabhängig festgenagelt — eine Verschiebung des Vergleichs in nur einer der beiden Einheiten würde
+  auffallen.
 
 ### 12 — `VolumeResolver.Resolve(basis, fade, duck)` → **Stark** *(neu, TDD, 2026-06-28)*
 **Vertrag (Stufe-1-Gain):** `clamp01(basis · fade · duck)`. Drei unabhängige Gain-Faktoren
@@ -433,40 +496,395 @@ Einziger Besitzer von `source.volume` (Stufe 1) → [`ARCHITECTURE.md`](ARCHITEC
 
 ---
 
-## Querschnitt-Befunde
+> **Ab hier: erstmals auditiert (2026-08-15).** Die Einheiten #13–#25 sind seit dem Erst-Audit entstanden und
+> waren bis dahin nur als offene Erhebung gelistet. Alle sind regulär im TDD-Loop mit Mutation Check
+> entstanden; die Bewertung unten ist eine **unabhängige Nachprüfung**, kein Nachvollziehen der
+> Entstehungs-Protokolle.
 
-1. **Tautologie-Risiko: praktisch null.** Die kulturelle Markierung (spec-first-Header) ist gelebt, nicht dekorativ.
-2. **Stärkstes Muster:** Grenzen mit *benachbarten* true/false-Paaren pinnen (#7, #11, #2). Wirksamster Schutz gegen `>`/`>=`- und `<`/`<=`-Mutationen.
-3. **Wiederkehrende minor-Schwäche (das eigentliche Audit-Ergebnis):** **„Guard ohne echten Pin"** — ein `if`/Early-Return, dessen Entfernung am getesteten Input nichts ändert (#6 `maxStep<=0`).
-4. **Asset-Tool-spezifisch:** Mehrere **Warn-Logs** (Fehlkonfiguration) sind reines Verhalten ohne `LogAssert`-Bestätigung (#8, #9). Für ein verkauftes Plugin ist die Diagnose-Meldung Teil der UX.
-5. **Operator-Äquivalenz-blind:** `|` vs `+` (#10), isolierte statt verkettete Mathe (#5).
-6. **Gesunde Redundanz:** #2/#3 beweisen #1-Zahlen erneut durch die jeweils höhere Schicht — fängt Verdrahtungsfehler, kein Ballast.
+### 13 — `ListenerCachePolicy.NeedsResolve(hasCached, isAliveAndActive)` → **Exzellent**
+**Vertrag:** neu auflösen ⟺ kein Cache **ODER** der gecachte Listener ist nicht mehr lebend & aktiv.
+
+- **Spec-abgeleitet:** Ja; der Header benennt zusätzlich, *welche* Zeile der Wahrheitstafel fehlt und warum:
+  `(hasCached: false, isAliveAndActive: true)` ist **unerreichbar** (lebend & aktiv setzt eine Referenz voraus).
+  Das ist die saubere Art, eine bewusste Nicht-Abdeckung zu dokumentieren — nicht schweigen, sondern begründen.
+- **Mutation:** `||`→`&&` kippt genau `CachedButStale` (true → false). ✔ Weglassen des zweiten Operanden kippt
+  denselben Test; Weglassen des ersten kippt `NoCachedListener`. ✔ Jede Klausel einzeln gepinnt.
+- **Abdeckung:** 3 von 4 Zeilen — und die vierte ist **erschöpfend**, weil unerreichbar. Mehr geht nicht.
+- **Lücke:** keine. Die Einheit ist klein, aber die Tests holen alles heraus, was die Domäne hergibt.
+
+### 14 — `WallCheckContinuation.ShouldContinue(...)` → **Exzellent**
+**Vertrag (in dieser Reihenfolge):** Generation ≠ → `false` · pausiert → `true` · OneShot →
+`isPlaying || currentTime < busyUntilTime` · sonst → `isPlaying`.
+
+- **Spec-abgeleitet:** Ja, der Klassen-Header schreibt den Vertrag als **nummerierte Reihenfolge** hin — und
+  genau diese Reihenfolge wird getestet, nicht nur die Einzelklauseln.
+- **Mutation — jede Klausel *und* ihre Position ist gepinnt:**
+  - **Generation-Guard:** `GenerationMismatch_DoesNotContinue`. ✔
+  - **Reihenfolge Generation VOR Pause:** `GenerationMismatch_OverridesPaused` (Mismatch **und** pausiert →
+    false). Stünde der Pause-Check oben, käme `true`. ✔✔ **Der wertvollste Test der Einheit** — er pinnt eine
+    Eigenschaft, die man beim Umsortieren zweier `if`-Zeilen versehentlich zerstört.
+  - **Pause-Klausel:** `Matched_Paused_Continues` ist bewusst so gefüttert, dass *alle anderen* Pfade `false`
+    ergäben (OneShot, still, Busy-Fenster abgelaufen). Ohne die Pause-Zeile: `false ≠ true` → rot. ✔✔
+    Genau der Pin, der in #6 fehlt.
+  - **OneShot-Zweig:** `OneShot_Silent_BusyWindowOpen_Continues` (still, 3 < 5 → true) fiele ohne den
+    OneShot-Zweig auf `isPlaying == false` zurück → rot. ✔
+  - **`<`-Grenze als Nachbarpaar:** `BusyWindowOpen` (3<5 → true) **+** `CurrentTimeEqualsBusyUntil` (5<5 →
+    false). Mit `<=` würde der Gleichheitsfall durchrutschen. ✔✔
+  - **Loop-Zweig:** beide Ausgänge (`Playing` → true, `NotPlaying` → false). ✔
+- **Lücke:** keine nennenswerte. Zusammen mit #11 die vorbildlichste Prädikat-Abdeckung der Suite.
+
+### 15 — `DuckEnvelope.Step(current, target, dt, attackRate, releaseRate)` → **Stark**
+**Vertrag:** MoveTowards mit **asymmetrischer** Rate — `attackRate` beim Tiefer-Ducken (Faktor fällt),
+`releaseRate` beim Erholen (Faktor steigt); nicht-positive gewählte Rate → sofort `target`; kein Overshoot.
+
+- **Spec-abgeleitet:** Ja, alle Werte hand-nachrechenbar (`1 − 4·0.1 = 0.6`, `0.2 + 1·0.1 = 0.3`).
+- **Mutation:**
+  - **Richtungsabhängige Ratenwahl — beidseitig gepinnt:** `DuckingDeeper` (0.6 mit attack 4) und `Recovering`
+    (0.3 mit release 1). Wären die Raten vertauscht, kippen **beide**. ✔✔ Das ist der Kern des Vertrags und
+    er ist sauber festgenagelt.
+  - **Snap bei nicht-positiver Rate — für beide Richtungen einzeln:** `ZeroAttackRate` und `ZeroReleaseRate`.
+    Ohne den Guard liefe man in `maxStep == 0 → current` und bekäme den *Start*wert statt des Ziels. ✔✔
+  - **Kein Overshoot, in beide Richtungen:** `WithinOneStepDeeper` (0.5→0.4 statt 0.1) und
+    `WithinOneStepRecovering` (0.5→0.55 statt 0.6). ✔
+- **⚠️ Lücke — die Wiederkehr von #6:** **`maxStep <= 0` ist nicht echt gepinnt.** `Step_ZeroDeltaTime`
+  erwartet 1.0; ohne den Guard liefert der allgemeine Pfad `1.0 + (−0)` = **ebenfalls 1.0**. Der Guard
+  schützt negatives `dt` — und das ist ungetestet. **Bemerkenswert:** Die Lehre aus #6 stand zum
+  Entstehungszeitpunkt von `DuckEnvelope` (2026-06-28) bereits in Teil I §5, und der Zwilling hat die Lücke
+  trotzdem 1:1 geerbt. Das ist der stärkste Beleg des ganzen Audits dafür, dass die Checkliste beim
+  **Kopieren einer bestehenden Einheit** aktiv abgehakt werden muss und nicht von allein greift.
+- **Lücke (minor):** `Step_AlreadyAtTarget_StaysPut` ist der Neutralfall-Test — dokumentiert, diskriminiert
+  nichts (vgl. #6, #12c).
+
+### 16 — `DuckTargetPolicy.ResolveDuck(target, activeCategories, pairs)` → **Exzellent**
+**Vertrag:** über alle Paare, die *dieses* Ziel treffen, deren Trigger ≠ Ziel ist (kein Selbst-Duck) und deren
+Trigger **aktiv** ist: der **stärkste** Duck gewinnt (`min` der Faktoren). Kein solches Paar → 1.0.
+
+- **Spec-abgeleitet:** Ja.
+- **Mutation — alle drei `continue`-Guards einzeln gepinnt, jeweils mit einem Input, an dem das Weglassen
+  einen *anderen* Wert erzeugt:**
+  - `pair.Target != target` → `PairTargetsOtherCategory` (ohne Guard käme 0.4 statt 1.0). ✔
+  - `pair.Trigger == target` → `SelfDuckSkipped` (ohne Guard käme 0.3 statt 1.0). ✔
+  - `!IsActive(...)` → `PairTriggerNotActive` / `NoActiveTriggerForTarget` (ohne Guard käme 0.5). ✔
+  - **`min`-Stacking:** `TwoActiveTriggers_ReturnsMinimum` (0.5 vor 0.8) — ein `>` statt `<` kippt ihn. ✔
+- **Der Reihenfolge-Diskriminator:** `ActiveTriggerBeatsSmallerInactive` (aktiv 0.6 vs. inaktiv 0.3 → 0.6)
+  beweist, dass **erst gefiltert, dann minimiert** wird. Würde jemand die Aktiv-Prüfung hinter das Minimum
+  ziehen (der naheliegende „Optimierungs"-Fehler), käme 0.3. ✔✔ Zusammen mit `GenerationMismatch_OverridesPaused`
+  (#14) die beste Sorte Test in dieser Suite.
+- **Lücken (minor, außerhalb der zugesagten Domäne):** `pairs`/`activeCategories` als `null` → NRE, wird vom
+  Vertrag aber nicht zugesagt. Ein `DuckedVolume > 1` (Config könnte theoretisch „lauter" schreiben) wird von
+  `< result` stillschweigend ignoriert; durch `[Range(0,1)]` auf `DuckTarget.DuckedVolume` praktisch moot —
+  dieselbe Kategorie „durch Serialisierung unerreichbar" wie das `|`/`+` in #10.
+
+### 17 — `DuckRuleFlattening.Flatten(rules, results)` → **Stark**
+**Vertrag:** `results` leeren, dann pro `(rule.Trigger, target.Category, target.DuckedVolume)` **ein** Paar
+anhängen, Regel- dann Ziel-Reihenfolge erhalten; null-Regelliste und null-`Targets` tragen nichts bei;
+**kein** Filtern von Selbst-Zielen oder Duplikaten (das gehört der Policy).
+
+- **Spec-abgeleitet:** Ja.
+- **Mutation:**
+  - **`results.Clear()`** ist explizit gepinnt (`ResultsList_IsClearedBeforeFill`: ein Fremdeintrag vorher →
+    Count muss 1 sein, nicht 2). ✔✔ Genau die Zeile, die man beim „Fill-Stil" vergisst.
+  - **Ordnung** doppelt gepinnt — über Ziele *innerhalb* einer Regel und über Regeln hinweg. ✔
+  - **`targets == null`-Guard:** `RuleWithNullTargets_Skipped` (ohne Guard NRE). ✔
+  - **„Dummer Transform":** `SelfTargetAndDuplicates_PassThroughUnfiltered` pinnt, dass hier **nicht**
+    gefiltert wird — schützt die Einzigkeit der Filter-Regeln in #16 gegen ein „hilfsbereites" Vorfiltern. ✔✔
+- **⚠️ Lücke (konkret, nicht inhärent):** **Der zugesagte `rules == null`-Pfad ist ungetestet.** Sowohl der
+  `///`-Summary der Methode („A null rule list … contributes nothing (no exception)") als auch der
+  Klassen-Header der Tests nennen ihn ausdrücklich — es gibt aber keinen Test, der `Flatten(null, results)`
+  aufruft. Entfernt man `if (rules == null) return;`, wirft die Methode eine NRE und **die Suite bleibt grün**.
+  `RuleWithNoTargets_ContributesNothing` deckt das *nicht* ab: `Rule(SFX)` erzeugt über `params` ein **leeres**
+  Array, nicht `null`. Das ist die einzige Stelle im Audit, an der ein **schriftlich zugesagter Vertragsteil**
+  gar keinen Pin hat.
+
+### 18 — `DuckFactorLedger` (`Step`, `ReleaseAll`, `FactorFor`) → **Dünn (mit Lücke)**
+**Vertrag:** Eine Kategorie wird geführt, solange sie konfiguriertes Duck-Ziel **oder** noch in Erholung ist;
+pro Frame glidet jede geführte Kategorie (`DuckEnvelope`) auf das von `DuckTargetPolicy` aufgelöste Ziel zu;
+bei 1.0 wird sie pensioniert. `ReleaseAll` fährt mit den Raten des **letzten** `Step` aus.
+
+- **Spec-abgeleitet:** Ja — beide Erwartungswerte sind sauber hand-nachrechenbar und wurden 2026-08-15
+  unabhängig nachgerechnet: `Step 1` snappt über `attackRate 0` auf 0.5, `Step 2` glidet mit `release 0.25 · 1.0 s`
+  auf **0.75** ✔; `ReleaseAll(0.5 s)` mit gemerktem `release 0.4` ergibt `0.5 + 0.2` = **0.7** ✔.
+- **Die zwei vorhandenen Tests sind gut** und treffen genau die zwei Bugs, wegen derer die Einheit entstand
+  (Einfrieren statt Ausblenden bei entfallener Regel; Zurückschnappen bei verlorener Config). Sie pinnen
+  echtes Frame-zu-Frame-Verhalten, nicht nur einen Rückgabewert.
+- **Bewusst nicht getestet — und das ist korrekt:** das **Retire bei 1.0**. Durch die öffentliche Oberfläche
+  ist „pensioniert" von „mitgeführt bei 1.0" nicht unterscheidbar (`FactorFor` liefert beide Male 1.0); ein
+  Test müsste die Dictionary-Größe exponieren und wäre ein Change-Detector. Entscheidung und Begründung
+  stehen im BACKLOG; das Audit **bestätigt sie unabhängig** (echter Äquivalenz-Mutant).
+- **⚠️ Was tatsächlich ungepinnt ist — und die Note trägt:**
+  - **Der `attackRate`-Pfad wird nie durchlaufen.** Beide Tests setzen `attackRate: 0f` und nehmen damit den
+    Snap-Pfad von `DuckEnvelope`. Ein *gleitendes Tiefer-Ducken* über Frames — das hörbare Kernverhalten des
+    Features — kommt in dieser Einheit nirgends vor.
+  - **`FactorFor`-Rückfall auf 1.0 für eine nicht geführte Kategorie ist nicht gepinnt.** Beide Assertions
+    fragen `Music` ab, *nachdem* es im Dictionary liegt; ein `: 0f` statt `: 1f` bliebe grün. Das ist
+    dieselbe Sorte „Guard ohne echten Pin" wie #6/#15.
+  - **`trackedCategories`-Dedup ist nicht gepinnt.** Zwei Paare auf dasselbe Ziel würden es doppelt steppen
+    (doppelte Glide-Geschwindigkeit); die Tests haben nie mehr als ein Paar.
+  - **`trackedCategories.Clear()` ist an den vorhandenen Inputs ein Äquivalenz-Mutant** — die
+    `Contains`-Prüfungen darunter verhindern das Doppeltanhängen ohnehin, solange nur *eine* Kategorie
+    im Spiel ist. Mit einem zweiten Ziel wäre es ein echter Pin.
+  - **Nur eine Kategorie im gesamten Test.** Es gibt keinen Beleg, dass zwei Kategorien unabhängig
+    voneinander geführt werden.
+  - **`lastAttackRate` wird nie geprüft** (nur `lastReleaseRate` über `ReleaseAll`).
+- **Einordnung, ehrlich:** Die Einheit ist die **einzige zustandsbehaftete** der puren Schicht und die
+  einzige mit einer *Historie über Frames*. Genau dort ist Abdeckung am teuersten zu erreichen und am
+  wertvollsten — und genau dort ist sie am dünnsten. Kein Test hier ist falsch; es fehlen welche.
+
+### 19 — `AudioVolumeWriteService.Apply()` → **Exzellent**
+**Vertrag:** Jeder **klingende** Slot bekommt `clamp01(basis · fade · duck)`, wobei `basis`/`duck` über die
+Kategorie **dieses** Slots aufgelöst werden und `fade` sein eigener Faktor ist. Ein stiller Slot wird gar
+nicht geschrieben. Eine fehlende Faktor-Quelle steuert 1.0 bei.
+
+- **Getestet über `IVolumeTarget` + `FakeVolumeTarget`** — der Zwilling des `FakeFadeTarget`-Musters (#3),
+  hier mit `WriteCount`, damit „gar nicht geschrieben" von „denselben Wert nochmal geschrieben" unterscheidbar ist.
+  Das ist genau die Sorte Double, die Teil I §5 als Standardmuster verlangt.
+- **`FakeCategoryFactorSource` liefert für unkonfigurierte Kategorien absichtlich `0` statt `1`** — damit ein
+  falscher Kategorie-Lookup das Produkt auf null zieht und **laut** scheitert, statt durch ein neutrales 1.0
+  hindurchzurutschen. **Herausragende Test-Doubles-Disziplin;** dieses Detail entscheidet, ob
+  `SlotCategoryDecidesTheLookup` überhaupt etwas beweist.
+- **Mutation:**
+  - **Stiller Slot wird übersprungen:** `SilentSlot_IsNotWrittenAtAll` über `WriteCount == 0`. ✔
+  - **`continue` statt `break`:** `SilentSlotDoesNotStopLaterSlotsFromBeingWritten` — ein stiller Slot **vor**
+    einem klingenden. ✔✔ Das ist der direkte Nachfolger des mit dem Volume-Umbau entfallenen
+    null-Eintrag-Diskriminators aus #9; das Muster ist also nicht verloren gegangen, sondern umgezogen.
+  - **Kategorie-Zuordnung:** `SlotCategoryDecidesTheLookup` (SFX 0.9 statt Music 0.1) und
+    `EachSlotIsResolvedWithItsOwnCategoryAndFade` (0.2 / 0.4 für zwei Slots in **einem** `Apply`). ✔✔
+  - **Optionalität jedes Faktors einzeln:** fehlende Duck-Quelle (0.4), fehlende Basis-Quelle (0.25), gar
+    keine Quelle (0.6). Jede der drei `?? 1f`-Stellen ist damit separat gepinnt. ✔✔
+  - **Clamp:** `ProductAboveUnity_IsClampedToUnity` (basis 2 → 1). ✔
+- **Lücken (minor):** `targets == null` ungetestet und ungeguardet (nicht zugesagt). Ein Slot, dessen
+  `IsPlaying` *während* eines `Apply` kippt, ist ein Unity-Lebenszyklus-Thema und gehört in den PlayMode-Smoke.
+
+### 20 — `CategoryVolumeSource.For(category)` → **Exzellent**
+**Vertrag:** konfigurierte Kategorie → genau ihr Wert (**inklusive 0**); unkonfigurierte → 1.0; **ungeklemmt**
+durchgereicht; **live** aus dem Dictionary gelesen, nie gesnapshottet.
+
+- **Mutation — jede Vertragsklausel hat einen Test, der bei ihrem Wegfall einen *anderen* Wert liefert:**
+  - **`ConfiguredZero_ReturnsZeroNotUnity`** ist der Kronjuwel dieser Einheit: er trennt „Wert 0" von
+    „nicht konfiguriert". Eine naheliegende Fehlimplementierung (`value == 0 ? 1f : value`, oder ein
+    `GetValueOrDefault` mit falschem Default) fällt genau hier — und **nur** hier. ✔✔
+  - **Rückfall 1.0:** `UnconfiguredCategory` und `EmptyDictionary`. ✔
+  - **Kein Clamp:** `ValueAboveUnity_IsReturnedUnclamped` (1.5). ✔ Pinnt eine **Design-Entscheidung**
+    (Clampen gehört dem `VolumeResolver`) gegen späteres „Sicherheits"-Clampen an der falschen Stelle.
+  - **Live-Read, zweifach:** Wert nach Konstruktion geändert (0.6 → 0.2) **und** Kategorie nach Konstruktion
+    *hinzugefügt* (leeres Dictionary → 0.3). Eine Snapshot-Implementierung fiele bei beiden. ✔✔ Der zweite
+    Test ist der schärfere: ein Snapshot der *Keys* würde ihn allein kippen.
+- **Lücken:** `null`-Dictionary im Ctor → NRE, nicht zugesagt. Sonst nichts. Für eine Einheit dieser Größe
+  die vollständigste Abdeckung der Suite.
+
+### 21 — `CategoryVolumeWriter.Set(category, requested)` → **Stark**
+**Vertrag:** speichert den Wert **auf `[0,1]` geklemmt** (Read-Back-Ehrlichkeit an der API-Grenze); eine
+unbekannte Kategorie wird **angelegt**, nicht abgewiesen; der Unterschied wird als
+`CategoryVolumeWriteOutcome` gemeldet.
+
+- **Mutation:**
+  - **Beide Clamps:** 1.5 → 1.0 und −0.5 → 0.0. ✔
+  - **Beide Outcomes:** `Updated` bei vorhandenem, `EntryCreated` bei fehlendem Eintrag. ✔
+  - **Reihenfolge-Pin (leicht zu übersehen, aber echt):** `UnconfiguredCategory_ReportsEntryCreated` pinnt,
+    dass `ContainsKey` **vor** dem Schreiben ausgewertet wird. Zieht man die Abfrage hinter die Zuweisung, ist
+    sie immer `true` und der Test kippt. ✔✔
+  - **Anlegen ohne Kollateralschaden:** `UnconfiguredCategory_IsCreatedWithTheRequestedValue` schreibt SFX in
+    ein Dictionary, das bereits Music enthält. ✔
+- **Grenzen korrekt behandelt:** `BoundaryValues_ArePassedThroughUnchanged` (0 und 1) — die Schwelle selbst
+  ist an dieser **kontinuierlichen** Grenze prinzip-bedingt nicht pinnbar (`clamp(0)=0`, `clamp(1)=1`), also
+  ist „Existenz + Repräsentant" hier die *richtige* Wahl. Sauber angewandte Lehre aus #12.
+- **Lücken (minor):** dass die *anderen* Einträge unverändert bleiben, wird nicht assertet (nur implizit).
+  `NaN` läuft durch beide Vergleiche hindurch und wird gespeichert — außerhalb der zugesagten Domäne und über
+  den Inspector (`[Range(0,1)]`) nicht erreichbar.
+
+### 22 — `CategoryVolumeCoverage.Evaluate(configured, allCategories)` → **Stark**
+**Vertrag:** meldet drei Arten von Fehlkonfiguration — **fehlend** (in Enum-Reihenfolge), **doppelt** (genau
+einmal gemeldet, zählt als konfiguriert), **stumm** (Eintrag auf 0); bei einem Duplikat entscheidet der
+**erste** Eintrag über die Stummheit (spiegelt keep-first aus #9). Null-Liste == leere Liste.
+
+- **Mutation:**
+  - **`continue` nach dem Duplikat-Fund:** `DuplicateWithZeroAfterAudibleFirst_IsNotSilent` (0.5 dann 0.0 →
+    **nicht** stumm). Ohne das `continue` würde der zweite Eintrag die Stumm-Prüfung erreichen → Count 1. ✔✔
+    Ein echter Reihenfolge-Diskriminator, und er koppelt die Inspector-Meldung korrekt an das
+    **Laufzeit**verhalten (keep-first) statt an das, was im Inspector zuletzt steht.
+  - **Dedup der Duplikat-Liste:** `CategoryListedThreeTimes_IsReportedOnce` — ohne
+    `if (!duplicated.Contains(...))` käme 2. ✔
+  - **Duplikat zählt als konfiguriert:** `RepeatedCategory…` assertet zusätzlich
+    `Missing` enthält SFX **nicht**. ✔
+  - **Enum-Reihenfolge:** `UnlistedCategories_AreMissingInEnumOrder` prüft nicht nur den Count, sondern die
+    drei Positionen. ✔
+  - **Null == leer:** beide Wege einzeln. ✔
+- **Lücken (minor):** Eine **negative** Lautstärke gilt per `<= 0f` ebenfalls als „stumm", ist aber ungetestet
+  — durch `[Range(0f,1f)]` auf `CategoryVolume.Volume` praktisch unerreichbar (Kategorie „moot wie #10").
+  `allCategories == null` → NRE (nicht zugesagt). Der Fall „erster Eintrag 0, zweiter hörbar → stumm"
+  (Spiegelbild des starken Tests oben) fehlt.
+
+### 23 — `DuckConfigValidation.Evaluate(enabled, ruleCount)` → **Stark**
+**Vertrag:** Schalter an ohne Regeln → `EnabledWithoutRules`; Regeln ohne Schalter → `RulesWithoutEnabled`;
+die beiden übereinstimmenden Kombinationen → `None`.
+
+- **Abdeckung: vollständige 2×2-Wahrheitstafel.** Mehr ist über dieser Domäne nicht erreichbar.
+- **Mutation:** Die beiden Fehlerfälle sind **nicht vertauschbar** (verschiedene Enum-Werte) → ein Dreher
+  kippt beide Tests. ✔ Die `> 0`-Schwelle ist über die Inputs 0 und 1 als Nachbarpaar gepinnt: mit `>= 0`
+  wäre `hasRules` immer wahr und beide `None`-Tests kippen. ✔
+- **Einordnung:** erschöpfend, aber die Domäne ist winzig — **Wert pro Test wie bei #4**. Die Note steht für
+  „so gut, wie es hier geht", nicht für Tiefe. Kein Handlungsbedarf.
+
+### 24 — `OcclusionRangeValidation.Evaluate(defaultCutoff, minCutoff)` → **Stark**
+**Vertrag:** Boden **über** offenem Cutoff → `MinAboveDefault` (Occlusion invertiert); Boden **gleich**
+offenem Cutoff → `MinEqualsDefault` (Occlusion inert); jede noch so schmale Spanne → `None`.
+
+- **Mutation:**
+  - **`==`-Grenze gegen die schmalstmögliche gültige Spanne:** `FloorEqualToOpenCutoff` (22000/22000 →
+    `MinEqualsDefault`) **+** `NarrowestRange` (22000/21999 → `None`). Echtes Nachbarpaar an einer
+    **Diskontinuität** — mit `>=` in der ersten Zeile käme `MinAboveDefault` statt `MinEqualsDefault`, der
+    Test fängt es. ✔✔
+  - **Beide Fehlermodi** liefern verschiedene Enum-Werte und sind einzeln gepinnt. ✔
+- **Vertragstreue Schärfe:** Der `///`-Kommentar begründet, warum die Gleichheit **exakt** und nicht per
+  `Mathf.Approximately` geprüft wird (beide Werte werden getippt) — und `NarrowestRange` ist genau der Test,
+  der eine spätere „Verbesserung" auf Epsilon rot machen würde. Spec und Test greifen ineinander.
+- **Bekannte Lücke (bereits im BACKLOG als P8):** Die *Regel* ist vollständig geprüft, die **ausgelieferten
+  Feld-Defaults** von `AudioSystemConfig` sind es nicht. Hier nur als Verweis geführt, nicht doppelt eröffnet.
+
+### 25 — `OcclusionRangeValidation.Advise(defaultCutoff, minCutoff)` → **Exzellent**
+**Vertrag:** beschreibt eine **gültige, aber ungewohnte** Spanne über zwei unabhängige Flags — offener Cutoff
+unter 20000 Hz → `OpenCutoffNotTransparent`; Boden über 200 Hz → `FloorLimitsMuffling`; **genau auf** der
+Schwelle gilt der Wert noch als unauffällig; beide können zugleich gelten; eine Spanne, die `Evaluate` bereits
+verwirft, bekommt **gar keinen** Rat.
+
+- **Mutation — beide Schwellen als true/false-Nachbarpaar, beide an echten Diskontinuitäten:**
+  - `OpenCutoffExactlyAtTransparent` (20000 → `None`) **+** `OpenCutoffBelowTransparent` (8000 → Flag).
+    Mit `<=` statt `<` kippt der Gleichheitsfall. ✔✔
+  - `FloorExactlyAtUnobtrusive` (200 → `None`) **+** `FloorAboveUnobtrusive` (5000 → Flag).
+    Mit `>=` statt `>` kippt der Gleichheitsfall. ✔✔
+- **Der Vorrang-Guard ist in *beiden* Zweigen einzeln gepinnt** — das ist die stärkste Eigenschaft dieser
+  Einheit: `FloorAboveOpenCutoff` (100/22000) und `FloorEqualToOpenCutoff` (15000/15000) erwarten beide
+  `None`, obwohl **beide Flags** zutreffen würden, wenn die Zeile
+  `if (Evaluate(...) != None) return None;` fehlte (→ jeweils `3` statt `0`). ✔✔ Ein Guard, dessen Entfernung
+  an *diesen* Inputs wirklich ein anderes Ergebnis liefert — genau das, was #6 und #15 fehlt. **Vorbild.**
+- **Kombination:** `BothEndsMoved` (8000/5000 → beide Flags) pinnt, dass sich die Flags nicht gegenseitig
+  ausschließen. ✔
+- **Lücke (minor, moot — Wiederkehr von #10):** `|=` vs. `+=` ist bei disjunkten Flag-Bits (1 und 2) nicht
+  unterscheidbar, und da jedes Flag höchstens einmal gesetzt wird, ist der `+=`-Mutant hier sogar
+  **vollständig äquivalent**. Anders als in #10 gibt es keinen Input, der die beiden trennen könnte — also
+  keine behebbare Lücke, sondern die Natur eines Flag-Aufbaus aus paarweise verschiedenen Bits.
 
 ---
 
-## Noch nicht auditiert (Stand 2026-07-27)
+## Struktur-Befunde (Suite-Ebene, nicht pro Methode)
 
-Diese getesteten Einheiten sind nach dem Audit dazugekommen und **noch nicht** nach dem Raster oben bewertet.
-Offene Erhebung, **kein** Qualitätsurteil — alle sind regulär im TDD-Loop mit Mutation Check entstanden.
+### S1 — Die Testgrenze aus Teil I §3 und der `AudioFramework.Editor`-Bestand gehen auseinander
 
-| Einheit | Tests | Entstanden |
-|---|---|---|
-| `ListenerCachePolicy` | 3 | 2026-06-20 (W3) |
-| `WallCheckContinuation` | 9 | 2026-06-21 (R3) |
-| `DuckEnvelope` | 8 | 2026-06-28 (Ducking-Schritt 2) |
-| `DuckTargetPolicy` | 8 | 2026-07-02 (Ducking-Schritt 3) |
-| `DuckRuleFlattening` | 8 | 2026-07-02 (Ducking-Schritt 4) |
+**Beobachtung, kein Regel-Vorschlag.** Teil I §3 nimmt die **Editor-Präsentation** ausdrücklich von der
+Testpflicht aus und begründet das damit, dass sie „zustandslos" sei, „ausschließlich über `SerializedProperty`"
+schreibe und dass außerhalb des Runtime-Assemblys „wirklich nur Kabel" liege. Diese Beschreibung trifft auf
+`AudioSystemConfigEditor`, `AudioDataObjectEditor`, `AudioInspectorSkin` und `SingleLayerDrawer` zu. Auch
+diese Dateien verzweigen — aber ausschließlich über **Darstellung** (Foldouts, Layout, Pluralisierung wie
+`DescribeClipCount`), nie über ein **Urteil**. Genau an dieser Trennlinie verläuft der Befund.
 
-**Summe:** 36 Tests. Zusammen mit den 82 auditierten ergibt das die 118 Tests des IST-Stands.
+Sie trifft **nicht** auf zwei Dateien im selben Assembly zu, deren Verzweigungen Urteile sind — *welcher*
+Befund entsteht, mit *welcher* Severity, ab *welcher* Schwelle:
+
+| Datei | Was darin entschieden wird |
+|---|---|
+| `Editor/AudioDataObjectInspectorModel.cs` (206 Z.) | `Validate` — 5 Befund-Regeln mit Severity · `Describe` — verzweigende Prosa (0/1/n Clips, Blend `<=0`/`>=1`/dazwischen) · `ToVariableName` — Zeichen-Algorithmus (camelCase, führende Ziffern, Leer-Rückfall) · `ClipLengthFormatter.Format` — drei Bereiche mit Rundung · `NeedsSpatialPlayback` — Prädikat |
+| `Editor/AudioSystemConfigInspectorModel.cs` (174 Z.) | `Validate` — ~10 Befund-Regeln inkl. zweier `switch` über `OcclusionRangeIssue`/`DuckConfigIssue` · `Describe` — verzweigende Prosa · `Join` — Aufzählungs-Formatierung mit Sonderfall am letzten Element · `CoversEveryCategory` — Prädikat |
+
+Das ist genau der Fall, den die **Auflage** in §3 benennt („Entsteht in solchem Code je eine echte
+Entscheidung […], gehört diese Entscheidung als pure Einheit ins Runtime-Assembly"). Drei Belege, dass hier
+nicht nur Kabel liegt:
+
+1. **Beide Klassen behaupten selbst, testbar gebaut zu sein.** Ihre `///`-Summaries enden wörtlich auf
+   „*so it can be unit tested*". Getestet wird keine von beiden.
+2. **Sie sind aus dem Test-Assembly nicht einmal erreichbar:** beide Typen sind `internal` in
+   `AudioFramework.Editor`, und `AudioFramework.Tests.EditMode.asmdef` referenziert nur `AudioFramework`.
+   Das Fehlen der Tests ist damit **strukturell**, nicht das Ergebnis einer Abwägung pro Methode.
+3. **Eine der beiden Selbstbeschreibungen stimmt nicht mehr:** `AudioSystemConfigInspectorModel` erklärt sich
+   für „free of […] AudioFramework runtime types", benutzt aber `OcclusionRangeValidation`,
+   `DuckConfigValidation`, `OcclusionDefaults` und die beiden Issue-Enums aus dem Runtime-Assembly.
+
+**Kalibrierung, ehrlich:** Der *Schaden* ist begrenzt — falsche Prosa im Inspector ist sichtbar, nicht still,
+und `AudioDataObjectInspectorModel` stammt aus dem als „Experiment, nicht Teil des Kanons" markierten
+Inspector-Vorhaben ([`INSPECTOR_UI_EXPERIMENT.md`](INSPECTOR_UI_EXPERIMENT.md)).
+`AudioSystemConfigInspectorModel` dagegen ist mit dem Config-Umzug (2026-08-14) als reguläre Arbeit
+entstanden. Der Befund ist deshalb **keine Regelverletzung, die zu reparieren wäre**, sondern eine
+Abweichung zwischen der *Begründung* der Grenze und dem, was heute hinter ihr liegt. **Was daraus folgt,
+entscheidet der Maintainer** — Teil I bleibt davon unberührt, und eine daraus folgende Aufgabe gehört in den
+[`BACKLOG.md`](BACKLOG.md), nicht hierher.
+
+### S2 — Kein einziges `LogAssert` in der gesamten Suite
+
+Über alle 27 Testklassen kommt **kein** `LogAssert.Expect` / `LogAssert.NoUnexpectedReceived` vor (ebenso
+keine `SetUp`/`TearDown`, keine `TestCase`-Parametrisierung, keine `Ignore`/`Explicit`-Marker — die Suite ist
+durchgehend „ein Test, ein Fall, kein Fixture-Zustand", was für sich genommen eine Stärke ist).
+
+Die Konsequenz ist der Querschnitt-Befund von 2026-06-15, nur **größer** geworden: Die
+Fehlkonfigurations-Meldungen des Tools — inzwischen mindestens drei (`FillLayerMaskDictionary…` Duplikat,
+`FillDictionaryWithKeysAndValues` Duplikat **und** „No category volumes configured") — sind reines,
+unbestätigtes Verhalten. Für ein verkauftes Asset ist die Diagnose-Meldung der einzige Kanal zwischen einer
+stillen Fehlkonfiguration und dem Käufer.
+
+### S3 — Der Zustand ist der blinde Fleck, nicht die Mathematik
+
+Sortiert man die 23 Einheiten nach „wie viel Frame-zu-Frame-**Zustand** trage ich?", ergibt sich das
+Audit-Ergebnis fast von allein:
+
+- **17 zustandslose Funktionen** (statische Prädikate, Mathe, Transforms, Validierungen) → durchgehend
+  **Stark**/**Exzellent**, keine einzige Ausnahme,
+- **3 Einheiten über einem *fremden* Dictionary** (`CategoryVolumeSource` #20, `CategoryVolumeWriter` #21,
+  `AudioManagerDictionaryProvider` #8/#9) → **Stark**/**Exzellent**: Der Zustand gehört ihnen nicht, der Test
+  hält ihn selbst in der Hand und liest ihn direkt zurück,
+- **2 Dienste mit Seam und Recording-Double** (`AudioFadeService` #3, `AudioVolumeWriteService` #19) →
+  **Exzellent**, weil der Seam den internen Zustand beobachtbar macht,
+- **1 Einheit mit eigenem Gedächtnis** (`DuckFactorLedger` #18) → **die dünnste der Suite.**
+
+Das ist die belastbarste Verallgemeinerung dieses Audits: **Nicht die Komplexität einer Formel erzeugt
+Lücken, sondern das Vorhandensein von Zustand.** Wo ein Seam den Zustand nach außen beobachtbar macht
+(`FakeFadeTarget`, `FakeVolumeTarget`), verschwindet der Effekt vollständig.
+
+---
+
+## Querschnitt-Befunde
+
+1. **Tautologie-Risiko: praktisch null — jetzt über alle 165 Tests belegt.** Die kulturelle Markierung
+   (spec-first-Header) ist gelebt, nicht dekorativ: 26/27 Klassen tragen sie, die eine Ausnahme
+   (`AudioFadeServicePauseTests`) benennt ihre Spec trotzdem im Header.
+2. **Stärkstes Muster, unverändert:** Grenzen mit *benachbarten* true/false-Paaren pinnen (#7, #11, #2 — neu
+   dazu #14, #24, #25). Wirksamster Schutz gegen `>`/`>=`- und `<`/`<=`-Mutationen.
+3. **Zweitstärkstes Muster, neu benannt: der Reihenfolge-Diskriminator.** Ein Test, der beweist, *wann* ein
+   Guard relativ zu einer Aggregation greift, nicht nur *dass* er greift: #14
+   (`GenerationMismatch_OverridesPaused`), #16 (`ActiveTriggerBeatsSmallerInactive`), #22
+   (`DuplicateWithZeroAfterAudibleFirst`), #19 (`SilentSlotDoesNotStopLaterSlotsFromBeingWritten`), #21
+   (`ContainsKey` vor dem Schreiben). Diese Tests schützen gegen die Umbau-Fehler, die keine Zeile Logik
+   ändern, sondern nur ihre Position.
+4. **Wiederkehrende minor-Schwäche Nr. 1 — „Guard ohne echten Pin".** Ein `if`/Early-Return, dessen
+   Entfernung am getesteten Input nichts ändert: #6 (`maxStep<=0`), **#15 (dieselbe Zeile im Zwilling
+   `DuckEnvelope`)**, #18 (`FactorFor`-Rückfall, `Clear()`). **Das ist der eigentliche Audit-Befund 2026-08-15:**
+   Die Lehre stand seit dem Erst-Audit in Teil I §5 und wurde beim **Kopieren einer bestehenden Einheit**
+   trotzdem nicht angewandt. Gegenprobe, dass es geht: #25 pinnt seinen Vorrang-Guard in beiden Zweigen.
+5. **Wiederkehrende minor-Schwäche Nr. 2 — unbestätigte Warn-Logs.** Siehe S2; seit dem Erst-Audit **mehr**
+   statt weniger.
+6. **Operator-Äquivalenz-blind:** `|` vs `+` in #10 und erneut in #25 — beide Male praktisch folgenlos, in
+   #25 sogar unbehebbar. Kein Handlungsbedarf, aber es gehört benannt.
+7. **Eine echte, konkret schließbare Vertragslücke im gesamten Bestand:** der zugesagte, aber ungetestete
+   `rules == null`-Pfad in #17. Alles andere, was „fehlt", ist entweder inhärent (kontinuierliche Grenzen),
+   durch Serialisierung unerreichbar (`[Range]`-Felder) oder bewusst ausgeschlossen (Retire in #18).
+8. **Gesunde Redundanz:** #2/#3 beweisen #1-Zahlen erneut durch die jeweils höhere Schicht; #19 beweist die
+   Clamp-Semantik von #12 noch einmal durch den Writer. Fängt Verdrahtungsfehler, kein Ballast.
+9. **Test-Doubles sind eine Stärke des Projekts, nicht nur ein Hilfsmittel.** `FakeFadeTarget` (Recording),
+   `FakeVolumeTarget` (Recording **mit `WriteCount`**, damit „nicht geschrieben" beobachtbar wird) und
+   `FakeCategoryFactorSource` (bewusst **nicht**-neutraler Rückfall auf 0, damit falsche Lookups laut
+   scheitern) sind drei verschiedene, jeweils begründete Entwurfsentscheidungen. Das ist überdurchschnittlich.
 
 ---
 
 ## Nicht geprüft (bewusst außerhalb dieses Audits)
 
 - **Ungetesteter Glue/Orchestrierung:** `AudioManagerDynamic`, `AudioPlaybackService.Dispatch`,
-  `AudioStopService`, `AudioFollowService`, beide WallCheck-*Schleifen*, `PooledFadeTarget`,
-  `AudioDuckService`, `AudioDuckComponent`. → Das ist genau der M2/Gruppe-B-Backlog + die leere
-  PlayMode-Assembly (M3) + die offenen PlayMode-Smokes.
-- **Korrektheit der Implementierungen selbst:** Im Zuge des Audits gegengelesen — **keine** Implementierung
-  widersprach ihrer Spec, **kein** Test behauptete etwas Spec-Widriges. *(Bezieht sich auf den Stand
-  2026-06-28; der Ducking-Glue kam danach dazu und ist nicht mitgeprüft.)*
+  `AudioStopService`, `AudioPoolAcquisitionService`, `AudioFollowService`, `AudioPauseService`,
+  `AudioDuckService` (verbleibend: `DeriveActiveCategories`), `AudioOcclusionSmoothingService`, beide
+  WallCheck-*Schleifen*, `SceneAudioListenerProvider`, `PooledFadeTarget`, `PooledVolumeTarget`.
+  → Das ist der M2/Gruppe-B-Backlog + die leere PlayMode-Assembly (M3) + die offenen PlayMode-Smokes.
+- **`AudioFramework.Editor`** — siehe S1; die Grenze selbst steht in Teil I §3 und wird hier nur *gemessen*,
+  nicht geändert.
+- **Szenen-/Demo-Glue** (`Assets/Scripts/`, u. a. `TestScript`, `CategoryVolumeSliderBinding`) — bewusst
+  außerhalb, Begründung in Teil I §3.
+- **Korrektheit der Implementierungen selbst:** Im Zuge dieses Audits wurden **alle 23 getesteten Einheiten**
+  gegen ihre Spezifikation gegengelesen — **keine** Implementierung widersprach ihrer Spec, **kein** Test
+  behauptete etwas Spec-Widriges, und alle nachgerechneten Erwartungswerte (#1, #5, #12, #15, #18, #19, #25)
+  stimmten von Hand. Der ungetestete Glue oben ist davon **nicht** erfasst.
